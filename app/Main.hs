@@ -1,8 +1,7 @@
 module Main where
 
-import Protolude
-import Lib
+import Preload
 
 
 main :: IO ()
-main = someFunc
+main = putText "Hello world!"
