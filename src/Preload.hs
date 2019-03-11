@@ -3,7 +3,7 @@ module Preload
   ( module Protolude
   , module Data.Bitraversable
   , List, Unit
-  , quote, words, unwords, lines, unlines
+  , quote, paren, words, unwords, lines, unlines
   , Debug(..), read
   , neutral
   , (<<), (>>), (#), (<#>)
@@ -42,6 +42,10 @@ quote :: Text -> Text
 quote t = "`" <> t <> "`"
 
 
+paren :: Text -> Text
+paren t = "(" <> t <> ")"
+
+
 
 -- Reading & Showing -----------------------------------------------------------
 
@@ -50,7 +54,7 @@ class Debug a where
   debug :: a -> Text
 
 
-instance (Show a) => Debug a where
+instance {-# OVERLAPPABLE #-} (Show a) => Debug a where
   debug = pack << show
 
 
