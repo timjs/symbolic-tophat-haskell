@@ -7,7 +7,10 @@ import Data.Universe
 
 
 
-data Ty
+-- Universe --------------------------------------------------------------------
+
+
+data Ty -- kind
   = TyInt
   | TyBool
   | Ty :-> Ty
@@ -19,18 +22,13 @@ instance Universe Ty where
   type TypeOf (a ':-> b) = TypeOf a -> TypeOf b
 
 
+
+-- Context ---------------------------------------------------------------------
+
+
 data HasType (cxt :: List Ty) (t :: Ty) where
   Here  :: HasType (t ': ts) t
   There :: HasType ts t -> HasType (t2 ': ts) t
-
-
-data Expr (cxt :: List Ty) (t :: Ty) where
-  Val :: Int -> Expr cxt 'TyInt
-  Var :: HasType cxt t -> Expr cxt t
-  Lam :: Expr (a ': cxt) t -> Expr cxt (a ':-> t)
-  Op  :: (TypeOf a -> TypeOf b -> TypeOf c) -> Expr cxt a -> Expr cxt b -> Expr cxt c
-  App :: Expr cxt (a ':-> b) -> Expr cxt a -> Expr cxt b
-  If  :: Expr cxt 'TyBool -> Expr cxt a -> Expr cxt a -> Expr cxt a
 
 
 data Env (cxt :: List Ty) where
@@ -41,6 +39,19 @@ data Env (cxt :: List Ty) where
 lookup :: HasType cxt t -> Env cxt -> TypeOf t
 lookup Here      (Cons x _)  = x
 lookup (There i) (Cons _ xs) = lookup i xs
+
+
+
+-- Expressions -----------------------------------------------------------------
+
+
+data Expr (cxt :: List Ty) (t :: Ty) where
+  Val :: Int -> Expr cxt 'TyInt
+  Var :: HasType cxt t -> Expr cxt t
+  Lam :: Expr (a ': cxt) t -> Expr cxt (a ':-> t)
+  Op  :: (TypeOf a -> TypeOf b -> TypeOf c) -> Expr cxt a -> Expr cxt b -> Expr cxt c
+  App :: Expr cxt (a ':-> b) -> Expr cxt a -> Expr cxt b
+  If  :: Expr cxt 'TyBool -> Expr cxt a -> Expr cxt a -> Expr cxt a
 
 
 eval :: Env cxt -> Expr cxt t -> TypeOf t
@@ -55,6 +66,10 @@ eval env = \case
 
 eval' :: Expr '[] t -> TypeOf t
 eval' = eval Nil
+
+
+
+-- Examples --------------------------------------------------------------------
 
 
 fact :: Expr cxt ('TyInt ':-> 'TyInt)
