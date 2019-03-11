@@ -41,6 +41,16 @@ lookup Here      (Cons x _)  = x
 lookup (There i) (Cons _ xs) = lookup i xs
 
 
+count :: HasType cxt t -> Int
+count = \case
+  Here -> 0
+  There xs -> 1 + count xs
+
+
+instance Debug (HasType ctx t) where
+  debug = debug << count
+
+
 
 -- Expressions -----------------------------------------------------------------
 
@@ -52,6 +62,16 @@ data Expr (cxt :: List Ty) (t :: Ty) where
   Op  :: (TypeOf a -> TypeOf b -> TypeOf c) -> Expr cxt a -> Expr cxt b -> Expr cxt c
   App :: Expr cxt (a ':-> b) -> Expr cxt a -> Expr cxt b
   If  :: Expr cxt 'TyBool -> Expr cxt a -> Expr cxt a -> Expr cxt a
+
+
+instance Debug (Expr ctx t) where
+  debug = \case
+    Val i    -> debug i
+    Op _ a b -> paren (unwords [debug a, "<op>", debug b])
+    Var i    -> "x" <> debug i
+    Lam f    -> "λ." <> debug f
+    App f a  -> unwords [paren (debug f), paren (debug a)]
+    If p a b -> unwords ["if", debug p, "then", debug a, "else", debug b]
 
 
 eval :: Env cxt -> Expr cxt t -> TypeOf t
