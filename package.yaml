@@ -29,7 +29,7 @@ default-extensions:
   - FlexibleContexts
   - FlexibleInstances
   - InstanceSigs
-  - MultiParamTypeClasses
+  # - MultiParamTypeClasses
 
   # Syntactic conveniences:
   - LambdaCase
@@ -78,13 +78,14 @@ default-extensions:
   # - ApplicativeDo
 
   # Intermediate type extensions:
-  - FunctionalDependencies
+  # - FunctionalDependencies
   - GADTs
   - ExistentialQuantification
 
   # Advanced type extensions:
-  # - DataKinds
-  # - PolyKinds
+  - DataKinds
+  - PolyKinds
+  - TypeFamilies
 
 
 ghc-options:
