@@ -40,26 +40,54 @@ instance Pretty (HasType cxt t) where
 
 -- Operations ------------------------------------------------------------------
 
-
-data Op (a :: Ty) (b :: Ty) (c :: Ty) where
-  And :: Op 'TyBool 'TyBool 'TyBool
-  Or  :: Op 'TyBool 'TyBool 'TyBool
-  -- Not :: Op TyBool TyUnit TyBool
-
-  Lt :: Op 'TyInt 'TyInt 'TyBool
-  Le :: Op 'TyInt 'TyInt 'TyBool
-  Eq :: Op 'TyInt 'TyInt 'TyBool
-  Nq :: Op 'TyInt 'TyInt 'TyBool
-  Ge :: Op 'TyInt 'TyInt 'TyBool
-  Gt :: Op 'TyInt 'TyInt 'TyBool
-
-  Add :: Op 'TyInt 'TyInt 'TyInt
-  Sub :: Op 'TyInt 'TyInt 'TyInt
-  Mul :: Op 'TyInt 'TyInt 'TyInt
-  Div :: Op 'TyInt 'TyInt 'TyInt
+-- Unary -
 
 
-instance Pretty (Op a b c) where
+data Un (a :: Ty) (b :: Ty) where
+  Not :: Un 'TyBool 'TyBool
+
+  Fst :: Un (a ':>< b) a
+  Snd :: Un (a ':>< b) b
+
+
+instance Pretty (Un a b) where
+  pretty = \case
+    Not -> "not"
+
+    Fst -> "fst"
+    Snd -> "snd"
+
+
+un :: Un a b -> TypeOf a -> TypeOf b
+un = \case
+    Not -> not
+
+    Fst -> fst
+    Snd -> snd
+
+
+
+-- Binary --
+
+
+data Bin (a :: Ty) (b :: Ty) (c :: Ty) where
+  And :: Bin 'TyBool 'TyBool 'TyBool
+  Or  :: Bin 'TyBool 'TyBool 'TyBool
+
+  Lt :: Bin 'TyInt 'TyInt 'TyBool
+  Le :: Bin 'TyInt 'TyInt 'TyBool
+  Eq :: Bin 'TyInt 'TyInt 'TyBool
+  Nq :: Bin 'TyInt 'TyInt 'TyBool
+  Ge :: Bin 'TyInt 'TyInt 'TyBool
+  Gt :: Bin 'TyInt 'TyInt 'TyBool
+
+  Add :: Bin 'TyInt 'TyInt 'TyInt
+  Sub :: Bin 'TyInt 'TyInt 'TyInt
+  Mul :: Bin 'TyInt 'TyInt 'TyInt
+  Div :: Bin 'TyInt 'TyInt 'TyInt
+
+
+instance Pretty (Bin a b c) where
   pretty = \case
     And -> "&&"
     Or  -> "||"
@@ -77,8 +105,8 @@ instance Pretty (Op a b c) where
     Div -> "/"
 
 
-op :: Op a b c -> TypeOf a -> TypeOf b -> TypeOf c
-op = \case
+bin :: Bin a b c -> TypeOf a -> TypeOf b -> TypeOf c
+bin = \case
   And -> (&&)
   Or  -> (||)
 
@@ -105,7 +133,8 @@ data Expr (cxt :: List Ty) (t :: Ty) where
   Var :: HasType cxt t -> Expr cxt t
   Val :: Pretty (TypeOf a) => TypeOf a -> Expr cxt a
 
-  Op :: Op a b c -> Expr cxt a -> Expr cxt b -> Expr cxt c
+  Un :: Un a b -> Expr cxt a -> Expr cxt b
+  Bin :: Bin a b c -> Expr cxt a -> Expr cxt b -> Expr cxt c
   If :: Expr cxt 'TyBool -> Expr cxt a -> Expr cxt a -> Expr cxt a
 
   Unit :: Expr cxt 'TyUnit
@@ -119,7 +148,8 @@ instance Pretty (Expr cxt t) where
     Var i -> "x" <> pretty i
     Val i -> pretty i
 
-    Op o a b -> parens (sep [pretty a, pretty o, pretty b])
+    Un o a -> parens (sep [pretty o, pretty a])
+    Bin o a b -> parens (sep [pretty a, pretty o, pretty b])
     If p a b -> sep ["if", pretty p, "then", pretty a, "else", pretty b]
 
     Unit -> angles neutral
@@ -133,7 +163,8 @@ eval env = \case
   Var i -> lookup i env
   Val i -> i
 
-  Op o a b -> (op o) (eval env a) (eval env b)
+  Un o a -> (un o) (eval env a)
+  Bin o a b -> (bin o) (eval env a) (eval env b)
   If p a b -> if eval env p then eval env a else eval env b
 
   Unit -> ()
@@ -149,11 +180,11 @@ eval' = eval Nil
 
 
 double :: Expr cxt ('TyInt ':-> 'TyInt)
-double = Lam (Op Mul (Val 2) (Var Here))
+double = Lam (Bin Mul (Val 2) (Var Here))
 
 
 fact :: Expr cxt ('TyInt ':-> 'TyInt)
 fact = Lam
-  (If (Op Eq (Var Here) (Val 0))
+  (If (Bin Eq (Var Here) (Val 0))
     (Val 1)
-    (Op Mul (App fact (Op Sub (Var Here) (Val 1))) (Var Here)))
+    (Bin Mul (App fact (Bin Sub (Var Here) (Val 1))) (Var Here)))
