@@ -14,12 +14,34 @@ import Data.Universe
 
 
 data {- kind -} Ty
-  = TyInt
+  = Ty :-> Ty
+  | Ty :>< Ty
+
+  | TyUnit
   | TyBool
-  | Ty :-> Ty
+  | TyInt
+  | TyString
 
 
 instance Universe Ty where
-  type TypeOf 'TyInt = Int
-  type TypeOf 'TyBool = Bool
   type TypeOf (a ':-> b) = TypeOf a -> TypeOf b
+  type TypeOf (a ':>< b) = ( TypeOf a, TypeOf b )
+
+  type TypeOf 'TyUnit = ()
+  type TypeOf 'TyBool = Bool
+  type TypeOf 'TyInt = Int
+  type TypeOf 'TyString = Text
+
+
+
+-- Basics ----------------------------------------------------------------------
+
+
+class (Pretty (TypeOf t)) => IsBasic t
+
+
+instance IsBasic 'TyUnit
+instance IsBasic 'TyBool
+instance IsBasic 'TyInt
+instance IsBasic 'TyString
+instance ( IsBasic a, IsBasic b ) => IsBasic (a ':>< b)
