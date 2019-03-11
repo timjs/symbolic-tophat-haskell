@@ -3,6 +3,7 @@ module Language.Expr where
 
 import Preload
 
+import Data.Text.Prettyprint.Doc
 import Data.Universe
 
 
@@ -10,7 +11,7 @@ import Data.Universe
 -- Universe --------------------------------------------------------------------
 
 
-data Ty -- kind
+data {- kind -} Ty
   = TyInt
   | TyBool
   | Ty :-> Ty
@@ -47,8 +48,8 @@ count = \case
   There xs -> 1 + count xs
 
 
-instance Debug (HasType ctx t) where
-  debug = debug << count
+instance Pretty (HasType cxt t) where
+  pretty = pretty << count
 
 
 
@@ -64,14 +65,14 @@ data Expr (cxt :: List Ty) (t :: Ty) where
   If :: Expr cxt 'TyBool -> Expr cxt a -> Expr cxt a -> Expr cxt a
 
 
-instance Debug (Expr ctx t) where
-  debug = \case
-    Val i -> debug i
-    Op _ a b -> paren (unwords [debug a, "<op>", debug b])
-    Var i -> "x" <> debug i
-    Lam f -> "λ." <> debug f
-    App f a -> unwords [paren (debug f), paren (debug a)]
-    If p a b -> unwords ["if", debug p, "then", debug a, "else", debug b]
+instance Pretty (Expr cxt t) where
+  pretty = \case
+    Val i -> pretty i
+    Op _ a b -> parens (sep [pretty a, "<>", pretty b])
+    Var i -> "x" <> pretty i
+    Lam f -> "λ." <> pretty f
+    App f a -> sep [parens (pretty f), parens (pretty a)]
+    If p a b -> sep ["if", pretty p, "then", pretty a, "else", pretty b]
 
 
 eval :: Env cxt -> Expr cxt t -> TypeOf t
@@ -90,6 +91,10 @@ eval' = eval Nil
 
 
 -- Examples --------------------------------------------------------------------
+
+
+double :: Expr cxt ('TyInt ':-> 'TyInt)
+double = Lam (Op (*) (Val 2) (Var Here))
 
 
 fact :: Expr cxt ('TyInt ':-> 'TyInt)

@@ -3,8 +3,7 @@ module Preload
   ( module Protolude
   , module Data.Bitraversable
   , List, Unit
-  , quote, paren, words, unwords, lines, unlines
-  , Debug(..), read
+  , Pretty(..), read
   , neutral
   , (<<), (>>), (#), (<#>)
   , (<-<), (>->), (<&>), skip
@@ -13,13 +12,11 @@ module Preload
   ) where
 
 
-import Protolude hiding
-  ( (.), (>>), (&), (<&>)
-  , catch, handle
-  )
+import Protolude hiding ((.), (>>), (&), (<&>), catch, handle)
 
 import Data.Bitraversable
-import Data.Text (pack, unpack, words, unwords, lines, unlines)
+import Data.Text (unpack)
+import Data.Text.Prettyprint.Doc
 
 import Type.Reflection (typeOf)
 
@@ -35,27 +32,7 @@ type Unit = ()
 
 
 
--- Text ------------------------------------------------------------------------
-
-
-quote :: Text -> Text
-quote t = "`" <> t <> "`"
-
-
-paren :: Text -> Text
-paren t = "(" <> t <> ")"
-
-
-
 -- Reading & Showing -----------------------------------------------------------
-
-
-class Debug a where
-  debug :: a -> Text
-
-
-instance {-# OVERLAPPABLE #-} (Show a) => Debug a where
-  debug = pack << show
 
 
 read :: Read a => Text -> Maybe a
