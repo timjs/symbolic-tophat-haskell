@@ -1,4 +1,8 @@
-module Language.Expr where
+module Language.Expr
+  ( module Language.Types
+  , HasType(..), count
+  , Expr(..), Un(..), Bin(..)
+  ) where
 
 
 import Data.Text.Prettyprint.Doc
@@ -15,24 +19,14 @@ data HasType (cxt :: List Ty) (t :: Ty) where
   There :: HasType ts t -> HasType (t2 ': ts) t
 
 
-data Env (cxt :: List Ty) where
-  Nil :: Env '[]
-  Cons :: TypeOf t -> Env ts -> Env (t ': ts)
-
-
-lookup :: HasType cxt t -> Env cxt -> TypeOf t
-lookup Here      (Cons x _)  = x
-lookup (There i) (Cons _ xs) = lookup i xs
+instance Pretty (HasType cxt t) where
+  pretty = pretty << count
 
 
 count :: HasType cxt t -> Int
 count = \case
   Here -> 0
   There xs -> 1 + count xs
-
-
-instance Pretty (HasType cxt t) where
-  pretty = pretty << count
 
 
 
@@ -54,14 +48,6 @@ instance Pretty (Un a b) where
 
     Fst -> "fst"
     Snd -> "snd"
-
-
-un :: Un a b -> TypeOf a -> TypeOf b
-un = \case
-    Not -> not
-
-    Fst -> fst
-    Snd -> snd
 
 
 
@@ -103,24 +89,6 @@ instance Pretty (Bin a b c) where
     Div -> "/"
 
 
-bin :: Bin a b c -> TypeOf a -> TypeOf b -> TypeOf c
-bin = \case
-  And -> (&&)
-  Or  -> (||)
-
-  Lt -> (<)
-  Le -> (<=)
-  Eq -> (==)
-  Nq -> (/=)
-  Ge -> (>=)
-  Gt -> (>)
-
-  Add -> (+)
-  Sub -> (-)
-  Mul -> (*)
-  Div -> div
-
-
 
 -- Expressions -----------------------------------------------------------------
 
@@ -152,37 +120,3 @@ instance Pretty (Expr cxt t) where
 
     Unit -> angles neutral
     Pair a b -> angles $ pretty a <> comma <> pretty b
-
-
-eval :: Env cxt -> Expr cxt t -> TypeOf t
-eval env = \case
-  Lam f -> \x -> eval (Cons x env) f
-  App f a -> eval env f $ eval env a
-  Var i -> lookup i env
-  Val i -> i
-
-  Un o a -> (un o) (eval env a)
-  Bin o a b -> (bin o) (eval env a) (eval env b)
-  If p a b -> if eval env p then eval env a else eval env b
-
-  Unit -> ()
-  Pair a b -> ( eval env a, eval env b )
-
-
-eval' :: Expr '[] t -> TypeOf t
-eval' = eval Nil
-
-
-
--- Examples --------------------------------------------------------------------
-
-
-double :: Expr cxt ('TyInt ':-> 'TyInt)
-double = Lam (Bin Mul (Val 2) (Var Here))
-
-
-fact :: Expr cxt ('TyInt ':-> 'TyInt)
-fact = Lam
-  (If (Bin Eq (Var Here) (Val 0))
-    (Val 1)
-    (Bin Mul (App fact (Bin Sub (Var Here) (Val 1))) (Var Here)))
