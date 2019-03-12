@@ -4,6 +4,7 @@ module Language.Types
   ) where
 
 
+import Data.SBV
 import Data.Universe
 
 
@@ -27,8 +28,17 @@ instance Universe Ty where
 
   type TypeOf 'TyUnit = ()
   type TypeOf 'TyBool = Bool
-  type TypeOf 'TyInt = Int
+  type TypeOf 'TyInt = Integer
   type TypeOf 'TyString = Text
+
+
+  type SymOf (a ':-> b) = SymOf a -> SymOf b
+  type SymOf (a ':>< b) = ( SymOf a, SymOf b )
+
+  type SymOf 'TyUnit = ()
+  type SymOf 'TyBool = SBool
+  type SymOf 'TyInt = SInteger
+  type SymOf 'TyString = SString
 
 
 
