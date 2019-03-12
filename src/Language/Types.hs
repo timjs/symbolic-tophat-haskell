@@ -1,6 +1,6 @@
 module Language.Types
   ( module Data.Universe
-  , Ty(..)
+  , Ty(..), IsBasic
   ) where
 
 
@@ -45,11 +45,4 @@ instance Universe Ty where
 -- Basics ----------------------------------------------------------------------
 
 
-class (Pretty (TypeOf t)) => IsBasic t
-
-
-instance IsBasic 'TyUnit
-instance IsBasic 'TyBool
-instance IsBasic 'TyInt
-instance IsBasic 'TyString
-instance ( IsBasic a, IsBasic b ) => IsBasic (a ':>< b)
+type IsBasic a = (Typeable a, HasKind a, Pretty a)

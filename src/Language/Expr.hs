@@ -97,7 +97,7 @@ data Expr (cxt :: List Ty) (t :: Ty) where
   Lam :: Expr (a ': cxt) t -> Expr cxt (a ':-> t)
   App :: Expr cxt (a ':-> b) -> Expr cxt a -> Expr cxt b
   Var :: HasType cxt t -> Expr cxt t
-  Val :: Pretty (TypeOf a) => TypeOf a -> Expr cxt a
+  Val :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt a
 
   Un :: Un a b -> Expr cxt a -> Expr cxt b
   Bin :: Bin a b c -> Expr cxt a -> Expr cxt b -> Expr cxt c
