@@ -1,6 +1,5 @@
 module Main where
 
-import Preload
 
 
 main :: IO ()

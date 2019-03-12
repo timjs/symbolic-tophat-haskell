@@ -1,24 +1,25 @@
-{-# LANGUAGE UndecidableInstances #-}
-module Preload
-  ( module Protolude
-  , module Data.Bitraversable
+module Prelude
+  ( module Relude
   , List, Unit
   , Pretty(..), read
   , neutral
   , (<<), (>>), (#), (<#>)
   , (<-<), (>->), (<&>), skip
-  , forany, forall, ok, throw, catch
+  , ok, throw, catch
   , sameT, proxyOf, typeOf
   ) where
 
 
-import Protolude hiding ((.), (>>), (&), (<&>), catch, handle)
+import Relude hiding ((.), (>>), (&), (<&>), readMaybe)
+import qualified Relude
 
-import Data.Bitraversable
+import Control.Monad.Except (MonadError(..))
+
 import Data.Text (unpack)
 import Data.Text.Prettyprint.Doc
+import Data.Typeable (eqT)
 
-import Type.Reflection (typeOf)
+import Type.Reflection
 
 
 
@@ -36,7 +37,7 @@ type Unit = ()
 
 
 read :: Read a => Text -> Maybe a
-read = readMaybe << unpack
+read = Relude.readMaybe << unpack
 
 
 
@@ -109,28 +110,6 @@ skip = pure ()
 
 
 -- Monads ----------------------------------------------------------------------
-
-
--- | A version of 'any' lifted to a monad. Retains the short-circuiting behaviour.
---
--- > forany [False,True ,undefined] Just == Just True
--- > forany [False,False,undefined] Just == undefined
--- > xs \(f :: Int -> Maybe Bool) -> forany xs f == orM (map f xs)
-forany :: Monad m => List a -> (a -> m Bool) -> m Bool
-forany [] _ = return False
-forany (x:xs) p = ifM (p x) (return True) (forany xs p)
-
-
--- | A version of 'all' lifted to a monad. Retains the short-circuiting behaviour.
---
--- > forall [True,False,undefined] Just == Just False
--- > forall [True,True ,undefined] Just == undefined
--- > xs \(f :: Int -> Maybe Bool) -> forany xs f == orM (map f xs)
-forall :: Monad m => List a -> (a -> m Bool) -> m Bool
-forall [] _ = return True
-forall (x:xs) p = ifM (p x) (forall xs p) (return False)
-
-
 
 -- Errors --
 

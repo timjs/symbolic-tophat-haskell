@@ -4,8 +4,6 @@ module Language.Types
   ) where
 
 
-import Preload
-
 import Data.Universe
 
 

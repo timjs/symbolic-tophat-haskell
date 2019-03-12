@@ -1,8 +1,6 @@
 module Language.Expr where
 
 
-import Preload
-
 import Data.Text.Prettyprint.Doc
 
 import Language.Types
