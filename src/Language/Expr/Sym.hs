@@ -28,6 +28,8 @@ un :: Un a b -> SymOf a -> SymOf b
 un = \case
     Not -> sNot
 
+    Neg -> negate
+
     Fst -> fst
     Snd -> snd
 

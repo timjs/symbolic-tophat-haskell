@@ -25,6 +25,8 @@ un :: Un a b -> TypeOf a -> TypeOf b
 un = \case
     Not -> not
 
+    Neg -> negate
+
     Fst -> fst
     Snd -> snd
 

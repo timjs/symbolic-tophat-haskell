@@ -38,6 +38,8 @@ count = \case
 data Un (a :: Ty) (b :: Ty) where
   Not :: Un 'TyBool 'TyBool
 
+  Neg :: Un 'TyInt 'TyInt
+
   Fst :: Un (a ':>< b) a
   Snd :: Un (a ':>< b) b
 
@@ -45,6 +47,7 @@ data Un (a :: Ty) (b :: Ty) where
 instance Pretty (Un a b) where
   pretty = \case
     Not -> "not"
+    Neg -> "neg"
 
     Fst -> "fst"
     Snd -> "snd"
