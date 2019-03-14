@@ -50,21 +50,21 @@ bn = \case
   Div -> div
 
 
-eval :: Env cxt -> Expr cxt sxt t -> Env sxt -> TypeOf t
+eval :: Env cxt -> Expr cxt '[] t -> TypeOf t
 eval vars = \case
-  Lam f -> \syms x -> eval (Cons x vars) f syms
-  App f a -> eval vars f <*> eval vars a
-  Var i -> pure $ lookup i vars
-  Sym i -> lookup i
-  Val i -> pure i
+  Lam f -> \x -> eval (Cons x vars) f
+  App f a -> eval vars f $ eval vars a
+  Var i -> lookup i vars
+  Sym _ -> error "Found Sym in executable expression" --FIXME: should be checkable
+  Val i -> i
 
-  Un o a -> un o <$> eval vars a
-  Bn o a b -> bn o <$> eval vars a <*> eval vars b
-  If p a b -> bool <$> eval vars a <*> eval vars b <*> eval vars p
+  Un o a -> un o (eval vars a)
+  Bn o a b -> bn o (eval vars a) (eval vars b)
+  If p a b -> if eval vars p then eval vars a else eval vars b
 
-  Unit -> pure ()
-  Pair a b -> eval vars a <&> eval vars b
+  Unit -> ()
+  Pair a b -> ( eval vars a, eval vars b )
 
 
-eval' :: Expr '[] sxt t -> Env sxt -> TypeOf t
+eval' :: Expr '[] '[] t -> TypeOf t
 eval' = eval Nil
