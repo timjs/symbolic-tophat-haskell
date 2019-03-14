@@ -1,5 +1,6 @@
 module Language.Expr.Sym where
 
+{-
 
 import Language.Expr
 
@@ -65,3 +66,5 @@ bin = \case
 --
 --   Unit -> ()
 --   Pair a b -> ( sym env a, sym env b )
+
+-}

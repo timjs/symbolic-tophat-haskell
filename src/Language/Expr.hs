@@ -1,6 +1,6 @@
 module Language.Expr
   ( module Language.Types
-  , HasType(..), count
+  , HasType(..), idx
   , Expr(..), Un(..), Bin(..)
   ) where
 
@@ -20,13 +20,13 @@ data HasType (cxt :: List Ty) (t :: Ty) where
 
 
 instance Pretty (HasType cxt t) where
-  pretty = pretty << count
+  pretty = pretty << idx
 
 
-count :: HasType cxt t -> Int
-count = \case
+idx :: HasType cxt t -> Int
+idx = \case
   Here -> 0
-  There xs -> 1 + count xs
+  There xs -> 1 + idx xs
 
 
 

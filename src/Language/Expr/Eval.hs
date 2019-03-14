@@ -1,11 +1,13 @@
 module Language.Expr.Eval where
 
 
+import Data.SBV
+
 import Language.Expr
 
 
 
--- Environment -----------------------------------------------------------------
+-- Environments ----------------------------------------------------------------
 
 
 data Env (cxt :: List Ty) where
@@ -50,20 +52,24 @@ bin = \case
   Div -> div
 
 
-eval :: Env cxt -> Env sxt -> Expr cxt sxt t -> TypeOf t
-eval vars syms = \case
-  Lam f -> \x -> eval (Cons x vars) syms f
-  App f a -> eval vars syms f $ eval vars syms a
-  Var i -> lookup i vars
-  Val i -> i
+eval :: Env cxt -> Expr cxt sxt t -> Symbolic (TypeOf t)
+eval vars = \case
+  Lam f -> pure \x -> eval (Cons x vars) f
+  App f a -> do
+    f' <- eval vars f
+    a' <- eval vars a
+    f' a'
+  Var i -> pure $ lookup i vars
+  -- Sym i -> symbolic (show $ idx i)
+  Val i -> pure i
 
-  Un o a -> (un o) (eval vars syms a)
-  Bin o a b -> (bin o) (eval vars syms a) (eval vars syms b)
-  If p a b -> if eval vars syms p then eval vars syms a else eval vars syms b
+  Un o a -> un o <$> eval vars a
+  Bin o a b -> bin o <$> eval vars a <*> eval vars b
+  If p a b -> bool <$> eval vars a <*> eval vars b <*> eval vars p
 
-  Unit -> ()
-  Pair a b -> ( eval vars syms a, eval vars syms b )
+  Unit -> pure ()
+  Pair a b -> eval vars a <&> eval vars b
 
 
-eval' :: Expr '[] '[] t -> TypeOf t
-eval' = eval Nil Nil
+eval' :: Expr '[] '[] t -> Symbolic (TypeOf t)
+eval' = eval Nil

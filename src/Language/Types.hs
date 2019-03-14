@@ -23,22 +23,13 @@ data {- kind -} Ty
 
 
 instance Universe Ty where
-  type TypeOf (a ':-> b) = TypeOf a -> TypeOf b
+  type TypeOf (a ':-> b) = TypeOf a -> Symbolic (TypeOf b)
   type TypeOf (a ':>< b) = ( TypeOf a, TypeOf b )
 
   type TypeOf 'TyUnit = ()
   type TypeOf 'TyBool = Bool
   type TypeOf 'TyInt = Integer
   type TypeOf 'TyString = Text
-
-
-  type SymOf (a ':-> b) = SymOf a -> SymOf b
-  type SymOf (a ':>< b) = ( SymOf a, SymOf b )
-
-  type SymOf 'TyUnit = ()
-  type SymOf 'TyBool = SBool
-  type SymOf 'TyInt = SInteger
-  type SymOf 'TyString = SString
 
 
 
