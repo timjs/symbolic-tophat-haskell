@@ -1,7 +1,7 @@
 module Language.Expr
   ( module Language.Types
   , HasType(..), idx
-  , Expr(..), Un(..), Bin(..)
+  , Expr(..), Un(..), Bn(..)
   ) where
 
 
@@ -57,24 +57,24 @@ instance Pretty (Un a b) where
 -- Binary --
 
 
-data Bin (a :: Ty) (b :: Ty) (c :: Ty) where
-  And :: Bin 'TyBool 'TyBool 'TyBool
-  Or  :: Bin 'TyBool 'TyBool 'TyBool
+data Bn (a :: Ty) (b :: Ty) (c :: Ty) where
+  And :: Bn 'TyBool 'TyBool 'TyBool
+  Or  :: Bn 'TyBool 'TyBool 'TyBool
 
-  Lt :: Bin 'TyInt 'TyInt 'TyBool
-  Le :: Bin 'TyInt 'TyInt 'TyBool
-  Eq :: Bin 'TyInt 'TyInt 'TyBool
-  Nq :: Bin 'TyInt 'TyInt 'TyBool
-  Ge :: Bin 'TyInt 'TyInt 'TyBool
-  Gt :: Bin 'TyInt 'TyInt 'TyBool
+  Lt :: Bn 'TyInt 'TyInt 'TyBool
+  Le :: Bn 'TyInt 'TyInt 'TyBool
+  Eq :: Bn 'TyInt 'TyInt 'TyBool
+  Nq :: Bn 'TyInt 'TyInt 'TyBool
+  Ge :: Bn 'TyInt 'TyInt 'TyBool
+  Gt :: Bn 'TyInt 'TyInt 'TyBool
 
-  Add :: Bin 'TyInt 'TyInt 'TyInt
-  Sub :: Bin 'TyInt 'TyInt 'TyInt
-  Mul :: Bin 'TyInt 'TyInt 'TyInt
-  Div :: Bin 'TyInt 'TyInt 'TyInt
+  Add :: Bn 'TyInt 'TyInt 'TyInt
+  Sub :: Bn 'TyInt 'TyInt 'TyInt
+  Mul :: Bn 'TyInt 'TyInt 'TyInt
+  Div :: Bn 'TyInt 'TyInt 'TyInt
 
 
-instance Pretty (Bin a b c) where
+instance Pretty (Bn a b c) where
   pretty = \case
     And -> "&&"
     Or  -> "||"
@@ -104,7 +104,7 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   Val :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
 
   Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
-  Bin :: Bin a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
+  Bn :: Bn a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
   If :: Expr cxt sxt 'TyBool -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
 
   Unit :: Expr cxt sxt 'TyUnit
@@ -120,7 +120,7 @@ instance Pretty (Expr cxt sxt t) where
     Val a -> pretty a
 
     Un o a -> parens (sep [pretty o, pretty a])
-    Bin o a b -> parens (sep [pretty a, pretty o, pretty b])
+    Bn o a b -> parens (sep [pretty a, pretty o, pretty b])
     If p a b -> sep ["if", pretty p, "then", pretty a, "else", pretty b]
 
     Unit -> angles neutral

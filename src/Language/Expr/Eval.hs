@@ -1,10 +1,12 @@
 module Language.Expr.Eval where
 
+
 import Language.Expr
 
 
 
 -- Environments ----------------------------------------------------------------
+
 
 data Env (cxt :: List u) where
   Nil :: Env '[]
@@ -30,8 +32,8 @@ un = \case
     Snd -> snd
 
 
-bin :: Bin a b c -> TypeOf a -> TypeOf b -> TypeOf c
-bin = \case
+bn :: Bn a b c -> TypeOf a -> TypeOf b -> TypeOf c
+bn = \case
   And -> (&&)
   Or  -> (||)
 
@@ -57,7 +59,7 @@ eval vars = \case
   Val i -> pure i
 
   Un o a -> un o <$> eval vars a
-  Bin o a b -> bin o <$> eval vars a <*> eval vars b
+  Bn o a b -> bn o <$> eval vars a <*> eval vars b
   If p a b -> bool <$> eval vars a <*> eval vars b <*> eval vars p
 
   Unit -> pure ()
