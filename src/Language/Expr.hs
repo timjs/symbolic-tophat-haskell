@@ -99,8 +99,8 @@ instance Pretty (Bn a b c) where
 data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   Lam :: Expr (a ': cxt) sxt t -> Expr cxt sxt (a ':-> t)
   App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
-  Var :: HasType cxt t -> Expr cxt sxt t
-  Sym :: HasType sxt t -> Expr cxt sxt t
+  Var :: HasType cxt a -> Expr cxt sxt a
+  Sym :: IsBasic (TypeOf a) => HasType sxt a -> Expr cxt sxt a
   Val :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
 
   Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
