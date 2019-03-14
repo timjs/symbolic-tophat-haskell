@@ -1,16 +1,12 @@
 module Language.Expr.Eval where
 
-
-import Data.SBV
-
 import Language.Expr
 
 
 
 -- Environments ----------------------------------------------------------------
 
-
-data Env (cxt :: List Ty) where
+data Env (cxt :: List u) where
   Nil :: Env '[]
   Cons :: TypeOf t -> Env ts -> Env (t ': ts)
 
@@ -52,15 +48,12 @@ bin = \case
   Div -> div
 
 
-eval :: Env cxt -> Expr cxt sxt t -> Symbolic (TypeOf t)
+eval :: Env cxt -> Expr cxt sxt t -> Env sxt -> TypeOf t
 eval vars = \case
-  Lam f -> pure \x -> eval (Cons x vars) f
-  App f a -> do
-    f' <- eval vars f
-    a' <- eval vars a
-    f' a'
+  Lam f -> \syms x -> eval (Cons x vars) f syms
+  App f a -> eval vars f <*> eval vars a
   Var i -> pure $ lookup i vars
-  -- Sym i -> symbolic (show $ idx i)
+  Sym i -> lookup i
   Val i -> pure i
 
   Un o a -> un o <$> eval vars a
@@ -71,5 +64,5 @@ eval vars = \case
   Pair a b -> eval vars a <&> eval vars b
 
 
-eval' :: Expr '[] '[] t -> Symbolic (TypeOf t)
+eval' :: Expr '[] sxt t -> Env sxt -> TypeOf t
 eval' = eval Nil
