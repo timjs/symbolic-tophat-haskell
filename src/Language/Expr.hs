@@ -100,8 +100,8 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   Lam :: Expr (a ': cxt) sxt t -> Expr cxt sxt (a ':-> t)
   App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
   Var :: HasType cxt a -> Expr cxt sxt a
-  Sym :: IsBasic (TypeOf a) => HasType sxt a -> Expr cxt sxt a
-  Val :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
+  Sym :: IsBasic (TypeOf a) => HasType sxt a -> Expr cxt sxt a --FIXME: add to context
+  Val :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a --FIXME: add to context
 
   Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
   Bn :: Bn a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
