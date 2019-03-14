@@ -23,7 +23,7 @@ data {- kind -} Ty
 
 
 instance Universe Ty where
-  type TypeOf (a ':-> b) = TypeOf a -> (TypeOf b)
+  type TypeOf (a ':-> b) = TypeOf a -> TypeOf b
   type TypeOf (a ':>< b) = ( TypeOf a, TypeOf b )
 
   type TypeOf 'TyUnit = ()
