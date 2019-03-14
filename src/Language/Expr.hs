@@ -11,7 +11,7 @@ import Language.Types
 
 
 
--- Context ---------------------------------------------------------------------
+-- Contexts --------------------------------------------------------------------
 
 
 data HasType (cxt :: List Ty) (t :: Ty) where
@@ -96,26 +96,28 @@ instance Pretty (Bin a b c) where
 -- Expressions -----------------------------------------------------------------
 
 
-data Expr (cxt :: List Ty) (t :: Ty) where
-  Lam :: Expr (a ': cxt) t -> Expr cxt (a ':-> t)
-  App :: Expr cxt (a ':-> b) -> Expr cxt a -> Expr cxt b
-  Var :: HasType cxt t -> Expr cxt t
-  Val :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt a
+data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
+  Lam :: Expr (a ': cxt) sxt t -> Expr cxt sxt (a ':-> t)
+  App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
+  Var :: HasType cxt t -> Expr cxt sxt t
+  Sym :: HasType sxt t -> Expr cxt sxt t
+  Val :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
 
-  Un :: Un a b -> Expr cxt a -> Expr cxt b
-  Bin :: Bin a b c -> Expr cxt a -> Expr cxt b -> Expr cxt c
-  If :: Expr cxt 'TyBool -> Expr cxt a -> Expr cxt a -> Expr cxt a
+  Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
+  Bin :: Bin a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
+  If :: Expr cxt sxt 'TyBool -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
 
-  Unit :: Expr cxt 'TyUnit
-  Pair :: Expr cxt a -> Expr cxt b -> Expr cxt (a ':>< b)
+  Unit :: Expr cxt sxt 'TyUnit
+  Pair :: Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt (a ':>< b)
 
 
-instance Pretty (Expr cxt t) where
+instance Pretty (Expr cxt sxt t) where
   pretty = \case
     Lam f -> "λ." <> pretty f
     App f a -> sep [parens (pretty f), parens (pretty a)]
     Var i -> "x" <> pretty i
-    Val i -> pretty i
+    Sym i -> "s" <> pretty i
+    Val a -> pretty a
 
     Un o a -> parens (sep [pretty o, pretty a])
     Bin o a b -> parens (sep [pretty a, pretty o, pretty b])

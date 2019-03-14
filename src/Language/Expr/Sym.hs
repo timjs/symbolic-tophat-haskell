@@ -52,16 +52,16 @@ bin = \case
   Div -> sDiv
 
 
-sym :: SymEnv cxt -> Expr cxt t -> SymOf t
-sym env = \case
-  Lam f -> \x -> sym (Cons x env) f
-  App f a -> sym env f $ sym env a
-  Var i -> lookup i env
-  -- Val i -> i
-
-  Un o a -> (un o) (sym env a)
-  Bin o a b -> (bin o) (sym env a) (sym env b)
-  -- If p a b -> ite (sym env p) (sym env a) (sym env b)
-
-  Unit -> ()
-  Pair a b -> ( sym env a, sym env b )
+-- sym :: SymEnv cxt -> Expr cxt sxt t -> SymOf t
+-- sym env = \case
+--   Lam f -> \x -> sym (Cons x env) f
+--   App f a -> sym env f $ sym env a
+--   Var i -> lookup i env
+--   -- Val i -> i
+--
+--   Un o a -> (un o) (sym env a)
+--   Bin o a b -> (bin o) (sym env a) (sym env b)
+--   -- If p a b -> ite (sym env p) (sym env a) (sym env b)
+--
+--   Unit -> ()
+--   Pair a b -> ( sym env a, sym env b )

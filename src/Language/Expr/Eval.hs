@@ -18,6 +18,7 @@ lookup Here      (Cons x _)  = x
 lookup (There i) (Cons _ xs) = lookup i xs
 
 
+
 -- Evaluation ------------------------------------------------------------------
 
 
@@ -49,20 +50,20 @@ bin = \case
   Div -> div
 
 
-eval :: Env cxt -> Expr cxt t -> TypeOf t
-eval env = \case
-  Lam f -> \x -> eval (Cons x env) f
-  App f a -> eval env f $ eval env a
-  Var i -> lookup i env
+eval :: Env cxt -> Env sxt -> Expr cxt sxt t -> TypeOf t
+eval vars syms = \case
+  Lam f -> \x -> eval (Cons x vars) syms f
+  App f a -> eval vars syms f $ eval vars syms a
+  Var i -> lookup i vars
   Val i -> i
 
-  Un o a -> (un o) (eval env a)
-  Bin o a b -> (bin o) (eval env a) (eval env b)
-  If p a b -> if eval env p then eval env a else eval env b
+  Un o a -> (un o) (eval vars syms a)
+  Bin o a b -> (bin o) (eval vars syms a) (eval vars syms b)
+  If p a b -> if eval vars syms p then eval vars syms a else eval vars syms b
 
   Unit -> ()
-  Pair a b -> ( eval env a, eval env b )
+  Pair a b -> ( eval vars syms a, eval vars syms b )
 
 
-eval' :: Expr '[] t -> TypeOf t
-eval' = eval Nil
+eval' :: Expr '[] '[] t -> TypeOf t
+eval' = eval Nil Nil
