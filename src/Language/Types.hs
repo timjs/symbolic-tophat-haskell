@@ -23,6 +23,16 @@ data {- kind -} Ty
   | TyString
 
 
+instance Universe Ty where
+  type TypeOf (a ':-> b) = TypeOf a -> TypeOf b
+  type TypeOf (a ':>< b) = ( TypeOf a, TypeOf b )
+
+  type TypeOf 'TyUnit = ()
+  type TypeOf 'TyBool = Bool
+  type TypeOf 'TyInt = Integer
+  type TypeOf 'TyString = String
+
+
 
 -- Basics ----------------------------------------------------------------------
 
