@@ -1,10 +1,8 @@
-module Language.Expr.SymDynamic where
+module Language.Expr.SymMonadic where
 
-
-{-
 import Language.Expr
 
-import Data.SBV.Dynamic
+import Data.SBV
 
 
 
@@ -26,8 +24,13 @@ lookup (There i) (Cons _ xs) = lookup i xs
 
 
 type family SymOf (a :: Ty) where
-  SymOf (a ':-> b) = SVal -> SVal
-  SymOf a = SVal
+  SymOf (a ':-> b) = SymOf a -> Symbolic (SymOf b)
+  SymOf (a ':>< b) = ( SymOf a, SymOf b )
+
+  SymOf 'TyUnit = SBV ()
+  SymOf 'TyBool = SBV Bool
+  SymOf 'TyInt = SBV Integer
+  SymOf 'TyString = SBV String
 
 
 
@@ -36,9 +39,9 @@ type family SymOf (a :: Ty) where
 
 un :: Un a b -> SymOf a -> SymOf b
 un = \case
-    Not -> svNot
+    Not -> sNot
 
-    Neg -> svUNeg
+    Neg -> negate
 
     -- Fst -> fst
     -- Snd -> snd
@@ -46,37 +49,39 @@ un = \case
 
 bn :: Bn a b c -> SymOf a -> SymOf b -> SymOf c
 bn = \case
-  And -> svAnd
-  Or  -> svOr
+  And -> (.&&)
+  Or  -> (.||)
 
-  Lt -> svLessThan
-  Le -> svLessEq
-  Eq -> svEqual
-  Nq -> svNotEqual
-  Ge -> svGreaterEq
-  Gt -> svGreaterThan
+  Lt -> (.<)
+  Le -> (.<=)
+  Eq -> (.==)
+  Nq -> (./=)
+  Ge -> (.>=)
+  Gt -> (.>)
 
-  Add -> svPlus
-  Sub -> svMinus
-  Mul -> svTimes
-  Div -> svDivide --TODO: correct one?
+  Add -> (+)
+  Sub -> (-)
+  Mul -> (*)
+  Div -> sDiv
 
 
-eval :: Env cxt -> Expr cxt '[] t -> SymOf t
+eval :: Env cxt -> Expr cxt sxt t -> Symbolic (SymOf t)
 eval vars = \case
-  Lam f -> \x -> eval (Cons x vars) f
-  App f a -> eval vars f $ eval vars a
-  Var i -> lookup i vars
-  Sym _ -> error "Found Sym in executable expression" --FIXME: should be checkable
-  Val i -> i
+  Lam f -> pure \x -> eval (Cons x vars) f
+  App f a -> do
+    f' <- eval vars f
+    a' <- eval vars a
+    f' a'
+  Var i -> pure $ lookup i vars
+  Sym i -> free $ show $ idx i
+  Val i -> pure $ literal i
 
-  Un o a -> un o (eval vars a)
-  Bn o a b -> bn o (eval vars a) (eval vars b)
-  If p a b -> svIte (eval vars p) (eval vars a) (eval vars b)
+  Un o a -> un o <$> eval vars a
+  Bn o a b -> bn o <$> eval vars a <*> eval vars b
+  If p a b -> ite <$> eval vars p <*> eval vars a <*> eval vars b
 
-  Unit -> ()
-  Pair a b -> ( eval vars a, eval vars b )
-
+  Unit -> pure $ literal ()
+  Pair a b -> eval vars a <&> eval vars b
 
 
 -- sym :: SymEnv cxt -> Expr cxt sxt t -> SymOf t
@@ -92,5 +97,3 @@ eval vars = \case
 --
 --   Unit -> ()
 --   Pair a b -> ( sym env a, sym env b )
-
--}
