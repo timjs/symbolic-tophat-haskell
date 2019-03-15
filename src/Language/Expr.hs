@@ -46,3 +46,5 @@ instance Pretty (Expr cxt sxt t) where
 
     Unit -> angles neutral
     Pair a b -> angles $ pretty a <> comma <> pretty b
+    Fst a -> "fst" <+> pretty a
+    Snd a -> "snd" <+> pretty a
