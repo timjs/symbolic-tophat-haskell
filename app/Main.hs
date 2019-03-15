@@ -7,33 +7,33 @@ import Language.Expr
 -- Examples --------------------------------------------------------------------
 
 
-double_mul :: Expr cxt '[] ('TyInt ':-> 'TyInt)
-double_mul = Lam (Bn Mul (Val 2) (Var Here))
+cDoubleMul :: Expr cxt '[] ('TyInt ':-> 'TyInt)
+cDoubleMul = Lam (Bn Mul (Val 2) (Var Here))
 
 
-double_add :: Expr cxt '[] ('TyInt ':-> 'TyInt)
-double_add = Lam (Bn Add (Var Here) (Var Here))
+cDoubleAdd :: Expr cxt '[] ('TyInt ':-> 'TyInt)
+cDoubleAdd = Lam (Bn Add (Var Here) (Var Here))
 
 
-abs :: Expr cxt '[] ('TyInt ':-> 'TyInt)
-abs = Lam
+cAbs :: Expr cxt '[] ('TyInt ':-> 'TyInt)
+cAbs = Lam
   (If (Bn Lt (Var Here) (Val 0))
     (Un Neg (Var Here))
     (Var Here))
 
 
-abs' :: Expr cxt '[ 'TyInt ] 'TyInt
-abs' =
+sAbs :: Expr cxt '[ 'TyInt ] 'TyInt
+sAbs =
   If (Bn Lt (Sym Here) (Val 0))
     (Un Neg (Sym Here))
     (Sym Here)
 
 
-fact :: Expr cxt '[] ('TyInt ':-> 'TyInt)
-fact = Lam
+cFact :: Expr cxt '[] ('TyInt ':-> 'TyInt)
+cFact = Lam
   (If (Bn Eq (Var Here) (Val 0))
     (Val 1)
-    (Bn Mul (App fact (Bn Sub (Var Here) (Val 1))) (Var Here)))
+    (Bn Mul (App cFact (Bn Sub (Var Here) (Val 1))) (Var Here)))
 
 
 
