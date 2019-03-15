@@ -39,7 +39,7 @@ eval vars = \case
   App f a -> eval vars f $ eval vars a
   Var i -> lookup i vars
   Sym _ -> error "Found Sym in executable expression" --FIXME: should be checkable
-  Val i -> i
+  Con i -> i
 
   Un o a -> un o (eval vars a)
   Bn o a b -> bn o (eval vars a) (eval vars b)
