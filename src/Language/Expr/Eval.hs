@@ -5,20 +5,6 @@ import Language.Expr
 
 
 
--- Environments ----------------------------------------------------------------
-
-
-data Env (cxt :: List u) where
-  Nil :: Env '[]
-  Cons :: TypeOf t -> Env ts -> Env (t ': ts)
-
-
-lookup :: HasType cxt t -> Env cxt -> TypeOf t
-lookup Here      (Cons x _)  = x
-lookup (There i) (Cons _ xs) = lookup i xs
-
-
-
 -- Evaluation ------------------------------------------------------------------
 
 
@@ -27,9 +13,6 @@ un = \case
     Not -> not
 
     Neg -> negate
-
-    Fst -> fst
-    Snd -> snd
 
 
 bn :: Bn a b c -> TypeOf a -> TypeOf b -> TypeOf c
@@ -64,6 +47,8 @@ eval vars = \case
 
   Unit -> ()
   Pair a b -> ( eval vars a, eval vars b )
+  Fst e -> fst $ eval vars e
+  Snd e -> snd $ eval vars e
 
 
 eval' :: Expr '[] '[] t -> TypeOf t

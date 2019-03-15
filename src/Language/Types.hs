@@ -1,10 +1,10 @@
 module Language.Types
   ( module Data.Universe
-  , Ty(..), IsBasic
+  , Ty(..), PrimTy(..), IsBasic
   ) where
 
 
-import Data.SBV
+import Data.SBV ( HasKind )
 
 import Data.Universe
 
@@ -16,9 +16,12 @@ import Data.Universe
 data {- kind -} Ty
   = Ty :-> Ty
   | Ty :>< Ty
-
   | TyUnit
-  | TyBool
+  | TyPrim PrimTy
+
+
+data {- kind -} PrimTy
+  = TyBool
   | TyInt
   | TyString
 
@@ -26,8 +29,11 @@ data {- kind -} Ty
 instance Universe Ty where
   type TypeOf (a ':-> b) = TypeOf a -> TypeOf b
   type TypeOf (a ':>< b) = ( TypeOf a, TypeOf b )
-
   type TypeOf 'TyUnit = ()
+  type TypeOf ('TyPrim p) = TypeOf p
+
+
+instance Universe PrimTy where
   type TypeOf 'TyBool = Bool
   type TypeOf 'TyInt = Integer
   type TypeOf 'TyString = String
@@ -38,6 +44,7 @@ instance Universe Ty where
 
 
 type IsBasic a = (Typeable a, HasKind a, Pretty a)
+
 
 -- class IsBasic (a :: Ty)
 --

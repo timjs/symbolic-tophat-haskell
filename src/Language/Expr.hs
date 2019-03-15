@@ -1,6 +1,6 @@
 module Language.Expr
   ( module Language.Types
-  , HasType(..), idx
+  , HasType(..)
   , Expr(..), Un(..), Bn(..)
   ) where
 
@@ -8,88 +8,7 @@ module Language.Expr
 import Data.Text.Prettyprint.Doc
 
 import Language.Types
-
-
-
--- Contexts --------------------------------------------------------------------
-
-
-data HasType (cxt :: List Ty) (t :: Ty) where
-  Here :: HasType (t ': ts) t
-  There :: HasType ts t -> HasType (t2 ': ts) t
-
-
-instance Pretty (HasType cxt t) where
-  pretty = pretty << idx
-
-
-idx :: HasType cxt t -> Int
-idx = \case
-  Here -> 0
-  There xs -> 1 + idx xs
-
-
-
--- Operations ------------------------------------------------------------------
-
--- Unary -
-
-
-data Un (a :: Ty) (b :: Ty) where
-  Not :: Un 'TyBool 'TyBool
-
-  Neg :: Un 'TyInt 'TyInt
-
-  Fst :: Un (a ':>< b) a --FIXME: move to Expr
-  Snd :: Un (a ':>< b) b --FIXME: move to Expr
-
-
-instance Pretty (Un a b) where
-  pretty = \case
-    Not -> "not"
-    Neg -> "neg"
-
-    Fst -> "fst"
-    Snd -> "snd"
-
-
-
--- Binary --
-
-
-data Bn (a :: Ty) (b :: Ty) (c :: Ty) where
-  And :: Bn 'TyBool 'TyBool 'TyBool
-  Or  :: Bn 'TyBool 'TyBool 'TyBool
-
-  Lt :: Bn 'TyInt 'TyInt 'TyBool
-  Le :: Bn 'TyInt 'TyInt 'TyBool
-  Eq :: Bn 'TyInt 'TyInt 'TyBool
-  Nq :: Bn 'TyInt 'TyInt 'TyBool
-  Ge :: Bn 'TyInt 'TyInt 'TyBool
-  Gt :: Bn 'TyInt 'TyInt 'TyBool
-
-  Add :: Bn 'TyInt 'TyInt 'TyInt
-  Sub :: Bn 'TyInt 'TyInt 'TyInt
-  Mul :: Bn 'TyInt 'TyInt 'TyInt
-  Div :: Bn 'TyInt 'TyInt 'TyInt
-
-
-instance Pretty (Bn a b c) where
-  pretty = \case
-    And -> "&&"
-    Or  -> "||"
-
-    Lt -> "<"
-    Le -> "<="
-    Eq -> "=="
-    Nq -> "/="
-    Ge -> ">="
-    Gt -> ">"
-
-    Add -> "+"
-    Sub -> "-"
-    Mul -> "*"
-    Div -> "/"
+import Language.Ops
 
 
 
@@ -97,18 +16,20 @@ instance Pretty (Bn a b c) where
 
 
 data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
-  Lam :: Expr (a ': cxt) sxt t -> Expr cxt sxt (a ':-> t)
+  Lam :: Expr (a ': cxt) sxt b -> Expr cxt sxt (a ':-> b)
   App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
   Var :: HasType cxt a -> Expr cxt sxt a
   Sym :: HasType sxt a -> Expr cxt sxt a --FIXME: add to context
   Val :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a --FIXME: add to context
 
-  Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
-  Bn :: Bn a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
-  If :: Expr cxt sxt 'TyBool -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
+  Un :: Un a b -> Expr cxt sxt ('TyPrim a) -> Expr cxt sxt ('TyPrim b)
+  Bn :: Bn a b c -> Expr cxt sxt ('TyPrim a) -> Expr cxt sxt ('TyPrim b) -> Expr cxt sxt ('TyPrim c)
+  If :: Expr cxt sxt ('TyPrim 'TyBool) -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
 
   Unit :: Expr cxt sxt 'TyUnit
   Pair :: Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt (a ':>< b)
+  Fst :: Expr cxt sxt (a ':>< b) -> Expr cxt sxt a
+  Snd :: Expr cxt sxt (a ':>< b) -> Expr cxt sxt b
 
 
 instance Pretty (Expr cxt sxt t) where
