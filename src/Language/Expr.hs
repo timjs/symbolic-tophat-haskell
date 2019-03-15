@@ -40,8 +40,8 @@ data Un (a :: Ty) (b :: Ty) where
 
   Neg :: Un 'TyInt 'TyInt
 
-  Fst :: Un (a ':>< b) a
-  Snd :: Un (a ':>< b) b
+  Fst :: Un (a ':>< b) a --FIXME: move to Expr
+  Snd :: Un (a ':>< b) b --FIXME: move to Expr
 
 
 instance Pretty (Un a b) where

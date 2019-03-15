@@ -89,6 +89,7 @@ default-extensions:
   - DataKinds
   - PolyKinds
   - TypeFamilies
+  # - TypeFamilyDependencies
 
 
 ghc-options:

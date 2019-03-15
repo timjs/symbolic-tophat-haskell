@@ -29,7 +29,7 @@ instance Universe Ty where
   type TypeOf 'TyUnit = ()
   type TypeOf 'TyBool = Bool
   type TypeOf 'TyInt = Integer
-  type TypeOf 'TyString = Text
+  type TypeOf 'TyString = String
 
 
 
