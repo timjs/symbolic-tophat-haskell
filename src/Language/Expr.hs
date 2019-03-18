@@ -22,6 +22,7 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   Var :: HasType cxt a -> Expr cxt sxt a
   Sym :: HasType sxt a -> Expr cxt sxt a
 
+  --FIXME: Merge literal constructors into one named `Con`stant
   -- Con :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
   I :: Integer -> Expr cxt sxt 'TyInt
   B :: Bool -> Expr cxt sxt 'TyBool

@@ -46,7 +46,7 @@ instance Universe Ty where
 -- Basics ----------------------------------------------------------------------
 
 
-type IsBasic a = ( Typeable a, HasKind a, Pretty a )
+type IsBasic a = ( Pretty a )
 
 
 -- class IsBasic (a :: Ty)

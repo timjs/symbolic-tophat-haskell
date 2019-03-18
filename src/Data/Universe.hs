@@ -6,6 +6,7 @@ module Data.Universe where
 
 
 class Universe u where
+  --FIXME: injectivity doesn't help...
   type TypeOf (a :: u) = c | c -> a
   type SymbOf (a :: u) = s | s -> a
 
@@ -31,6 +32,7 @@ idx = \case
 
 
 -- Environments ----------------------------------------------------------------
+--FIXME: Merge definitions by using polymorphic `TypeOf m` where `m` is `C`oncrete or `S`ymbolic
 
 
 data Vars (cxt :: List u) where
