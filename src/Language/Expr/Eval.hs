@@ -42,10 +42,9 @@ eval vars = \case
   App f a -> eval vars f $ eval vars a
   Var i -> lookup i vars
 
-  -- Con i -> i
-  B x -> x
-  I x -> x
-  S x -> x
+  Con BoolIsPrim x -> x
+  Con IntIsPrim x -> x
+  Con StringIsPrim x -> x
 
   Un o a -> un o (eval vars a)
   Bn o a b -> bn o (eval vars a) (eval vars b)

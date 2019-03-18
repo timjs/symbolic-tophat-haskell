@@ -2,6 +2,7 @@ module Language.Expr
   ( module Language.Types
   , HasType(..)
   , Expr(..), Un(..), Bn(..)
+  , pattern B, pattern I, pattern S
   ) where
 
 
@@ -25,12 +26,7 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   -- |
   -- | Note we demand the symbolic context to be non-empty when using any symbol.
   Sym :: HasType (t ': ts) a -> Expr cxt (t ': ts) a
-
-  --FIXME: Merge literal constructors into one named `Con`stant
-  -- Con :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
-  I :: Integer -> Expr cxt sxt 'TyInt
-  B :: Bool -> Expr cxt sxt 'TyBool
-  S :: String -> Expr cxt sxt 'TyString
+  Con :: IsPrim a -> TypeOf a -> Expr cxt sxt a
 
   Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
   Bn :: Bn a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
@@ -42,6 +38,11 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   Snd :: Expr cxt sxt (a ':>< b) -> Expr cxt sxt b
 
 
+pattern B x = Con BoolIsPrim x
+pattern I x = Con IntIsPrim x
+pattern S x = Con StringIsPrim x
+
+
 instance Pretty (Expr cxt sxt t) where
   pretty = \case
     Lam f -> "λ." <> pretty f
@@ -49,10 +50,9 @@ instance Pretty (Expr cxt sxt t) where
     Var i -> "x" <> pretty i
     Sym i -> "s" <> pretty i
 
-    -- Con x -> pretty x
-    B x -> pretty x
-    I x -> pretty x
-    S x -> pretty x
+    Con BoolIsPrim x -> pretty x
+    Con IntIsPrim x -> pretty x
+    Con StringIsPrim x -> pretty x
 
     Un o a -> parens (sep [ pretty o, pretty a ])
     Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])

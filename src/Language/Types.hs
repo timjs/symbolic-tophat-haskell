@@ -1,6 +1,6 @@
 module Language.Types
   ( module Data.Universe
-  , Ty(..), IsBasic
+  , Ty(..), IsPrim(..)
   ) where
 
 
@@ -43,17 +43,10 @@ instance Universe Ty where
 
 
 
--- Basics ----------------------------------------------------------------------
+-- Primitives ------------------------------------------------------------------
 
 
-type IsBasic a = ( Pretty a )
-
-
--- class IsBasic (a :: Ty)
---
--- instance IsBasic 'TyUnit
--- instance IsBasic 'TyBool
--- instance IsBasic 'TyInt
--- instance IsBasic 'TyString
---
--- instance ( IsBasic a, IsBasic b ) => IsBasic (a ':>< b)
+data IsPrim (a :: Ty) where
+  BoolIsPrim :: IsPrim 'TyBool
+  IntIsPrim :: IsPrim 'TyInt
+  StringIsPrim :: IsPrim 'TyString

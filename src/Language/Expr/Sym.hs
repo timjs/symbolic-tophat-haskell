@@ -38,15 +38,11 @@ eval vars = \case
   Lam f -> \syms x -> eval (More x vars) f syms
   App f a -> eval vars f <*> eval vars a
   Var i -> pure $ refer i vars
-  Sym i -> refer i
 
-  -- Con x
-  --   | Just Refl <- typeOf x ~= intRep -> pure $ literal x
-  --   where
-  --     intRep = typeRep :: TypeRep Integer
-  B x -> pure $ literal x
-  I x -> pure $ literal x
-  S x -> pure $ literal x
+  Sym i -> refer i
+  Con BoolIsPrim x -> pure $ literal x
+  Con IntIsPrim x -> pure $ literal x
+  Con StringIsPrim x -> pure $ literal x
 
   Un o a -> un o <$> eval vars a
   Bn o a b -> bn o <$> eval vars a <*> eval vars b
