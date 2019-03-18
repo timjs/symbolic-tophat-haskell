@@ -40,7 +40,10 @@ eval vars = \case
   Var i -> pure $ lookup i vars
 
   Sym i -> lookup i
-  Con i -> _ --pure $ literal i
+  Con a
+    | Just Refl <- typeOf a ~= intRep -> pure $ _ --literal i
+    where
+      intRep = typeRep :: TypeRep Int
 
   Un o a -> un o <$> eval vars a
   Bn o a b -> bn o <$> eval vars a <*> eval vars b
