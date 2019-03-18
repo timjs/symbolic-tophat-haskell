@@ -5,12 +5,13 @@ module Prelude
   , neutral
   , (<<), (>>), (#), (<#>)
   , (<-<), (>->), (<&>), skip
+  , lift1, lift2, lift3
   , ok, throw, catch
   , sameT, proxyOf, typeOf
   ) where
 
 
-import Relude hiding ((.), (>>), (&), (<&>), readMaybe)
+import Relude hiding ((.), (>>), (&), (<&>), readMaybe, liftA2, liftA3)
 import qualified Relude
 
 import Control.Monad.Except (MonadError(..))
@@ -83,6 +84,18 @@ infixl 1 <#>
 
 
 -- Applicatives ----------------------------------------------------------------
+
+
+lift1 :: Functor f => (a -> b) -> f a -> f b
+lift1 = fmap
+
+
+lift2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+lift2 = Relude.liftA2
+
+
+lift3 :: Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
+lift3 = Relude.liftA3
 
 
 infixr 1 <-<
