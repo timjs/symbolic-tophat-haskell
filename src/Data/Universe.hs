@@ -6,7 +6,8 @@ module Data.Universe where
 
 
 class Universe u where
-  type TypeOf (a :: u)
+  type TypeOf (a :: u) = c | c -> a
+  type SymbOf (a :: u) = s | s -> a
 
 
 

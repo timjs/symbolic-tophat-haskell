@@ -11,7 +11,7 @@ import Language.Ops
 -- Predicates ------------------------------------------------------------------
 
 
-data Pred (sxt :: List PrimTy) (t :: PrimTy) where
+data Pred (sxt :: List Ty) (t :: Ty) where
   Con :: TypeOf a -> Pred sxt a
   Sym :: HasType sxt a -> Pred sxt a
 

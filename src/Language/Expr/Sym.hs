@@ -10,7 +10,7 @@ import qualified Language.Pred as Pred
 
 
 
--- Gathering ------------------------------------------------------------------
+{- Gathering ------------------------------------------------------------------
 
 
 gather :: Env cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
@@ -36,4 +36,4 @@ gather vars = \case
   Fst e -> lift1 Fst <$> gather vars e
   Snd e -> lift1 Snd <$> gather vars e
 
---
+--}

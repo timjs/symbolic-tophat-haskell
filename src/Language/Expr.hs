@@ -15,16 +15,16 @@ import Language.Ops
 -- Expressions -----------------------------------------------------------------
 
 
-data Expr (cxt :: List Ty) (sxt :: List PrimTy) (t :: Ty) where
+data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   Lam :: Expr (a ': cxt) sxt b -> Expr cxt sxt (a ':-> b)
   App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
   Var :: HasType cxt a -> Expr cxt sxt a
-  Sym :: HasType sxt a -> Expr cxt sxt ('TyPrim a)
+  Sym :: HasType sxt a -> Expr cxt sxt a
   Con :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
 
-  Un :: Un a b -> Expr cxt sxt ('TyPrim a) -> Expr cxt sxt ('TyPrim b)
-  Bn :: Bn a b c -> Expr cxt sxt ('TyPrim a) -> Expr cxt sxt ('TyPrim b) -> Expr cxt sxt ('TyPrim c)
-  If :: Expr cxt sxt ('TyPrim 'TyBool) -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
+  Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
+  Bn :: Bn a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
+  If :: Expr cxt sxt 'TyBool -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
 
   Unit :: Expr cxt sxt 'TyUnit
   Pair :: Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt (a ':>< b)
