@@ -8,13 +8,13 @@ import Language.Expr
 -- Evaluation ------------------------------------------------------------------
 
 
-un :: Un a b -> TypeOf a -> TypeOf b
+un :: Un a b -> ConcOf a -> ConcOf b
 un = \case
     Not -> not
     Neg -> negate
 
 
-bn :: Bn a b c -> TypeOf a -> TypeOf b -> TypeOf c
+bn :: Bn a b c -> ConcOf a -> ConcOf b -> ConcOf c
 bn = \case
   And -> (&&)
   Or  -> (||)
@@ -36,7 +36,7 @@ bn = \case
 -- |
 -- | Evaluates any expression to its Haskell equivallent.
 -- | Note that this expression (statically!) cannot contain any symbolic variables!
-eval :: Vars cxt -> Expr cxt '[] t -> TypeOf t
+eval :: ConcEnv cxt -> Expr cxt '[] t -> ConcOf t
 eval vars = \case
   Lam f -> \x -> eval (Cons x vars) f
   App f a -> eval vars f $ eval vars a
@@ -56,5 +56,5 @@ eval vars = \case
   Snd e -> snd $ eval vars e
 
 
-eval' :: Expr '[] '[] t -> TypeOf t
+eval' :: Expr '[] '[] t -> ConcOf t
 eval' = eval Nil

@@ -16,30 +16,25 @@ import Data.Universe
 data {- kind -} Ty
   = Ty :-> Ty
   | Ty :>< Ty
-
   | TyUnit
+
   | TyBool
   | TyInt
   | TyString
 
 
 instance Universe Ty where
-  type TypeOf (a ':-> b) = TypeOf a -> TypeOf b
-  type TypeOf (a ':>< b) = ( TypeOf a, TypeOf b )
-  type TypeOf 'TyUnit = ()
+  type TypeOf s (a ':-> b) = TypeOf s a -> TypeOf s b
+  type TypeOf s (a ':>< b) = ( TypeOf s a, TypeOf s b )
+  type TypeOf s 'TyUnit = ()
 
-  type TypeOf 'TyBool = Bool
-  type TypeOf 'TyInt = Integer
-  type TypeOf 'TyString = String
+  type TypeOf 'Concrete 'TyBool = Bool
+  type TypeOf 'Concrete 'TyInt = Integer
+  type TypeOf 'Concrete 'TyString = String
 
-
-  type SymbOf (a ':-> b) = SymbOf a -> SymbOf b
-  type SymbOf (a ':>< b) = ( SymbOf a, SymbOf b )
-  type SymbOf 'TyUnit = ()
-
-  type SymbOf 'TyBool = SBool
-  type SymbOf 'TyInt = SInteger
-  type SymbOf 'TyString = SString
+  type TypeOf 'Symbolic 'TyBool = SBool
+  type TypeOf 'Symbolic 'TyInt = SInteger
+  type TypeOf 'Symbolic 'TyString = SString
 
 
 

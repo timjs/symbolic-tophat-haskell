@@ -33,13 +33,13 @@ bn = \case
   Div -> sDiv
 
 
-eval :: Syms cxt -> Expr cxt sxt t -> Syms sxt -> SymbOf t
+eval :: SymbEnv cxt -> Expr cxt sxt t -> SymbEnv sxt -> SymbOf t
 eval vars = \case
-  Lam f -> \syms x -> eval (More x vars) f syms
+  Lam f -> \syms x -> eval (Cons x vars) f syms
   App f a -> eval vars f <*> eval vars a
-  Var i -> pure $ refer i vars
+  Var i -> pure $ lookup i vars
 
-  Sym i -> refer i
+  Sym i -> lookup i
   Con BoolIsPrim x -> pure $ literal x
   Con IntIsPrim x -> pure $ literal x
   Con StringIsPrim x -> pure $ literal x
@@ -54,14 +54,14 @@ eval vars = \case
   Snd e -> snd <$> eval vars e
 
 
-eval' :: Expr '[] sxt t -> Syms sxt -> SymbOf t
-eval' = eval None
+eval' :: Expr '[] sxt t -> SymbEnv sxt -> SymbOf t
+eval' = eval Nil
 
 
 {- Gathering ------------------------------------------------------------------
 
 
-gather :: Syms cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
+gather :: SymbEnv cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
 gather vars = \case
 
   -- Lam f -> \x -> gather (Cons x vars) f
@@ -90,7 +90,7 @@ gather vars = \case
 {- Gathering ------------------------------------------------------------------
 
 
-gather :: Syms cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
+gather :: SymbEnv cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
 gather vars = \case
 
   -- Lam f -> \x -> gather (Cons x vars) f

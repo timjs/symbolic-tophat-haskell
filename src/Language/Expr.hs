@@ -26,7 +26,7 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   -- |
   -- | Note we demand the symbolic context to be non-empty when using any symbol.
   Sym :: HasType (t ': ts) a -> Expr cxt (t ': ts) a
-  Con :: IsPrim a -> TypeOf a -> Expr cxt sxt a
+  Con :: IsPrim a -> ConcOf a -> Expr cxt sxt a
 
   Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
   Bn :: Bn a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c

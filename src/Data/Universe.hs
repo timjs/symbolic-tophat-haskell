@@ -5,10 +5,17 @@ module Data.Universe where
 -- Universes -------------------------------------------------------------------
 
 
+data {- kind -} Sort
+  = Symbolic
+  | Concrete
+
+
 class Universe u where
-  --FIXME: injectivity doesn't help...
-  type TypeOf (a :: u) = c | c -> a
-  type SymbOf (a :: u) = s | s -> a
+  type TypeOf (s :: Sort) (a :: u)
+
+
+type ConcOf a = TypeOf 'Concrete a
+type SymbOf a = TypeOf 'Symbolic a
 
 
 
@@ -32,24 +39,17 @@ idx = \case
 
 
 -- Environments ----------------------------------------------------------------
---FIXME: Merge definitions by using polymorphic `TypeOf m` where `m` is `C`oncrete or `S`ymbolic
 
 
-data Vars (cxt :: List u) where
-  Nil :: Vars '[]
-  Cons :: TypeOf t -> Vars ts -> Vars (t ': ts)
+data Env (s :: Sort) (cxt :: List u) where
+  Nil :: Env s '[]
+  Cons :: TypeOf s t -> Env s ts -> Env s (t ': ts)
 
 
-lookup :: HasType cxt t -> Vars cxt -> TypeOf t
+lookup :: HasType cxt t -> Env s cxt -> TypeOf s t
 lookup Here      (Cons x _)  = x
 lookup (There i) (Cons _ xs) = lookup i xs
 
 
-data Syms (sxt :: List u) where
-  None :: Syms '[]
-  More :: SymbOf t -> Syms ts -> Syms (t ': ts)
-
-
-refer :: HasType sxt t -> Syms sxt -> SymbOf t
-refer Here      (More x _)  = x
-refer (There i) (More _ xs) = refer i xs
+type ConcEnv cxt = Env 'Concrete cxt
+type SymbEnv cxt = Env 'Symbolic cxt
