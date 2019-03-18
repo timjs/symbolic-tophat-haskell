@@ -54,6 +54,8 @@ eval vars = \case
 
   Unit -> pure ()
   Pair a b -> eval vars a <&> eval vars b
+  Fst e -> fst <$> eval vars e
+  Snd e -> snd <$> eval vars e
 
 
 eval' :: Expr '[] sxt t -> Syms sxt -> SymbOf t
