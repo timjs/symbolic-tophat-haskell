@@ -20,7 +20,11 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   Lam :: Expr (a ': cxt) sxt b -> Expr cxt sxt (a ':-> b)
   App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
   Var :: HasType cxt a -> Expr cxt sxt a
-  Sym :: HasType sxt a -> Expr cxt sxt a
+
+  -- | Symbolic variable
+  -- |
+  -- | Note we demand the symbolic context to be non-empty when using any symbol.
+  Sym :: HasType (t ': ts) a -> Expr cxt (t ': ts) a
 
   --FIXME: Merge literal constructors into one named `Con`stant
   -- Con :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a

@@ -32,12 +32,15 @@ bn = \case
   Div -> div
 
 
+-- | Evaluation of expressions
+-- |
+-- | Evaluates any expression to its Haskell equivallent.
+-- | Note that this expression (statically!) cannot contain any symbolic variables!
 eval :: Vars cxt -> Expr cxt '[] t -> TypeOf t
 eval vars = \case
   Lam f -> \x -> eval (Cons x vars) f
   App f a -> eval vars f $ eval vars a
   Var i -> lookup i vars
-  Sym _ -> error "Found Sym in executable expression" --FIXME: should be checkable
 
   -- Con i -> i
   B x -> x
