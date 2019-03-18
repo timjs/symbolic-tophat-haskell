@@ -11,7 +11,6 @@ import Language.Expr
 un :: Un a b -> TypeOf a -> TypeOf b
 un = \case
     Not -> not
-
     Neg -> negate
 
 
