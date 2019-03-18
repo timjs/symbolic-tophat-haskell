@@ -5,6 +5,7 @@ module Language.Expr
   ) where
 
 
+import Data.SBV
 import Data.Text.Prettyprint.Doc
 
 import Language.Types
@@ -20,11 +21,15 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
   Var :: HasType cxt a -> Expr cxt sxt a
   Sym :: HasType sxt a -> Expr cxt sxt a
-  Con :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
+
+  -- Con :: IsBasic (TypeOf a) => TypeOf a -> Expr cxt sxt a
+  I :: Integer -> Expr cxt sxt 'TyInt
+  B :: Bool -> Expr cxt sxt 'TyBool
+  S :: String -> Expr cxt sxt 'TyString
 
   Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
   Bn :: Bn a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
-  If :: Expr cxt sxt 'TyBool -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
+  If :: Mergeable (SymbOf a) => Expr cxt sxt 'TyBool -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
 
   Unit :: Expr cxt sxt 'TyUnit
   Pair :: Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt (a ':>< b)
@@ -38,7 +43,11 @@ instance Pretty (Expr cxt sxt t) where
     App f a -> sep [ parens (pretty f), parens (pretty a) ]
     Var i -> "x" <> pretty i
     Sym i -> "s" <> pretty i
-    Con a -> pretty a
+
+    -- Con x -> pretty x
+    B x -> pretty x
+    I x -> pretty x
+    S x -> pretty x
 
     Un o a -> parens (sep [ pretty o, pretty a ])
     Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])

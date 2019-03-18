@@ -32,13 +32,17 @@ bn = \case
   Div -> div
 
 
-eval :: Env cxt -> Expr cxt '[] t -> TypeOf t
+eval :: Vars cxt -> Expr cxt '[] t -> TypeOf t
 eval vars = \case
   Lam f -> \x -> eval (Cons x vars) f
   App f a -> eval vars f $ eval vars a
   Var i -> lookup i vars
   Sym _ -> error "Found Sym in executable expression" --FIXME: should be checkable
-  Con i -> i
+
+  -- Con i -> i
+  B x -> x
+  I x -> x
+  S x -> x
 
   Un o a -> un o (eval vars a)
   Bn o a b -> bn o (eval vars a) (eval vars b)

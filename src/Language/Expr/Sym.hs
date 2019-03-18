@@ -33,17 +33,20 @@ bn = \case
   Div -> sDiv
 
 
-eval :: Env cxt -> Expr cxt sxt t -> Env sxt -> SymbOf t
+eval :: Syms cxt -> Expr cxt sxt t -> Syms sxt -> SymbOf t
 eval vars = \case
-  Lam f -> \syms x -> eval (Cons x vars) f syms
+  Lam f -> \syms x -> eval (More x vars) f syms
   App f a -> eval vars f <*> eval vars a
-  Var i -> pure $ lookup i vars
+  Var i -> pure $ refer i vars
+  Sym i -> refer i
 
-  Sym i -> lookup i
-  Con a
-    | Just Refl <- typeOf a ~= intRep -> pure $ _ --literal i
-    where
-      intRep = typeRep :: TypeRep Int
+  -- Con x
+  --   | Just Refl <- typeOf x ~= intRep -> pure $ literal x
+  --   where
+  --     intRep = typeRep :: TypeRep Integer
+  B x -> pure $ literal x
+  I x -> pure $ literal x
+  S x -> pure $ literal x
 
   Un o a -> un o <$> eval vars a
   Bn o a b -> bn o <$> eval vars a <*> eval vars b
@@ -53,14 +56,14 @@ eval vars = \case
   Pair a b -> eval vars a <&> eval vars b
 
 
-eval' :: Expr '[] sxt t -> Env sxt -> SymbOf t
-eval' = eval Nil
+eval' :: Expr '[] sxt t -> Syms sxt -> SymbOf t
+eval' = eval None
 
 
 {- Gathering ------------------------------------------------------------------
 
 
-gather :: Env cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
+gather :: Syms cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
 gather vars = \case
 
   -- Lam f -> \x -> gather (Cons x vars) f
@@ -89,7 +92,7 @@ gather vars = \case
 {- Gathering ------------------------------------------------------------------
 
 
-gather :: Env cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
+gather :: Syms cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
 gather vars = \case
 
   -- Lam f -> \x -> gather (Cons x vars) f

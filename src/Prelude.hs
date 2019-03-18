@@ -1,5 +1,6 @@
 module Prelude
   ( module Relude
+  , module Data.Type.Equality
   , List, Unit
   , Pretty(..), read
   , neutral
@@ -7,7 +8,7 @@ module Prelude
   , (<-<), (>->), (<&>), skip
   , lift1, lift2, lift3
   , ok, throw, catch
-  , sameT, proxyOf, typeOf
+  , (~=), proxyOf, typeOf, typeRep, TypeRep
   ) where
 
 
@@ -17,10 +18,10 @@ import qualified Relude
 import Control.Monad.Except (MonadError(..))
 
 import Data.Text (unpack)
-import Data.Text.Prettyprint.Doc
-import Data.Typeable (eqT)
+import Data.Text.Prettyprint.Doc (Pretty(..))
+import Data.Type.Equality
 
-import Type.Reflection
+import Type.Reflection (typeOf, typeRep, TypeRep)
 
 
 
@@ -146,11 +147,16 @@ catch = catchError
 -- Type equality ---------------------------------------------------------------
 
 
-{-# INLINE sameT #-}
-sameT :: ( Typeable a, Typeable b ) => a -> b -> Maybe (a :~: b)
-sameT _ _ = eqT
+-- {-# INLINE sameT #-}
+-- sameT :: ( Typeable a, Typeable b ) => a -> b -> Maybe (a :~: b)
+-- sameT _ _ = eqT
 
 
 {-# INLINE proxyOf #-}
 proxyOf :: a -> Proxy a
 proxyOf _ = Proxy
+
+
+infix 4 ~=
+(~=) :: TestEquality f => f a -> f b -> Maybe (a :~: b)
+(~=) = testEquality

@@ -33,11 +33,21 @@ idx = \case
 -- Environments ----------------------------------------------------------------
 
 
-data Env (cxt :: List u) where
-  Nil :: Env '[]
-  Cons :: TypeOf t -> Env ts -> Env (t ': ts)
+data Vars (cxt :: List u) where
+  Nil :: Vars '[]
+  Cons :: TypeOf t -> Vars ts -> Vars (t ': ts)
 
 
-lookup :: HasType cxt t -> Env cxt -> TypeOf t
+lookup :: HasType cxt t -> Vars cxt -> TypeOf t
 lookup Here      (Cons x _)  = x
 lookup (There i) (Cons _ xs) = lookup i xs
+
+
+data Syms (sxt :: List u) where
+  None :: Syms '[]
+  More :: SymbOf t -> Syms ts -> Syms (t ': ts)
+
+
+refer :: HasType sxt t -> Syms sxt -> SymbOf t
+refer Here      (More x _)  = x
+refer (There i) (More _ xs) = refer i xs
