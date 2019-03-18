@@ -1,5 +1,6 @@
 module Language.Expr.Sym where
 
+
 import Data.SBV
 
 import Language.Expr
@@ -61,56 +62,79 @@ eval' = eval Nil
 {- Gathering ------------------------------------------------------------------
 
 
-gather :: SymbEnv cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
+--FIXME: Use something other than List for optimisation
+gather :: SymbEnv cxt -> Expr cxt sxt t -> Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t)
 gather vars = \case
 
-  -- Lam f -> \x -> gather (Cons x vars) f
-  -- App f a -> gather vars f $ gather vars a
-  -- Var i -> lookup i vars
-  -- Sym _ -> error "Found Sym in executable expression" --FIXME: should be checkable
-  -- Val i -> i
+  Lam f -> _ -- \x -> gather (Cons x vars) f
+  App f a -> App <$> gather vars f <*> gather vars a
+  Var i -> pure $ Var i
+  Sym i -> _
 
-  Un o a -> lift1 (Un o) <$> gather vars a
-  Bn o a b -> lift2 (Bn o) <$> gather vars a <*> gather vars b
+  Con p x -> _
+
+  Un o a -> Un o <$> gather vars a
+  Bn o a b -> Bn o <$> gather vars a <*> gather vars b
   If p a b -> do
     p' <- gather vars p
-    ( p'', _ ) <- runWriter p'
-    _
+    tell [ toPred p' ]
+    case p' of
+      B True -> gather vars a
+      B False -> gather vars b
+    -- let ( p'', w ) = runWriter p'
+    --
     -- if gather vars p then gather vars a else gather vars b
 
-  Unit -> pure $ pure Unit
-  Pair a b -> lift2 Pair <$> gather vars a <*> gather vars b
+  Unit -> pure Unit
+  Pair a b -> Pair <$> gather vars a <*> gather vars b
 
-  Fst e -> lift1 Fst <$> gather vars e
-  Snd e -> lift1 Snd <$> gather vars e
+  Fst e -> (\(Pair a _) -> a) <$> gather vars e
+  Snd e -> (\(Pair _ b) -> b) <$> gather vars e
 
+
+--FIXME: Should `cxt` be empty?
+toPred :: Expr cxt sxt t -> Pred sxt t
+toPred = \case
+  Lam _ -> error "left over lambda"
+  App _ _ -> error "left over application"
+  Var _ -> error "left over variable"
+  Sym i -> Pred.Sym i
+
+  Con p x -> Pred.Con p x
+
+  Un u a -> Pred.Un u (toPred a)
+  Bn o a b -> Pred.Bn o (toPred a) (toPred b)
+  If _ _ _ -> error "left over if-then-else"
+
+  Unit -> error "left over unit"
+  Pair _ _ -> error "left over pair"
+  Fst _ -> error "left over fst"
+  Snd _ -> error "left over snd"
 -}
 
-
-{- Gathering ------------------------------------------------------------------
-
-
+{-
 gather :: SymbEnv cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
 gather vars = \case
 
   -- Lam f -> \x -> gather (Cons x vars) f
-  -- App f a -> gather vars f $ gather vars a
-  -- Var i -> lookup i vars
-  -- Sym _ -> error "Found Sym in executable expression" --FIXME: should be checkable
+  App f a -> lift2 App <$> gather vars f <*> gather vars a
+  Var i -> pure $ pure $ lookup i vars
   -- Val i -> i
 
   Un o a -> lift1 (Un o) <$> gather vars a
   Bn o a b -> lift2 (Bn o) <$> gather vars a <*> gather vars b
   If p a b -> do
     p' <- gather vars p
-    ( p'', _ ) <- runWriter p'
-    _
+    let ( p'', w ) = runWriter p'
+    case p'' of
+      B True -> _
+      B False -> do
+
     -- if gather vars p then gather vars a else gather vars b
 
   Unit -> pure $ pure Unit
   Pair a b -> lift2 Pair <$> gather vars a <*> gather vars b
 
-  Fst e -> lift1 Fst <$> gather vars e
-  Snd e -> lift1 Snd <$> gather vars e
-
---}
+  Fst e -> lift1 (\(Pair a b) -> a) <$> gather vars e
+  Snd e -> lift1 (\(Pair a b) -> b) <$> gather vars e
+-}

@@ -12,8 +12,8 @@ import Language.Ops
 
 
 data Pred (sxt :: List Ty) (t :: Ty) where
-  Con :: SymbOf a -> Pred sxt a
-  Sym :: HasType sxt a -> Pred sxt a
+  Con :: IsPrim a -> ConcOf a -> Pred sxt a
+  Sym :: HasType (t ': ts) a -> Pred (t ': ts) a
 
   Un :: Un a b -> Pred sxt a -> Pred sxt b
   Bn :: Bn a b c -> Pred sxt a -> Pred sxt b -> Pred sxt c
