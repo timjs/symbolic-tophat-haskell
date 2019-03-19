@@ -18,8 +18,8 @@ un = \case
 
 bn :: Bn a b c -> SymbOf a -> SymbOf b -> SymbOf c
 bn = \case
-  And -> (.&&)
-  Or  -> (.||)
+  Conj -> (.&&)
+  Disj -> (.||)
 
   Lt -> (.<)
   Le -> (.<=)

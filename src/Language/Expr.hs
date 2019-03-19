@@ -10,7 +10,7 @@ import Data.SBV
 import Data.Text.Prettyprint.Doc
 
 import Language.Types
-import Language.Ops
+import Language.Ops 
 
 
 
@@ -37,6 +37,8 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   Fst :: Expr cxt sxt (a ':>< b) -> Expr cxt sxt a
   Snd :: Expr cxt sxt (a ':>< b) -> Expr cxt sxt b
 
+  Task :: Pretask cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a)
+
 
 pattern B x = Con BoolIsPrim x
 pattern I x = Con IntIsPrim x
@@ -62,3 +64,34 @@ instance Pretty (Expr cxt sxt t) where
     Pair a b -> angles $ pretty a <> comma <> pretty b
     Fst a -> "fst" <+> pretty a
     Snd a -> "snd" <+> pretty a
+
+
+
+-- Tasks -----------------------------------------------------------------------
+
+
+data Pretask (cxt :: List Ty)  (sxt :: List Ty) (t :: Ty) where
+  Edit :: IsBasic a => Maybe (ConcOf a) -> Pretask cxt sxt a
+  -- Store :: Loc a -> Pretask cxt sxt ('TyTask a)
+
+  Fail :: Pretask cxt sxt ('TyTask a)
+
+  And :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask b) -> Pretask cxt sxt ('TyTask (a ':>< b))
+  Or  :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
+  Xor :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
+
+  Then :: Expr cxt sxt a -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+  Next :: Expr cxt sxt a -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+
+
+instance Pretty (Pretask cxt sxt t) where
+  pretty = \case
+    Edit (Just x) -> cat [ "□(", pretty x, ")" ]
+    Edit Nothing -> "□(_)"
+    -- Store -> "■(_)"
+    And x y -> sep [ pretty x, "⋈", pretty y ]
+    Or x y -> sep [ pretty x, "◆", pretty y ]
+    Xor x y -> sep [ pretty x, "◇", pretty y ]
+    Fail -> "↯"
+    Then x _ -> sep [ pretty x, "▶…" ]
+    Next x _ -> sep [ pretty x, "▷…" ]

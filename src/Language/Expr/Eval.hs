@@ -16,8 +16,8 @@ un = \case
 
 bn :: Bn a b c -> ConcOf a -> ConcOf b -> ConcOf c
 bn = \case
-  And -> (&&)
-  Or  -> (||)
+  Conj -> (&&)
+  Disj -> (||)
 
   Lt -> (<)
   Le -> (<=)

@@ -26,8 +26,8 @@ instance Pretty (Un a b) where
 
 
 data Bn (a :: Ty) (b :: Ty) (c :: Ty) where
-  And :: Bn 'TyBool 'TyBool 'TyBool
-  Or  :: Bn 'TyBool 'TyBool 'TyBool
+  Conj :: Bn 'TyBool 'TyBool 'TyBool
+  Disj :: Bn 'TyBool 'TyBool 'TyBool
 
   Lt :: Bn 'TyInt 'TyInt 'TyBool
   Le :: Bn 'TyInt 'TyInt 'TyBool
@@ -44,17 +44,17 @@ data Bn (a :: Ty) (b :: Ty) (c :: Ty) where
 
 instance Pretty (Bn a b c) where
   pretty = \case
-    And -> "&&"
-    Or  -> "||"
+    Conj -> "∧"
+    Disj -> "∨"
 
     Lt -> "<"
-    Le -> "<="
-    Eq -> "=="
-    Nq -> "/="
-    Ge -> ">="
+    Le -> "≤"
+    Eq -> "≡"
+    Nq -> "≢"
+    Ge -> "≥"
     Gt -> ">"
 
     Add -> "+"
     Sub -> "-"
-    Mul -> "*"
-    Div -> "/"
+    Mul -> "×"
+    Div -> "÷"

@@ -1,6 +1,6 @@
 module Language.Types
   ( module Data.Universe
-  , Ty(..), IsPrim(..)
+  , Ty(..), IsPrim(..), IsBasic(..)
   ) where
 
 
@@ -15,6 +15,9 @@ import Data.Universe
 
 data {- kind -} Ty
   = Ty :-> Ty
+
+  | TyTask Ty
+
   | Ty :>< Ty
   | TyUnit
 
@@ -38,10 +41,27 @@ instance Universe Ty where
 
 
 
--- Primitives ------------------------------------------------------------------
+-- Primitives & Basics ---------------------------------------------------------
 
 
 data IsPrim (a :: Ty) where
   BoolIsPrim :: IsPrim 'TyBool
   IntIsPrim :: IsPrim 'TyInt
   StringIsPrim :: IsPrim 'TyString
+
+
+-- data IsBasic (a :: Ty) where
+--   PairIsBasic :: IsBasic a -> IsBasic b -> IsBasic (a ':>< b)
+--   UnitIsBasic :: IsBasic 'TyUnit
+--   BoolIsBasic :: IsBasic 'TyBool
+--   IntIsBasic :: IsBasic 'TyInt
+--   StringIsBasic :: IsBasic 'TyString
+
+
+class ( Pretty (ConcOf a), Typeable (ConcOf a) ) => IsBasic (a :: Ty)
+
+instance IsBasic TyBool
+instance IsBasic TyInt
+instance IsBasic TyString
+instance IsBasic TyUnit
+instance ( IsBasic a, IsBasic b ) => IsBasic (a ':>< b)
