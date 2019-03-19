@@ -1,4 +1,4 @@
-module Language.Expr.Sym where
+module Language.Expr.Symb where
 
 
 import Data.SBV
