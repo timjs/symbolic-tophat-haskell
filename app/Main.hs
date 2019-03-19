@@ -22,7 +22,7 @@ cAbs = Lam
     (Var Here))
 
 
-sAbs :: Expr cxt '[ 'TyInt ] ('TyInt)
+sAbs :: Expr cxt '[ 'TyInt ] 'TyInt
 sAbs =
   If (Bn Lt (Sym Here) (I 0))
     (Un Neg (Sym Here))

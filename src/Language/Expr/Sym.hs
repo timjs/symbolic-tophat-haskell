@@ -12,8 +12,8 @@ import Language.Expr
 
 un :: Un a b -> SymbOf a -> SymbOf b
 un = \case
-    Not -> sNot
-    Neg -> negate
+  Not -> sNot
+  Neg -> negate
 
 
 bn :: Bn a b c -> SymbOf a -> SymbOf b -> SymbOf c

@@ -10,8 +10,8 @@ import Language.Expr
 
 un :: Un a b -> ConcOf a -> ConcOf b
 un = \case
-    Not -> not
-    Neg -> negate
+  Not -> not
+  Neg -> negate
 
 
 bn :: Bn a b c -> ConcOf a -> ConcOf b -> ConcOf c
