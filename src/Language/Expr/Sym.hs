@@ -59,6 +59,11 @@ eval' :: Expr '[] sxt t -> SymbEnv sxt -> SymbOf t
 eval' = eval Nil
 
 
+eval'' :: Expr '[] '[] t -> SymbOf t
+eval'' e = eval Nil e Nil
+
+
+
 {- Gathering ------------------------------------------------------------------
 
 
