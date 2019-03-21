@@ -19,6 +19,7 @@ dependencies:
   - base-noprelude
   - relude
   - mtl
+  - ref-tf
   - text
   - prettyprinter
   # - containers
@@ -94,6 +95,9 @@ default-extensions:
 
 ghc-options:
   - -Weverything
+  - -Wno-safe
+  - -Wno-unsafe
+  - -Wno-implicit-prelude
   - -Wno-missing-pattern-synonym-signatures
 
 
