@@ -93,12 +93,9 @@ default-extensions:
 
 
 ghc-options:
-  - -Wall
-  - -Wcompat
-  - -Wincomplete-record-updates
-  - -Wincomplete-uni-patterns
-  - -Wredundant-constraints
+  - -Weverything
   - -Wno-missing-pattern-synonym-signatures
+
 
 library:
   source-dirs: src
