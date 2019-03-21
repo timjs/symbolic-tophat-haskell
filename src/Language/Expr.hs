@@ -3,6 +3,8 @@ module Language.Expr
   , HasType(..)
   , Expr(..), Un(..), Bn(..)
   , pattern B, pattern I, pattern S
+  , Pretask(..)
+  , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
   ) where
 
 
@@ -10,7 +12,7 @@ import Data.SBV
 import Data.Text.Prettyprint.Doc
 
 import Language.Types
-import Language.Ops 
+import Language.Ops
 
 
 
@@ -71,7 +73,8 @@ instance Pretty (Expr cxt sxt t) where
 
 
 data Pretask (cxt :: List Ty)  (sxt :: List Ty) (t :: Ty) where
-  Edit :: IsBasic a => Maybe (ConcOf a) -> Pretask cxt sxt a
+  Edit :: IsBasic a => Expr cxt sxt a -> Pretask cxt sxt ('TyTask a)
+  Enter :: IsBasic a => Pretask cxt sxt ('TyTask a)
   -- Store :: Loc a -> Pretask cxt sxt ('TyTask a)
 
   Fail :: Pretask cxt sxt ('TyTask a)
@@ -80,14 +83,27 @@ data Pretask (cxt :: List Ty)  (sxt :: List Ty) (t :: Ty) where
   Or  :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
   Xor :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
 
-  Then :: Expr cxt sxt a -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
-  Next :: Expr cxt sxt a -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+  Then :: Expr cxt sxt ('TyTask a) -> Expr (a ': cxt) sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+  Next :: Expr cxt sxt ('TyTask a) -> Expr (a ': cxt) sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+
+
+infixl 3 :&&:
+infixr 2 :||:, :??:
+infixl 1 :>>=, :>>?
+
+
+pattern View x = Edit x
+pattern (:&&:) x y = And (Task x) (Task y)
+pattern (:||:) x y = Or (Task x) (Task y)
+pattern (:??:) x y = Xor (Task x) (Task y)
+pattern (:>>=) t c = Then (Task t) (Lam (Task c))
+pattern (:>>?) t c = Next (Task t) (Lam (Task c))
 
 
 instance Pretty (Pretask cxt sxt t) where
   pretty = \case
-    Edit (Just x) -> cat [ "□(", pretty x, ")" ]
-    Edit Nothing -> "□(_)"
+    Edit x -> cat [ "□(", pretty x, ")" ]
+    Enter -> "□(_)"
     -- Store -> "■(_)"
     And x y -> sep [ pretty x, "⋈", pretty y ]
     Or x y -> sep [ pretty x, "◆", pretty y ]
