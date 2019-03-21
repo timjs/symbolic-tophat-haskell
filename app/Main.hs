@@ -4,11 +4,13 @@ module Main where
 import Data.SBV
 
 import Language.Expr
-import qualified Language.Expr.Sym as Symb
+import qualified Language.Expr.Symb as Symb
 
 
 
 -- Examples --------------------------------------------------------------------
+
+-- Functions --
 
 
 double_mul :: Expr cxt '[] ('TyInt ':-> 'TyInt)
@@ -36,6 +38,31 @@ fact = Lam
   (If (Bn Eq (Var Here) (I 0))
     (I 1)
     (Bn Mul (App fact (Bn Sub (Var Here) (I 1))) (Var Here)))
+
+
+
+-- Tasks --
+
+enterInt' :: Pretask '[] '[] ('TyTask 'TyInt)
+enterInt' =
+  Enter
+
+
+echo :: Pretask '[] '[] ('TyTask 'TyInt)
+echo =
+  Enter :>>=
+  View (Var Here)
+
+
+add_seq :: Pretask cxt sxt ('TyTask 'TyInt)
+add_seq =
+  Enter :>>=
+  View (Bn Add (Var Here) (Var (There Here)))
+
+
+add_par :: Pretask cxt sxt ('TyTask 'TyInt)
+add_par = Enter :&&: Enter :>>=
+  View (Bn Add (Fst (Var Here)) (Snd (Var Here)))
 
 
 
