@@ -1,6 +1,6 @@
 module Language.Types
   ( module Data.Universe
-  , Ty(..), IsPrim(..), IsBasic(..)
+  , Ty(..), IsPrim(..), IsBasic
   ) where
 
 
@@ -60,8 +60,8 @@ data IsPrim (a :: Ty) where
 
 class ( Pretty (ConcOf a), Typeable (ConcOf a) ) => IsBasic (a :: Ty)
 
-instance IsBasic TyBool
-instance IsBasic TyInt
-instance IsBasic TyString
-instance IsBasic TyUnit
+instance IsBasic 'TyBool
+instance IsBasic 'TyInt
+instance IsBasic 'TyString
+instance IsBasic 'TyUnit
 instance ( IsBasic a, IsBasic b ) => IsBasic (a ':>< b)
