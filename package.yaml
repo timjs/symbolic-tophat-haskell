@@ -98,6 +98,7 @@ ghc-options:
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wredundant-constraints
+  - -Wno-missing-pattern-synonym-signatures
 
 library:
   source-dirs: src
