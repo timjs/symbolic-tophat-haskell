@@ -4,9 +4,10 @@ module Language.Types
   ) where
 
 
-import Data.SBV
-
+import Data.Basic
 import Data.Universe
+
+import Data.SBV (SBool, SInteger, SString)
 
 
 
@@ -58,7 +59,7 @@ data IsPrim (a :: Ty) where
 --   StringIsBasic :: IsBasic 'TyString
 
 
-class ( Pretty (ConcOf a), Typeable (ConcOf a) ) => IsBasic (a :: Ty)
+class ( Basic (ConcOf a) ) => IsBasic (a :: Ty)
 
 instance IsBasic 'TyBool
 instance IsBasic 'TyInt
