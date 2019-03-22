@@ -55,6 +55,8 @@ eval vars = \case
   Fst e -> fst $ eval vars e
   Snd e -> snd $ eval vars e
 
+  Task _ -> undefined
+
 
 eval' :: Expr '[] '[] t -> ConcOf t
 eval' = eval Nil

@@ -67,6 +67,8 @@ instance Pretty (Expr cxt sxt t) where
     Fst a -> "fst" <+> pretty a
     Snd a -> "snd" <+> pretty a
 
+    Task p -> pretty p
+
 
 
 -- Tasks -----------------------------------------------------------------------
