@@ -33,7 +33,7 @@ default-extensions:
   - FlexibleContexts
   - FlexibleInstances
   - InstanceSigs
-  # - MultiParamTypeClasses
+  - MultiParamTypeClasses
 
   # Syntactic conveniences:
   - LambdaCase
@@ -101,7 +101,7 @@ ghc-options:
   - -Wno-implicit-prelude
   - -Wno-missing-pattern-synonym-signatures
   - -Wno-missing-import-lists
-  - -Wno-missing-export-lists 
+  - -Wno-missing-export-lists
 
 
 library:

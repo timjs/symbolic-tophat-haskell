@@ -70,17 +70,18 @@ eval'' e = eval Nil e Nil
 
 
 evalTask :: SymbEnv cxt -> Pretask cxt sxt t -> SymbEnv sxt -> SymbOf t
-evalTask vars = \case
-    Edit x -> _
-    Enter -> _
-    -- Store -> _
-    And x y -> _
-    Or x y -> _
-    Xor x y -> _
-    Fail -> _
-    Then x _ -> _
-    Next x _ -> _
-
+evalTask _ = undefined
+{-
+  Edit x -> _
+  Enter -> _
+  -- Store -> _
+  And x y -> _
+  Or x y -> _
+  Xor x y -> _
+  Fail -> _
+  Then x _ -> _
+  Next x _ -> _
+-}
 
 
 {- Gathering ------------------------------------------------------------------
