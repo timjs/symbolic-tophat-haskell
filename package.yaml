@@ -95,10 +95,13 @@ default-extensions:
 
 ghc-options:
   - -Weverything
+
   - -Wno-safe
   - -Wno-unsafe
   - -Wno-implicit-prelude
   - -Wno-missing-pattern-synonym-signatures
+  - -Wno-missing-import-lists
+  - -Wno-missing-export-lists 
 
 
 library:
