@@ -1,10 +1,11 @@
 module Prelude
   ( module Relude
+  , module Data.Text.Prettyprint.Doc
   , module Data.Type.Equality
   , List, Unit
   , Pretty(..), read
   , neutral
-  , (<<), (>>), (#), (<#>)
+  , (<<), (>>), (#), (<#>), map
   , (<-<), (>->), (<&>), skip
   , lift1, lift2, lift3
   , ok, throw, catch
@@ -12,13 +13,13 @@ module Prelude
   ) where
 
 
-import Relude hiding ((.), (>>), (&), (<&>), readMaybe, liftA2, liftA3)
+import Relude hiding ((.), (>>), (&), (<&>), map, fail, readMaybe, liftA2, liftA3)
 import qualified Relude
 
 import Control.Monad.Except (MonadError(..))
 
 import Data.Text (unpack)
-import Data.Text.Prettyprint.Doc (Pretty(..))
+import Data.Text.Prettyprint.Doc hiding (group)
 import Data.Type.Equality
 
 import Type.Reflection (typeOf, typeRep, TypeRep)
@@ -81,6 +82,10 @@ infixl 1 <#>
 {-# INLINE (<#>) #-}
 (<#>) :: Functor f => f a -> (a -> b) -> f b
 (<#>) = flip (<$>)
+
+
+map :: Functor f => (a -> b) -> f a -> f b
+map = Relude.fmap
 
 
 

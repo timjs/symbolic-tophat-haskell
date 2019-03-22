@@ -30,7 +30,7 @@ data {- kind -} Ty
 instance Universe Ty where
   type TypeOf s (a ':-> b) = TypeOf s a -> TypeOf s b
   type TypeOf s (a ':>< b) = ( TypeOf s a, TypeOf s b )
-  type TypeOf s 'TyUnit = ()
+  type TypeOf _ 'TyUnit = ()
 
   type TypeOf 'Concrete 'TyBool = Bool
   type TypeOf 'Concrete 'TyInt = Integer

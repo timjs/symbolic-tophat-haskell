@@ -9,7 +9,6 @@ module Language.Expr
 
 
 import Data.SBV
-import Data.Text.Prettyprint.Doc
 
 import Language.Types
 import Language.Ops
