@@ -23,87 +23,91 @@ type TaskIO = TaskT IO
 
 
 ui :: MonadRef m => TaskT m a -> m (Doc b)
-ui (Edit (Just x)) = pure $ "□(" <> pretty x <> ")"
-ui (Edit Nothing) = pure "□(_)"
-ui (Store l) = do
-  x <- readRef l
-  pure $ "■(" <> pretty x <> ")"
-ui (And left rght) = do
-  l <- ui left
-  r <- ui rght
-  pure $ l <> "   ⋈   " <> r
-ui (Or left rght) = do
-  l <- ui left
-  r <- ui rght
-  pure $ l <> "   ◆   " <> r
-ui (Xor left rght) = do
-  l <- ui left
-  r <- ui rght
-  pure $ l <> " ◇ " <> r
-ui (Fail) = pure $ "↯"
-ui (Then this _) = do
-  t <- ui this
-  pure $ t <> " ▶…"
-ui (Next this _) = do
-  t <- ui this
-  pure $ t <> " ▷…"
+ui = \case
+  Edit (Just x) -> pure $ "□(" <> pretty x <> ")"
+  Edit Nothing -> pure "□(_)"
+  Store l -> do
+    x <- readRef l
+    pure $ "■(" <> pretty x <> ")"
+  And left rght -> do
+    l <- ui left
+    r <- ui rght
+    pure $ l <> "   ⋈   " <> r
+  Or left rght -> do
+    l <- ui left
+    r <- ui rght
+    pure $ l <> "   ◆   " <> r
+  Xor left rght -> do
+    l <- ui left
+    r <- ui rght
+    pure $ l <> " ◇ " <> r
+  Fail -> pure "↯"
+  Then this _ -> do
+    t <- ui this
+    pure $ t <> " ▶…"
+  Next this _ -> do
+    t <- ui this
+    pure $ t <> " ▷…"
 
 
 value :: MonadRef m => TaskT m a -> m (Maybe a)
-value (Edit val)      = pure $ val
-value (Store loc)     = Just <$> readRef loc
-value (And left rght) = (<&>) <$> value left <*> value rght
-value (Or left rght)  = (<|>) <$> value left <*> value rght
-value (Xor _ _)       = pure $ Nothing
-value (Fail)          = pure $ Nothing
-value (Then _ _)      = pure $ Nothing
-value (Next _ _)      = pure $ Nothing
+value = \case
+  Edit val      -> pure val
+  Store loc     -> Just <$> readRef loc
+  And left rght -> (<&>) <$> value left <*> value rght
+  Or left rght  -> (<|>) <$> value left <*> value rght
+  Xor _ _       -> pure Nothing
+  Fail          -> pure Nothing
+  Then _ _      -> pure Nothing
+  Next _ _      -> pure Nothing
 
 
 failing :: TaskT m a -> Bool
-failing (Edit _)        = False
-failing (Store _)       = False
-failing (And left rght) = failing left && failing rght
-failing (Or  left rght) = failing left && failing rght
---TODO: fix to peek in future
-failing (Xor left rght) = failing left && failing rght
-failing (Fail)          = True
-failing (Then this _)   = failing this
-failing (Next this _)   = failing this
+failing = \case
+  Edit _        -> False
+  Store _       -> False
+  And left rght -> failing left && failing rght
+  Or  left rght -> failing left && failing rght
+  --TODO: fix to peek in future
+  Xor left rght -> failing left && failing rght
+  Fail          -> True
+  Then this _   -> failing this
+  Next this _   -> failing this
 
 
 inputs :: forall m a. MonadZero m => MonadRef m => TaskT m a -> m (List (Input Dummy))
-inputs (Edit _) =
-  pure $ [ ToHere (AChange tau), ToHere AEmpty ]
-  where
-    tau = Proxy :: Proxy a
-inputs (Store _) =
-  pure $ [ ToHere (AChange tau) ]
-  where
-    tau = Proxy :: Proxy a
-inputs (And left rght) = do
-  l <- inputs left
-  r <- inputs rght
-  pure $ map ToFirst l ++ map ToSecond r
-inputs (Or left rght) = do
-  l <- inputs left
-  r <- inputs rght
-  pure $ map ToFirst l ++ map ToSecond r
-inputs (Xor left rght) =
-  pure $ map (ToHere << APick) choices
-  where
-    choices =
-      case ( left, rght ) of
-        ( Fail, Fail ) -> []
-        ( _,    Fail ) -> [ GoLeft ]
-        ( Fail, _ ) -> [ GoRight ]
-        ( _,    _ ) -> [ GoLeft, GoRight ]
-inputs (Fail) =
-  pure $ []
-inputs (Then this _) =
-  inputs this
-inputs (Next this next) =
-  (++) <$> inputs this <*> [ [ToHere AContinue] | Just v <- value this, cont <- normalise (next v), not $ failing cont ]
+inputs = \case
+  Edit _ ->
+    pure [ ToHere (AChange tau), ToHere AEmpty ]
+    where
+      tau = Proxy :: Proxy a
+  Store _ ->
+    pure [ ToHere (AChange tau) ]
+    where
+      tau = Proxy :: Proxy a
+  And left rght -> do
+    l <- inputs left
+    r <- inputs rght
+    pure $ map ToFirst l ++ map ToSecond r
+  Or left rght -> do
+    l <- inputs left
+    r <- inputs rght
+    pure $ map ToFirst l ++ map ToSecond r
+  Xor left rght ->
+    pure $ map (ToHere << APick) choices
+    where
+      choices =
+        case ( left, rght ) of
+          ( Fail, Fail ) -> []
+          ( _,    Fail ) -> [ GoLeft ]
+          ( Fail, _ ) -> [ GoRight ]
+          ( _,    _ ) -> [ GoLeft, GoRight ]
+  Fail ->
+    pure []
+  Then this _ ->
+    inputs this
+  Next this next ->
+    (++) <$> inputs this <*> [ [ToHere AContinue] | Just v <- value this, cont <- normalise (next v), not $ failing cont ]
 
 
 
@@ -113,46 +117,41 @@ inputs (Next this next) =
 stride ::
   MonadRef m =>
   TaskT m a -> m (TaskT m a)
-
--- Step --
-stride (Then this cont) = do
-  this_new <- stride this
-  val <- value this_new
-  case val of
-    Nothing -> pure $ Then this_new cont
-    Just v  ->
-      --FIXME: should we use stride here instead of just eval?
-      let next = cont v in
-      if failing next then
-        pure $ Then this_new cont
-      else
-        stride next
-
--- Evaluate --
-stride (And left rght) = do
-  left_new <- stride left
-  rght_new <- stride rght
-  pure $ And left_new rght_new
-
-stride (Or left rght) = do
-  left_new <- stride left
-  val_left <- value left_new
-  case val_left of
-    Just _  -> pure $ left_new
-    Nothing -> do
-      rght_new <- stride rght
-      val_rght <- value rght_new
-      case val_rght of
-        Just _  -> pure $ rght_new
-        Nothing -> pure $ Or left_new rght_new
-
-stride (Next this cont) = do
-  this_new <- stride this
-  pure $ Next this_new cont
-
--- Values --
-stride task = do
-  pure $ task
+stride = \case
+  -- Step:
+  Then this cont -> do
+    this_new <- stride this
+    val <- value this_new
+    case val of
+      Nothing -> pure $ Then this_new cont
+      Just v  ->
+        --FIXME: should we use stride here instead of just eval?
+        let next = cont v in
+        if failing next then
+          pure $ Then this_new cont
+        else
+          stride next
+  -- Evaluate:
+  And left rght -> do
+    left_new <- stride left
+    rght_new <- stride rght
+    pure $ And left_new rght_new
+  Or left rght -> do
+    left_new <- stride left
+    val_left <- value left_new
+    case val_left of
+      Just _  -> pure left_new
+      Nothing -> do
+        rght_new <- stride rght
+        val_rght <- value rght_new
+        case val_rght of
+          Just _  -> pure rght_new
+          Nothing -> pure $ Or left_new rght_new
+  Next this cont -> do
+    this_new <- stride this
+    pure $ Next this_new cont
+  -- Values:
+  task -> pure task
 
 
 normalise :: MonadRef m => TaskT m a -> m (TaskT m a)
@@ -186,7 +185,7 @@ handle (Edit val) (ToHere (Change val_new))
   -- NOTE: Here we check if `val` and `val_new` have the same type.
   -- If this is the case, it would be inhabited by `Refl :: a :~: b`, where `b` is the type of the value inside `Change`.
   -- Because we can't acces the type variable `b` directly, we use `~=` as a trick.
-  | Just Refl <- val ~= val_new = pure $ Edit $ val_new
+  | Just Refl <- val ~= val_new = pure $ Edit val_new
   | otherwise = trace CouldNotChange $ Edit val
 
 handle (Store loc) (ToHere (Change val_ext))
@@ -292,10 +291,9 @@ getInput = do
     "quit" -> exitSuccess
     _ ->
       case Input.parse (words input) of
-        Right i -> do
-          pure i
+        Right i -> pure i
         Left msg -> do
-          putStrLn $ show msg
+          print msg
           getInput
 
 
