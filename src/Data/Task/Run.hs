@@ -77,12 +77,10 @@ failing = \case
 
 inputs :: forall m a. MonadZero m => MonadRef m => TaskT m a -> m (List (Input Dummy))
 inputs = \case
-  Edit _ ->
-    pure [ ToHere (AChange tau), ToHere AEmpty ]
+  Edit _ -> pure [ ToHere (AChange tau), ToHere AEmpty ]
     where
       tau = Proxy :: Proxy a
-  Store _ ->
-    pure [ ToHere (AChange tau) ]
+  Store _ -> pure [ ToHere (AChange tau) ]
     where
       tau = Proxy :: Proxy a
   And left rght -> do
@@ -96,27 +94,24 @@ inputs = \case
   Xor left rght ->
     pure $ map (ToHere << APick) choices
     where
-      choices =
-        case ( left, rght ) of
-          ( Fail, Fail ) -> []
-          ( _,    Fail ) -> [ GoLeft ]
-          ( Fail, _ ) -> [ GoRight ]
-          ( _,    _ ) -> [ GoLeft, GoRight ]
-  Fail ->
-    pure []
-  Then this _ ->
-    inputs this
-  Next this next ->
-    (++) <$> inputs this <*> [ [ToHere AContinue] | Just v <- value this, cont <- normalise (next v), not $ failing cont ]
+      choices = case ( left, rght ) of
+        ( Fail, Fail ) -> []
+        ( _,    Fail ) -> [ GoLeft ]
+        ( Fail, _ ) -> [ GoRight ]
+        ( _,    _ ) -> [ GoLeft, GoRight ]
+  Fail -> pure []
+  Then this _ -> inputs this
+  Next this next -> (++) <$> inputs this <*>
+    [ [ToHere AContinue]
+    | Just v <- value this, cont <- normalise (next v), not $ failing cont
+    ]
 
 
 
 -- Normalisation ---------------------------------------------------------------
 
 
-stride ::
-  MonadRef m =>
-  TaskT m a -> m (TaskT m a)
+stride :: MonadRef m => TaskT m a -> m (TaskT m a)
 stride = \case
   -- Step:
   Then this cont -> do
@@ -193,15 +188,13 @@ handle (Store loc) (ToHere (Change val_ext))
   -- Here, we can't annotate `Refl`, because we do not have acces to the type variable `b` inside `Store`.
   -- We also do not have acces to the value stored in `loc` (we could readRef it first using `readRef`).
   -- Therefore we use a proxy `Nothing` of the correct scoped type to mach against the type of `val_ext`.
-  | Just Refl <- (Nothing :: Maybe a) ~= val_ext =
-      case val_ext of
-        Just val_new -> do
-          loc $= const val_new
-          pure $ Store loc
-        Nothing ->
-          trace CouldNotChange $ Store loc
-  | otherwise =
-      trace CouldNotChange $ Store loc
+  | Just Refl <- (Nothing :: Maybe a) ~= val_ext = case val_ext of
+      Just val_new -> do
+        loc $= const val_new
+        pure $ Store loc
+      Nothing ->
+        trace CouldNotChange $ Store loc
+  | otherwise = trace CouldNotChange $ Store loc
 
 -- Pass to left or rght --
 handle (And left rght) (ToFirst input) = do
@@ -289,12 +282,11 @@ getInput = do
   input <- getLine
   case input of
     "quit" -> exitSuccess
-    _ ->
-      case Input.parse (words input) of
-        Right i -> pure i
-        Left msg -> do
-          print msg
-          getInput
+    _ -> case Input.parse (words input) of
+      Right i -> pure i
+      Left msg -> do
+        print msg
+        getInput
 
 
 {-
