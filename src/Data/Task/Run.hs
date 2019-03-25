@@ -25,29 +25,14 @@ type TaskIO = TaskT IO
 ui :: MonadRef m => TaskT m a -> m (Doc b)
 ui = \case
   Edit (Just x) -> pure $ "□(" <> pretty x <> ")"
-  Edit Nothing -> pure "□(_)"
-  Store l -> do
-    x <- readRef l
-    pure $ "■(" <> pretty x <> ")"
-  And left rght -> do
-    l <- ui left
-    r <- ui rght
-    pure $ l <> "   ⋈   " <> r
-  Or left rght -> do
-    l <- ui left
-    r <- ui rght
-    pure $ l <> "   ◆   " <> r
-  Xor left rght -> do
-    l <- ui left
-    r <- ui rght
-    pure $ l <> " ◇ " <> r
-  Fail -> pure "↯"
-  Then this _ -> do
-    t <- ui this
-    pure $ t <> " ▶…"
-  Next this _ -> do
-    t <- ui this
-    pure $ t <> " ▷…"
+  Edit Nothing  -> pure "□(_)"
+  Store l       -> (\x -> "■(" <> pretty x <> ")") <$> readRef l
+  And left rght -> (\l r -> l <> "   ⋈   " <> r) <$> ui left <*> ui rght
+  Or left rght  -> (\l r -> l <> "   ◆   " <> r) <$> ui left <*> ui rght
+  Xor left rght -> (\l r -> l <> "   ◇   " <> r) <$> ui left <*> ui rght
+  Fail          -> pure "↯"
+  Then this _   -> (<> " ▶…") <$> ui this
+  Next this _   -> (<> " ▷…") <$> ui this
 
 
 value :: MonadRef m => TaskT m a -> m (Maybe a)
