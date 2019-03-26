@@ -9,8 +9,7 @@ module Prelude
   , (<-<), (>->), (<&>), skip
   , lift1, lift2, lift3
   , ok, throw, catch
-  , ($=)
-  , (~=), proxyOf, typeOf, typeRep, TypeRep
+  , (~=), (~~), proxyOf, typeOf, typeRep, TypeRep
   ) where
 
 
@@ -18,7 +17,6 @@ import Relude hiding ((.), (>>), (&), (<&>), map, fail, trace, readMaybe, liftA2
 import qualified Relude
 
 import Control.Monad.Except (MonadError(..))
-import Control.Monad.Ref
 
 import Data.Text (unpack)
 import Data.Text.Prettyprint.Doc hiding (group)
@@ -151,24 +149,19 @@ catch = catchError
 
 
 
--- Refs --
-
-
-infix 4 $=
-{-# INLINE ($=) #-}
-($=) :: MonadRef m => Ref m a -> (a -> a) -> m ()
-($=) = modifyRef
-
-
-
 -- Type equality ---------------------------------------------------------------
 
 
---XXX: Can we always use this? Also for `TypeRep a ~= TypeRep b`?
 infix 4 ~=
 {-# INLINE (~=) #-}
 (~=) :: ( Typeable a, Typeable b ) => a -> b -> Maybe (a :~: b)
-(~=) x y = typeOf x `testEquality` typeOf y
+(~=) x y = typeOf x ~~ typeOf y
+
+
+infix 4 ~~
+{-# INLINE (~~) #-}
+(~~) :: TestEquality f => f a -> f b -> Maybe (a :~: b)
+(~~) = testEquality
 
 
 {-# INLINE proxyOf #-}

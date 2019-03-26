@@ -19,10 +19,10 @@ dependencies:
   - base-noprelude
   - relude
   - mtl
-  - ref-tf
+  # - ref-tf
   - text
   - prettyprinter
-  # - containers
+  # - unordered-containers
   - sbv
 
 
@@ -91,6 +91,7 @@ default-extensions:
   - PolyKinds
   - TypeFamilies
   # - TypeFamilyDependencies
+  # - QuantifiedConstraints
 
 
 ghc-options:

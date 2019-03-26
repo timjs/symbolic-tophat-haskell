@@ -7,8 +7,6 @@ module Data.Task
   ) where
 
 
-import Prelude hiding (map)
-
 import Control.Monad.Ref
 
 import Data.Basic (Basic)
@@ -28,7 +26,7 @@ data TaskT (m :: Type -> Type) (r :: Type) where
   Edit :: Basic r => Maybe r -> TaskT m r
 
   -- | Stores referring to some shared value of type `r`
-  Store :: ( MonadRef m, Basic r ) => Ref m r -> TaskT m r
+  Store :: ( MonadRef m, Eq (Ref m r), Basic r ) => Ref m r -> TaskT m r
 
   -- | Composition of two tasks.
   And :: TaskT m a -> TaskT m b -> TaskT m ( a, b )
@@ -94,11 +92,11 @@ view :: Basic a => a -> TaskT m a
 view = edit
 
 
-update :: MonadRef m => Basic a => Ref m a -> TaskT m a
+update :: MonadRef m => Eq (Ref m a) => Basic a => Ref m a -> TaskT m a
 update = Store
 
 
-watch :: MonadRef m => Basic a => Ref m a -> TaskT m a
+watch :: MonadRef m => Eq (Ref m a) => Basic a => Ref m a -> TaskT m a
 watch = update
 
 
@@ -122,8 +120,8 @@ x &&- y = tmap snd $ x -&&- y
 -- Alternative --
 
 
-fail:: TaskT m a
-fail= Fail
+fail :: TaskT m a
+fail = Fail
 
 
 (-||-) :: TaskT m a -> TaskT m a -> TaskT m a

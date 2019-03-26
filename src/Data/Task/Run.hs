@@ -1,11 +1,13 @@
 module Data.Task.Run where
 
 
+import Control.Monad.Ref
 import Control.Monad.Trace
 import Control.Monad.Zero
 
+import Data.List (union)
 import Data.Task
-import Data.Task.Input as Input
+import Data.Task.Input
 
 
 
@@ -26,7 +28,7 @@ ui :: MonadRef m => TaskT m a -> m (Doc b)
 ui = \case
   Edit (Just x) -> pure $ "□(" <> pretty x <> ")"
   Edit Nothing  -> pure "□(_)"
-  Store l       -> (\x -> "■(" <> pretty x <> ")") <$> readRef l
+  Store loc     -> (\x -> "■(" <> pretty x <> ")") <$> deref loc
   And left rght -> (\l r -> l <> "   ⋈   " <> r) <$> ui left <*> ui rght
   Or left rght  -> (\l r -> l <> "   ◆   " <> r) <$> ui left <*> ui rght
   Xor left rght -> (\l r -> l <> "   ◇   " <> r) <$> ui left <*> ui rght
@@ -38,7 +40,7 @@ ui = \case
 value :: MonadRef m => TaskT m a -> m (Maybe a)
 value = \case
   Edit val      -> pure val
-  Store loc     -> Just <$> readRef loc
+  Store loc     -> Just <$> deref loc
   And left rght -> (<&>) <$> value left <*> value rght
   Or left rght  -> (<|>) <$> value left <*> value rght
   Xor _ _       -> pure Nothing
@@ -60,6 +62,18 @@ failing = \case
   Next this _   -> failing this
 
 
+watching :: TaskT m a -> List (Someref m)
+watching = \case
+  Edit _        -> []
+  Store loc     -> [ pack loc ]
+  And left rght -> watching left `union` watching rght
+  Or  left rght -> watching left `union` watching rght
+  Xor  _   _    -> []
+  Fail          -> []
+  Then this _   -> watching this
+  Next this _   -> watching this
+
+
 inputs :: forall m a. MonadZero m => MonadRef m => TaskT m a -> m (List (Input Dummy))
 inputs = \case
   Edit _ -> pure [ ToHere (AChange tau), ToHere AEmpty ]
@@ -68,16 +82,9 @@ inputs = \case
   Store _ -> pure [ ToHere (AChange tau) ]
     where
       tau = Proxy :: Proxy a
-  And left rght -> do
-    l <- inputs left
-    r <- inputs rght
-    pure $ map ToFirst l ++ map ToSecond r
-  Or left rght -> do
-    l <- inputs left
-    r <- inputs rght
-    pure $ map ToFirst l ++ map ToSecond r
-  Xor left rght ->
-    pure $ map (ToHere << APick) choices
+  And left rght -> (\l r -> map ToFirst l ++ map ToSecond r) <$> inputs left <*> inputs rght
+  Or  left rght -> (\l r -> map ToFirst l ++ map ToSecond r) <$> inputs left <*> inputs rght
+  Xor left rght -> pure $ map (ToHere << APick) choices
     where
       choices = case ( left, rght ) of
         ( Fail, Fail ) -> []
@@ -171,7 +178,7 @@ handle (Edit val) (ToHere (Change val_new))
 handle (Store loc) (ToHere (Change val_ext))
   -- NOTE: As in the `Edit` case above, we check for type equality.
   -- Here, we can't annotate `Refl`, because we do not have acces to the type variable `b` inside `Store`.
-  -- We also do not have acces to the value stored in `loc` (we could readRef it first using `readRef`).
+  -- We also do not have acces to the value stored in `loc` (we could deref it first using `deref`).
   -- Therefore we use a proxy `Nothing` of the correct scoped type to mach against the type of `val_ext`.
   | Just Refl <- (Nothing :: Maybe a) ~= val_ext = case val_ext of
       Just val_new -> do
@@ -267,7 +274,7 @@ getInput = do
   input <- getLine
   case input of
     "quit" -> exitSuccess
-    _ -> case Input.parse (words input) of
+    _ -> case parse (words input) of
       Right i -> pure i
       Left msg -> do
         print msg
