@@ -53,10 +53,11 @@ instance Eq Action where
 
 
 instance Pretty Action where
-  pretty (Change x) = "change " <> pretty x
-  pretty (Empty)    = "empty"
-  pretty (Pick p)   = "pick" <> pretty p
-  pretty (Continue) = "cont"
+  pretty = \case
+    Change x -> "change " <> pretty x
+    Empty    -> "empty"
+    Pick p   -> "pick" <> pretty p
+    Continue -> "cont"
 
 
 
@@ -84,10 +85,11 @@ instance Eq Dummy where
 
 
 instance Pretty Dummy where
-  pretty (AChange _) = "change <val>"
-  pretty (AEmpty)    = "empty"
-  pretty (APick p)   = "pick" <> pretty p
-  pretty (AContinue) = "cont"
+  pretty = \case
+    AChange _ -> "change <val>"
+    AEmpty    -> "empty"
+    APick p   -> "pick" <> pretty p
+    AContinue -> "cont"
 
 
 
@@ -112,10 +114,11 @@ instance Pretty a => Pretty (Input a) where
 
 
 dummyfy :: Action -> Dummy
-dummyfy (Change x) = AChange (proxyOf x)
-dummyfy (Empty)    = AEmpty
-dummyfy (Pick p)   = APick p
-dummyfy (Continue) = AContinue
+dummyfy = \case
+  Change x -> AChange (proxyOf x)
+  Empty    -> AEmpty
+  Pick p   -> APick p
+  Continue -> AContinue
 
 
 -- reify :: Dummy -> Gen (List Action)
@@ -174,7 +177,7 @@ parse [ "change", val ]
   | Just v <- read val :: Maybe [Text] = ok $ ToHere $ Change v
   | otherwise                          = throw $ "!! Error parsing value " <> dquotes (pretty val)
 parse [ "pick", next ]                 = map (ToHere << Pick) $ parsePath next
-parse [ "cont" ]                       = ok $ ToHere $ Continue
+parse [ "cont" ]                       = ok $ ToHere Continue
 parse ("f" : rest)                     = map ToFirst $ parse rest
 parse ("s" : rest)                     = map ToSecond $ parse rest
 parse [ "help" ]                       = throw usage
