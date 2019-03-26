@@ -1,5 +1,5 @@
 module Data.Task
-  ( TaskT(..)
+  ( TaskT(..), Task
   , edit, enter, view, update, watch
   , tmap, (-&&-), (&&-), (-&&), (-||-), (-??-), fail, (>>-), (>>?)
   , module Control.Monad.Ref
@@ -48,6 +48,9 @@ data TaskT (m :: Type -> Type) (r :: Type) where
 
   --FIXME: add labels
   --FIXME: add tmap and program some examples
+
+
+type Task = TaskT IO
 
 
 

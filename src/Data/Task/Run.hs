@@ -11,16 +11,6 @@ import Data.Task.Input
 
 
 
--- Aliases ---------------------------------------------------------------------
-
-
-type TaskIO = TaskT IO
-
-
--- type TaskST s = TaskT (ST s)
-
-
-
 -- Observations ----------------------------------------------------------------
 
 
@@ -157,7 +147,15 @@ data NotApplicable
   = CouldNotChange
   -- | CouldNotFind Label
   -- | CouldNotContinue
-  | CouldNotHandle
+  | CouldNotHandle (Input Action)
+
+
+instance Pretty NotApplicable where
+  pretty = \case
+    CouldNotChange   -> "Could not change value because types do not match"
+    -- CouldNotFind l   -> "Could not find label `" <> l <> "`"
+    -- CouldNotContinue -> "Could not continue because there is no value to continue with"
+    CouldNotHandle i -> "Could not handle input `" <> pretty i <> "`"
 
 
 handle :: forall m a.
@@ -254,9 +252,8 @@ handle (Next this cont) input = do
   pure $ Next this_new cont
 
 -- Rest --
-handle task _ =
-  -- trace (CouldNotHandle input) task
-  trace CouldNotHandle task
+handle task input =
+  trace (CouldNotHandle input) task
 
 
 drive :: MonadTrace NotApplicable m => MonadRef m => TaskT m a -> Input Action -> m (TaskT m a)
@@ -268,8 +265,8 @@ drive task input =
 -- Running ---------------------------------------------------------------------
 
 
-getInput :: IO (Input Action)
-getInput = do
+getUserInput :: IO (Input Action)
+getUserInput = do
   putText ">> "
   input <- getLine
   case input of
@@ -278,26 +275,25 @@ getInput = do
       Right i -> pure i
       Left msg -> do
         print msg
-        getInput
+        getUserInput
 
 
-{-
-loop :: TaskIO a -> IO ()
+loop :: Task a -> IO ()
 loop task = do
-  ui <- Task.ui task
-  putStrLn ui
-  is <- Task.inputs task
-  putStrLn $ "Possibilities: " <> show is
-  input <- getInput
-  task_new <- _ task input
-  loop task_new
+  interface <- ui task
+  print interface
+  events <- inputs task
+  print $ "Possibilities: " <> pretty events
+  input <- getUserInput
+  task' <- drive task input
+  loop task'
 
 
-run :: Show (typeOf a) -> Task a -> IO ()
-run task = loop !(Task.initialise task)
+run :: Task a -> IO ()
+run task = do
+  task' <- initialise task
+  loop task'
 
 
-main :: IO ()
-main = run empties
-
--}
+-- main :: IO ()
+-- main = run empties

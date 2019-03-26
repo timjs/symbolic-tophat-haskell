@@ -54,13 +54,14 @@ echo =
   View (Var Here)
 
 
-add_seq :: Pretask cxt sxt ('TyTask 'TyInt)
+add_seq :: Pretask '[] '[] ('TyTask 'TyInt)
 add_seq =
+  Enter :>>=
   Enter :>>=
   View (Bn Add (Var Here) (Var (There Here)))
 
 
-add_par :: Pretask cxt sxt ('TyTask 'TyInt)
+add_par :: Pretask '[] '[] ('TyTask 'TyInt)
 add_par = Enter :&&: Enter :>>=
   View (Bn Add (Fst (Var Here)) (Snd (Var Here)))
 

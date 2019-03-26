@@ -84,13 +84,16 @@ data Pretask (cxt :: List Ty)  (sxt :: List Ty) (t :: Ty) where
   Or  :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
   Xor :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
 
-  Then :: Expr cxt sxt ('TyTask a) -> Expr (a ': cxt) sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
-  Next :: Expr cxt sxt ('TyTask a) -> Expr (a ': cxt) sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+  Then :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+  Next :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
 
 
 infixl 3 :&&:
 infixr 2 :||:, :??:
-infixl 1 :>>=, :>>?
+-- | NOTE:
+-- | Fixity of bind is left associative in a normal setting because of the scoping of lambdas.
+-- | Because we can't use lambdas in our DSL, bind should be right associative.
+infixr 1 :>>=, :>>?
 
 
 pattern View x = Edit x

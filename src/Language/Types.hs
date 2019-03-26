@@ -5,6 +5,7 @@ module Language.Types
 
 
 import Data.Basic
+import Data.Task
 import Data.Universe
 
 import Data.SBV (SBool, SInteger, SString)
@@ -16,11 +17,10 @@ import Data.SBV (SBool, SInteger, SString)
 
 data {- kind -} Ty
   = Ty :-> Ty
-
-  | TyTask Ty
-
   | Ty :>< Ty
   | TyUnit
+
+  | TyTask Ty
 
   | TyBool
   | TyInt
@@ -31,6 +31,8 @@ instance Universe Ty where
   type TypeOf s (a ':-> b) = TypeOf s a -> TypeOf s b
   type TypeOf s (a ':>< b) = ( TypeOf s a, TypeOf s b )
   type TypeOf _ 'TyUnit = ()
+
+  type TypeOf s ('TyTask a) = Task (TypeOf s a)
 
   type TypeOf 'Concrete 'TyBool = Bool
   type TypeOf 'Concrete 'TyInt = Integer
