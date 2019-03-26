@@ -104,9 +104,9 @@ data Input a
 
 
 instance Pretty a => Pretty (Input a) where
-  pretty (ToFirst e)  = "l " <> pretty e
+  pretty (ToFirst e)  = "f " <> pretty e
   pretty (ToHere a)   = pretty a
-  pretty (ToSecond e) = "r " <> pretty e
+  pretty (ToSecond e) = "s " <> pretty e
 
 
 
@@ -145,11 +145,11 @@ usage = vcat
   , "    change <value> : change current editor to <value> "
   , "    empty          : empty current editor"
   , "    pick <path>    : pick amongst the possible options"
-  , "    pick <label>   : pick the option labeld with <label>"
+  -- , "    pick <label>   : pick the option labeld with <label>"
   , "    cont           : continue with the next task"
-  , "    cont <label>   : continue with the task labeld <label>"
-  , "    l <event>      : send <event> to the left task"
-  , "    r <event>      : send <event> to the right task"
+  -- , "    cont <label>   : continue with the task labeld <label>"
+  , "    f <event>      : send <event> to the first task"
+  , "    s <event>      : send <event> to the second task"
   , "    help           : show this message"
   , ""
   , "where values can be:"
@@ -159,10 +159,10 @@ usage = vcat
   , "    \"Hello\"   : Strings"
   , ""
   , "paths are of the form:"
-  , "   l <path>? : go left"
-  , "   r <path>? : go right"
-  , ""
-  , "and labels always start with a Capital letter"
+  , "   l : go left"
+  , "   r : go right"
+  -- , ""
+  -- , "and labels always start with a Capital letter"
   ]
 
 
