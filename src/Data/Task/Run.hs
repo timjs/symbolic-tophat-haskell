@@ -144,7 +144,7 @@ initialise = normalise
 
 
 data NotApplicable
-  = CouldNotChange
+  = CouldNotChange SomeTypeRep SomeTypeRep
   -- | CouldNotFind Label
   -- | CouldNotContinue
   | CouldNotHandle (Input Action)
@@ -152,10 +152,10 @@ data NotApplicable
 
 instance Pretty NotApplicable where
   pretty = \case
-    CouldNotChange   -> "Could not change value because types do not match"
+    CouldNotChange r s -> sep [ "Could not change value because types", dquotes $ pretty r, "and", dquotes $ pretty s, "do not match" ]
     -- CouldNotFind l   -> "Could not find label `" <> l <> "`"
     -- CouldNotContinue -> "Could not continue because there is no value to continue with"
-    CouldNotHandle i -> "Could not handle input `" <> pretty i <> "`"
+    CouldNotHandle i -> sep [ "Could not handle input", dquotes $ pretty i ]
 
 
 handle :: forall m a.
@@ -166,25 +166,28 @@ handle :: forall m a.
 handle (Edit _) (ToHere Empty) =
   pure $ Edit Nothing
 
-handle (Edit val) (ToHere (Change val_new))
+handle (Edit val) (ToHere (Change val_inp))
   -- NOTE: Here we check if `val` and `val_new` have the same type.
   -- If this is the case, it would be inhabited by `Refl :: a :~: b`, where `b` is the type of the value inside `Change`.
   -- Because we can't acces the type variable `b` directly, we use `~=` as a trick.
   | Just Refl <- val ~= val_new = pure $ Edit val_new
-  | otherwise = trace CouldNotChange $ Edit val
+  | otherwise = trace (CouldNotChange (someTypeOf val) (someTypeOf val_new)) $ Edit val
+  where
+    --NOTE: `val` is of a maybe type, so we need to wrap `val_new` into a `Just`.
+    val_new = Just val_inp
 
-handle (Store loc) (ToHere (Change val_ext))
-  -- NOTE: As in the `Edit` case above, we check for type equality.
-  -- Here, we can't annotate `Refl`, because we do not have acces to the type variable `b` inside `Store`.
-  -- We also do not have acces to the value stored in `loc` (we could deref it first using `deref`).
-  -- Therefore we use a proxy `Nothing` of the correct scoped type to mach against the type of `val_ext`.
-  | Just Refl <- (Nothing :: Maybe a) ~= val_ext = case val_ext of
-      Just val_new -> do
-        loc $= const val_new
-        pure $ Store loc
-      Nothing ->
-        trace CouldNotChange $ Store loc
-  | otherwise = trace CouldNotChange $ Store loc
+-- handle (Store loc) (ToHere (Change val_ext))
+--   -- NOTE: As in the `Edit` case above, we check for type equality.
+--   -- Here, we can't annotate `Refl`, because we do not have acces to the type variable `b` inside `Store`.
+--   -- We also do not have acces to the value stored in `loc` (we could deref it first using `deref`).
+--   -- Therefore we use a proxy `Nothing` of the correct scoped type to mach against the type of `val_ext`.
+--   | Just Refl <- (Nothing :: Maybe a) ~= val_ext = case val_ext of
+--       Just val_new -> do
+--         loc $= const val_new
+--         pure $ Store loc
+--       Nothing ->
+--         trace $ CouldNotChange (someTypeOf val) (someTypeOf val_new) $ Store loc
+--   | otherwise = trace $ CouldNotChange (someTypeOf val) (someTypeOf val_new) $ Store loc
 
 -- Pass to left or rght --
 handle (And left rght) (ToFirst input) = do

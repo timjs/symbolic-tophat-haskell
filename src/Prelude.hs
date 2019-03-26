@@ -9,7 +9,7 @@ module Prelude
   , (<-<), (>->), (<&>), skip
   , lift1, lift2, lift3
   , ok, throw, catch
-  , (~=), (~~), proxyOf, typeOf, typeRep, TypeRep
+  , (~=), (~~), proxyOf, typeOf, someTypeOf, typeRep, TypeRep, SomeTypeRep
   ) where
 
 
@@ -22,7 +22,7 @@ import Data.Text (unpack)
 import Data.Text.Prettyprint.Doc hiding (group)
 import Data.Type.Equality
 
-import Type.Reflection (typeOf, typeRep, TypeRep)
+import Type.Reflection (typeOf, typeRep, someTypeRep, TypeRep, SomeTypeRep)
 
 
 
@@ -167,3 +167,12 @@ infix 4 ~~
 {-# INLINE proxyOf #-}
 proxyOf :: a -> Proxy a
 proxyOf _ = Proxy
+
+
+{-# INLINE someTypeOf #-}
+someTypeOf :: forall a. Typeable a => a -> SomeTypeRep
+someTypeOf = someTypeRep << proxyOf
+
+
+instance Pretty SomeTypeRep where
+  pretty = viaShow

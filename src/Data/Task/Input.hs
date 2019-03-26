@@ -168,17 +168,18 @@ usage = vcat
 
 parse :: List Text -> Either (Doc a) (Input Action)
 parse [ "change", val ]
-  | Just v <- read val :: Maybe Unit   = ok $ ToHere $ Change v
-  | Just v <- read val :: Maybe Bool   = ok $ ToHere $ Change v
-  | Just v <- read val :: Maybe Int    = ok $ ToHere $ Change v
-  | Just v <- read val :: Maybe Text   = ok $ ToHere $ Change v
-  | Just v <- read val :: Maybe [Bool] = ok $ ToHere $ Change v
-  | Just v <- read val :: Maybe [Int]  = ok $ ToHere $ Change v
-  | Just v <- read val :: Maybe [Text] = ok $ ToHere $ Change v
-  | otherwise                          = throw $ "!! Error parsing value " <> dquotes (pretty val)
-parse [ "pick", next ]                 = map (ToHere << Pick) $ parsePath next
-parse [ "cont" ]                       = ok $ ToHere Continue
-parse ("f" : rest)                     = map ToFirst $ parse rest
-parse ("s" : rest)                     = map ToSecond $ parse rest
-parse [ "help" ]                       = throw usage
-parse other                            = throw $ "!! " <> dquotes (sep $ map pretty other) <> " is not a valid command, type `help` for more info"
+  | Just v <- read val :: Maybe Unit      = ok $ ToHere $ Change v
+  | Just v <- read val :: Maybe Bool      = ok $ ToHere $ Change v
+  | Just v <- read val :: Maybe Integer   = ok $ ToHere $ Change v
+  | Just v <- read val :: Maybe Text      = ok $ ToHere $ Change v
+  | Just v <- read val :: Maybe [Bool]    = ok $ ToHere $ Change v
+  | Just v <- read val :: Maybe [Integer] = ok $ ToHere $ Change v
+  | Just v <- read val :: Maybe [Text]    = ok $ ToHere $ Change v
+  | otherwise                             = throw $ "!! Error parsing value " <> dquotes (pretty val)
+parse [ "empty" ]                         = ok $ ToHere Empty
+parse [ "pick", next ]                    = map (ToHere << Pick) $ parsePath next
+parse [ "cont" ]                          = ok $ ToHere Continue
+parse ("f" : rest)                        = map ToFirst $ parse rest
+parse ("s" : rest)                        = map ToSecond $ parse rest
+parse [ "help" ]                          = throw usage
+parse other                               = throw $ "!! " <> dquotes (sep $ map pretty other) <> " is not a valid command, type `help` for more info"
