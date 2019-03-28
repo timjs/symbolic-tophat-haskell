@@ -1,5 +1,3 @@
-module Main where
-
 
 import Data.SBV
 
@@ -70,6 +68,7 @@ add_par = Enter :&&: Enter :>>=
 -- Main ------------------------------------------------------------------------
 
 
-main :: IO ThmResult
-main =
-  prove \x y -> Symb.eval'' add x y .== x + y
+main :: IO ()
+main = do
+  result <- prove \x y -> Symb.eval'' add x y .== x + y
+  print result

@@ -109,10 +109,10 @@ library:
   source-dirs: src
 
 
-executables:
-  symbolic-tophat-exe:
-    main:                Main.hs
-    source-dirs:         app
+tests:
+  translation-test:
+    main:                Translation.hs
+    source-dirs:         test
     ghc-options:
       - -threaded
       - -rtsopts
