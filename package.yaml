@@ -12,7 +12,6 @@ copyright:           "BSD3"
 
 extra-source-files:
   - README.md
-  - CHANGELOG.md
 
 
 dependencies:
