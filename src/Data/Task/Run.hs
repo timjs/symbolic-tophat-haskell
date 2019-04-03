@@ -127,6 +127,8 @@ stride = \case
   Next this cont -> do
     this_new <- stride this
     pure $ Next this_new cont
+  -- Lift --
+  -- Lift act -> Edit << Just <$> act
   -- Values:
   task -> pure task
 

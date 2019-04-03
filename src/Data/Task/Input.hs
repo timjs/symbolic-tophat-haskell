@@ -30,7 +30,7 @@ parsePath other = throw $ "!! " <> dquotes (pretty other) <> " is not a valid pa
 
 
 
--- Inputs ----------------------------------------------------------------------
+-- Actions ---------------------------------------------------------------------
 
 -- Real actions --
 
@@ -93,7 +93,15 @@ instance Pretty Dummy where
 
 
 
--- Inputs --
+-- Symbolic actions --
+
+
+data Symbolic :: Type where
+  SChange :: Basic b => Proxy b -> Symbolic
+
+
+
+-- Inputs ----------------------------------------------------------------------
 
 
 data Input a
@@ -171,10 +179,10 @@ parse [ "change", val ]
   | Just v <- read val :: Maybe Unit      = ok $ ToHere $ Change v
   | Just v <- read val :: Maybe Bool      = ok $ ToHere $ Change v
   | Just v <- read val :: Maybe Integer   = ok $ ToHere $ Change v
-  | Just v <- read val :: Maybe Text      = ok $ ToHere $ Change v
+  | Just v <- read val :: Maybe String    = ok $ ToHere $ Change v
   | Just v <- read val :: Maybe [Bool]    = ok $ ToHere $ Change v
   | Just v <- read val :: Maybe [Integer] = ok $ ToHere $ Change v
-  | Just v <- read val :: Maybe [Text]    = ok $ ToHere $ Change v
+  | Just v <- read val :: Maybe [String]  = ok $ ToHere $ Change v
   | otherwise                             = throw $ "!! Error parsing value " <> dquotes (pretty val)
 parse [ "empty" ]                         = ok $ ToHere Empty
 parse [ "pick", next ]                    = map (ToHere << Pick) $ parsePath next

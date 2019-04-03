@@ -46,8 +46,10 @@ data TaskT (m :: Type -> Type) (r :: Type) where
   -- | External, or user step.
   Next :: TaskT m a -> (a -> TaskT m r) -> TaskT m r
 
+  -- | Lift something to the underlaying monad
+  -- Lift :: Monad m => m a -> TaskT m a
+
   --FIXME: add labels
-  --FIXME: add tmap and program some examples
 
 
 type Task = TaskT IO
