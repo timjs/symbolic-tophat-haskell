@@ -4,12 +4,14 @@ module Data.Basic
   ) where
 
 
+import Data.SBV (SymVal)
+
 
 
 -- Class -----------------------------------------------------------------------
 
 
-type Basic a = ( Pretty a, Read a, Eq a, Typeable a ) -- , Arbitrary a ) -- Coarbitrary a )
+type Basic a = ( Pretty a, Read a, Eq a, Typeable a, SymVal a ) -- , Arbitrary a ) -- Coarbitrary a )
 
 
 
