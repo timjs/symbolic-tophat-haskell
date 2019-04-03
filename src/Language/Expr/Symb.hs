@@ -54,6 +54,8 @@ eval vars = \case
   Fst e -> fst <$> eval vars e
   Snd e -> snd <$> eval vars e
 
+  Task p -> evalTask vars p
+
 
 eval' :: Expr '[] sxt t -> SymbEnv sxt -> SymbOf t
 eval' = eval Nil
@@ -62,6 +64,24 @@ eval' = eval Nil
 eval'' :: Expr '[] '[] t -> SymbOf t
 eval'' e = eval Nil e Nil
 
+
+
+-- Tasks --
+
+
+evalTask :: SymbEnv cxt -> Pretask cxt sxt t -> SymbEnv sxt -> SymbOf t
+evalTask _ = undefined
+{-
+  Edit x -> _
+  Enter -> _
+  -- Store -> _
+  And x y -> _
+  Or x y -> _
+  Xor x y -> _
+  Fail -> _
+  Then x _ -> _
+  Next x _ -> _
+-}
 
 
 {- Gathering ------------------------------------------------------------------

@@ -1,27 +1,28 @@
 module Prelude
   ( module Relude
+  , module Data.Text.Prettyprint.Doc
   , module Data.Type.Equality
   , List, Unit
   , Pretty(..), read
   , neutral
-  , (<<), (>>), (#), (<#>)
+  , (<<), (>>), (#), (<#>), map
   , (<-<), (>->), (<&>), skip
   , lift1, lift2, lift3
   , ok, throw, catch
-  , (~=), proxyOf, typeOf, typeRep, TypeRep
+  , (~=), (~~), proxyOf, typeOf, someTypeOf, typeRep, TypeRep, SomeTypeRep
   ) where
 
 
-import Relude hiding ((.), (>>), (&), (<&>), readMaybe, liftA2, liftA3)
+import Relude hiding ((.), (>>), (&), (<&>), map, fail, trace, readMaybe, liftA2, liftA3)
 import qualified Relude
 
 import Control.Monad.Except (MonadError(..))
 
 import Data.Text (unpack)
-import Data.Text.Prettyprint.Doc (Pretty(..))
+import Data.Text.Prettyprint.Doc hiding (group)
 import Data.Type.Equality
 
-import Type.Reflection (typeOf, typeRep, TypeRep)
+import Type.Reflection (typeOf, typeRep, someTypeRep, TypeRep, SomeTypeRep)
 
 
 
@@ -81,6 +82,10 @@ infixl 1 <#>
 {-# INLINE (<#>) #-}
 (<#>) :: Functor f => f a -> (a -> b) -> f b
 (<#>) = flip (<$>)
+
+
+map :: Functor f => (a -> b) -> f a -> f b
+map = Relude.fmap
 
 
 
@@ -147,9 +152,16 @@ catch = catchError
 -- Type equality ---------------------------------------------------------------
 
 
--- {-# INLINE sameT #-}
--- sameT :: ( Typeable a, Typeable b ) => a -> b -> Maybe (a :~: b)
--- sameT _ _ = eqT
+infix 4 ~=
+{-# INLINE (~=) #-}
+(~=) :: ( Typeable a, Typeable b ) => a -> b -> Maybe (a :~: b)
+(~=) x y = typeOf x ~~ typeOf y
+
+
+infix 4 ~~
+{-# INLINE (~~) #-}
+(~~) :: TestEquality f => f a -> f b -> Maybe (a :~: b)
+(~~) = testEquality
 
 
 {-# INLINE proxyOf #-}
@@ -157,6 +169,10 @@ proxyOf :: a -> Proxy a
 proxyOf _ = Proxy
 
 
-infix 4 ~=
-(~=) :: TestEquality f => f a -> f b -> Maybe (a :~: b)
-(~=) = testEquality
+{-# INLINE someTypeOf #-}
+someTypeOf :: forall a. Typeable a => a -> SomeTypeRep
+someTypeOf = someTypeRep << proxyOf
+
+
+instance Pretty SomeTypeRep where
+  pretty = viaShow

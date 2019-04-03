@@ -9,7 +9,6 @@ module Language.Expr
 
 
 import Data.SBV
-import Data.Text.Prettyprint.Doc
 
 import Language.Types
 import Language.Ops
@@ -67,6 +66,8 @@ instance Pretty (Expr cxt sxt t) where
     Fst a -> "fst" <+> pretty a
     Snd a -> "snd" <+> pretty a
 
+    Task p -> pretty p
+
 
 
 -- Tasks -----------------------------------------------------------------------
@@ -83,13 +84,16 @@ data Pretask (cxt :: List Ty)  (sxt :: List Ty) (t :: Ty) where
   Or  :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
   Xor :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
 
-  Then :: Expr cxt sxt ('TyTask a) -> Expr (a ': cxt) sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
-  Next :: Expr cxt sxt ('TyTask a) -> Expr (a ': cxt) sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+  Then :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+  Next :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
 
 
 infixl 3 :&&:
 infixr 2 :||:, :??:
-infixl 1 :>>=, :>>?
+-- | NOTE:
+-- | Fixity of bind is left associative in a normal setting because of the scoping of lambdas.
+-- | Because we can't use lambdas in our DSL, bind should be right associative.
+infixr 1 :>>=, :>>?
 
 
 pattern View x = Edit x
@@ -109,5 +113,5 @@ instance Pretty (Pretask cxt sxt t) where
     Or x y -> sep [ pretty x, "◆", pretty y ]
     Xor x y -> sep [ pretty x, "◇", pretty y ]
     Fail -> "↯"
-    Then x _ -> sep [ pretty x, "▶…" ]
-    Next x _ -> sep [ pretty x, "▷…" ]
+    Then x c -> sep [ pretty x, "▶", pretty c ]
+    Next x c -> sep [ pretty x, "▷…", pretty c ]

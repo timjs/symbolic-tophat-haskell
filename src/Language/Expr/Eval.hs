@@ -1,6 +1,8 @@
 module Language.Expr.Eval where
 
 
+import qualified Data.Task as Task
+
 import Language.Expr
 
 
@@ -54,6 +56,21 @@ eval vars = \case
   Pair a b -> ( eval vars a, eval vars b )
   Fst e -> fst $ eval vars e
   Snd e -> snd $ eval vars e
+
+  Task x -> preval vars x
+
+
+preval :: ConcEnv cxt -> Pretask cxt '[] t -> ConcOf t
+preval vars = \case
+  Edit x -> Task.Edit $ Just $ eval vars x
+  Enter -> Task.Edit Nothing
+  -- Store -> _
+  And x y -> Task.And (eval vars x) (eval vars y)
+  Or x y -> Task.Or (eval vars x) (eval vars y)
+  Xor x y -> Task.Xor (eval vars x) (eval vars y)
+  Fail -> Task.Fail
+  Then t c -> Task.Then (eval vars t) (eval vars c)
+  Next t c -> Task.Next (eval vars t) (eval vars c)
 
 
 eval' :: Expr '[] '[] t -> ConcOf t

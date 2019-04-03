@@ -18,9 +18,10 @@ dependencies:
   - base-noprelude
   - relude
   - mtl
+  # - ref-tf
   - text
   - prettyprinter
-  # - containers
+  # - unordered-containers
   - sbv
 
 
@@ -31,7 +32,7 @@ default-extensions:
   - FlexibleContexts
   - FlexibleInstances
   - InstanceSigs
-  # - MultiParamTypeClasses
+  - MultiParamTypeClasses
 
   # Syntactic conveniences:
   - LambdaCase
@@ -89,21 +90,28 @@ default-extensions:
   - PolyKinds
   - TypeFamilies
   # - TypeFamilyDependencies
+  # - QuantifiedConstraints
 
 
 ghc-options:
   - -Weverything
+
+  - -Wno-safe
+  - -Wno-unsafe
+  - -Wno-implicit-prelude
   - -Wno-missing-pattern-synonym-signatures
+  - -Wno-missing-import-lists
+  - -Wno-missing-export-lists
 
 
 library:
   source-dirs: src
 
 
-executables:
-  symbolic-tophat-exe:
+tests:
+  translation-test:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         tst
     ghc-options:
       - -threaded
       - -rtsopts

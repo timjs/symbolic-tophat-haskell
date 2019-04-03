@@ -1,4 +1,4 @@
-module Main where
+module Test.Exprs where
 
 
 import Data.SBV
@@ -54,13 +54,14 @@ echo =
   View (Var Here)
 
 
-add_seq :: Pretask cxt sxt ('TyTask 'TyInt)
+add_seq :: Pretask '[] '[] ('TyTask 'TyInt)
 add_seq =
+  Enter :>>=
   Enter :>>=
   View (Bn Add (Var Here) (Var (There Here)))
 
 
-add_par :: Pretask cxt sxt ('TyTask 'TyInt)
+add_par :: Pretask '[] '[] ('TyTask 'TyInt)
 add_par = Enter :&&: Enter :>>=
   View (Bn Add (Fst (Var Here)) (Snd (Var Here)))
 
@@ -69,6 +70,7 @@ add_par = Enter :&&: Enter :>>=
 -- Main ------------------------------------------------------------------------
 
 
-main :: IO ThmResult
-main =
-  prove \x y -> Symb.eval'' add x y .== x + y
+main :: IO ()
+main = do
+  result <- prove \x y -> Symb.eval'' add x y .== x + y
+  print result
