@@ -86,7 +86,7 @@ tmap f t = (>>-) t (edit << f)
 
 
 edit :: Basic a => a -> TaskT m a
-edit x = Edit (Just x)
+edit = Edit << Just
 
 
 enter :: Basic a => TaskT m a
