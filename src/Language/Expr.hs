@@ -113,5 +113,5 @@ instance Pretty (Pretask cxt sxt t) where
     Or x y -> sep [ pretty x, "◆", pretty y ]
     Xor x y -> sep [ pretty x, "◇", pretty y ]
     Fail -> "↯"
-    Then x _ -> sep [ pretty x, "▶…" ]
-    Next x _ -> sep [ pretty x, "▷…" ]
+    Then x c -> sep [ pretty x, "▶", pretty c ]
+    Next x c -> sep [ pretty x, "▷…", pretty c ]
