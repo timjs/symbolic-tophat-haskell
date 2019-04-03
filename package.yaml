@@ -111,8 +111,8 @@ library:
 
 tests:
   translation-test:
-    main:                Translation.hs
-    source-dirs:         test
+    main:                Main.hs
+    source-dirs:         tst
     ghc-options:
       - -threaded
       - -rtsopts
