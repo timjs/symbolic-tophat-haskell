@@ -34,8 +34,8 @@ cRight = Right 1
 main :: IO ()
 main = do
   putStrLn "==================================================================="
-  r <- proveWith (z3 {verbose = True}) \ x -> intInSymEither x .== sRight
-  print r
-  r <- proveWith (z3 {verbose = True}) \ x -> symIntInEither x .== cRight
-  print r
+  r1 <- proveWith (z3 {verbose = True}) \ x -> intInSymEither x .== sRight
+  print r1
+  r2 <- proveWith (z3 {verbose = True}) \ x -> symIntInEither x .== cRight
+  print r2
   putStrLn "==================================================================="
