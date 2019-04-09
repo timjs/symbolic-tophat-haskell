@@ -4,6 +4,7 @@ module Language.Val
   , pattern B, pattern I, pattern S
   , Task(..)
   , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
+  , toPred
   ) where
 
 
@@ -11,20 +12,21 @@ import Language.Types
 import Language.Ops
 
 import qualified Language.Expr as E
+import qualified Language.Pred as P
 
 
 
 -- Expressions -----------------------------------------------------------------
 
 
-data Val (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
+data Val (cxt :: List Ty) (sxt :: List PrimTy) (t :: Ty) where
   Lam :: Val (a ': cxt) sxt b -> Val cxt sxt (a ':-> b)
 
-  Sym :: HasType (t ': ts) a -> Val cxt (t ': ts) a
-  Con :: IsPrim a -> ConcOf a -> Val cxt sxt a
+  Sym :: HasType (t ': ts) a -> Val cxt (t ': ts) ('TyPrim a)
+  Con :: IsPrim a -> ConcOf a -> Val cxt sxt ('TyPrim a)
 
-  Un :: Un a b -> Val cxt sxt a -> Val cxt sxt b
-  Bn :: Bn a b c -> Val cxt sxt a -> Val cxt sxt b -> Val cxt sxt c
+  Un :: Un a b -> Val cxt sxt ('TyPrim a) -> Val cxt sxt ('TyPrim b)
+  Bn :: Bn a b c -> Val cxt sxt ('TyPrim a) -> Val cxt sxt ('TyPrim b) -> Val cxt sxt ('TyPrim c)
 
   Unit :: Val cxt sxt 'TyUnit
   Pair :: Val cxt sxt a -> Val cxt sxt b -> Val cxt sxt (a ':>< b)
@@ -59,7 +61,7 @@ instance Pretty (Val cxt sxt t) where
 -- Tasks -----------------------------------------------------------------------
 
 
-data Task (cxt :: List Ty)  (sxt :: List Ty) (t :: Ty) where
+data Task (cxt :: List Ty)  (sxt :: List PrimTy) (t :: Ty) where
   Edit :: IsBasic a => Val cxt sxt a -> Task cxt sxt ('TyTask a)
   Enter :: IsBasic a => Task cxt sxt ('TyTask a)
   -- Store :: Loc a -> Task cxt sxt ('TyTask a)
@@ -101,3 +103,14 @@ instance Pretty (Task cxt sxt t) where
     Fail -> "↯"
     Then x c -> sep [ pretty x, "▶", pretty c ]
     Next x c -> sep [ pretty x, "▷…", pretty c ]
+
+
+
+-- Translation -----------------------------------------------------------------
+
+toPred :: Val '[] sxt ('TyPrim a) -> P.Pred sxt a
+toPred = \case
+  Sym i -> P.Sym i
+  Con p x -> P.Con p x
+  Un o v1 -> P.Un o (toPred v1)
+  Bn o v1 v2 -> P.Bn o (toPred v1) (toPred v2)
