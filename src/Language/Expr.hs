@@ -1,6 +1,5 @@
 module Language.Expr
   ( module Language.Types
-  , HasType(..)
   , Expr(..), Un(..), Bn(..)
   , pattern B, pattern I, pattern S
   , Pretask(..)
