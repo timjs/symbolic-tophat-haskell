@@ -1,6 +1,8 @@
 module Language.Types
   ( module Data.Universe
-  , Ty(..), IsPrim(..), IsBasic
+  , Ty(..), PrimTy(..)
+  , pattern TyPrimBool, pattern TyPrimInt, pattern TyPrimString
+  , IsPrim(..), IsBasic
   ) where
 
 
@@ -8,7 +10,7 @@ import Data.Basic
 import Data.Task
 import Data.Universe
 
-import Data.SBV (SBool, SInteger, SString)
+import Data.SBV (SBV)
 
 
 
@@ -19,52 +21,82 @@ data {- kind -} Ty
   = Ty :-> Ty
   | Ty :>< Ty
   | TyUnit
-
   | TyTask Ty
-
-  | TyBool
-  | TyInt
-  | TyString
+  | TyPrim PrimTy
 
 
 instance Universe Ty where
   type TypeOf s (a ':-> b) = TypeOf s a -> TypeOf s b
   type TypeOf s (a ':>< b) = ( TypeOf s a, TypeOf s b )
   type TypeOf _ 'TyUnit = ()
-
   type TypeOf s ('TyTask a) = Task (TypeOf s a)
 
+  type TypeOf s ('TyPrim p) = TypeOf s p
+
+  -- type TypeOf 'Concrete ('TyPrim 'TyBool) = Bool
+  -- type TypeOf 'Concrete ('TyPrim 'TyInt) = Integer
+  -- type TypeOf 'Concrete ('TyPrim 'TyString) = String
+
+  -- type TypeOf 'Symbolic ('TyPrim 'TyBool) = SBool
+  -- type TypeOf 'Symbolic ('TyPrim 'TyInt) = SInteger
+  -- type TypeOf 'Symbolic ('TyPrim 'TyString) = SString
+
+
+
+-- Primitives ------------------------------------------------------------------
+
+
+data PrimTy
+  = TyBool
+  | TyInt
+  | TyString
+
+
+pattern TyPrimBool = TyPrim TyBool
+pattern TyPrimInt = TyPrim TyInt
+pattern TyPrimString = TyPrim TyString
+
+
+instance Universe PrimTy where
   type TypeOf 'Concrete 'TyBool = Bool
   type TypeOf 'Concrete 'TyInt = Integer
   type TypeOf 'Concrete 'TyString = String
 
-  type TypeOf 'Symbolic 'TyBool = SBool
-  type TypeOf 'Symbolic 'TyInt = SInteger
-  type TypeOf 'Symbolic 'TyString = SString
+  -- | This needs undecidable instances...
+  -- type TypeOf 'Symbolic a = SBV (TypeOf 'Concrete a)
+
+  type TypeOf 'Symbolic 'TyBool = SBV Bool
+  type TypeOf 'Symbolic 'TyInt = SBV Integer
+  type TypeOf 'Symbolic 'TyString = SBV String
 
 
-
--- Primitives & Basics ---------------------------------------------------------
-
-
-data IsPrim (a :: Ty) where
+-- | Proof that some `PrimTy` is primitive.
+-- |
+-- | We need this at runtime to check what kind of primitive we have.
+-- | Apparently we can't use the dictionary trick as with `IsBasic`
+-- | due to some strange interaction with type families...
+data IsPrim (a :: PrimTy) where
   BoolIsPrim :: IsPrim 'TyBool
   IntIsPrim :: IsPrim 'TyInt
   StringIsPrim :: IsPrim 'TyString
 
 
--- data IsBasic (a :: Ty) where
---   PairIsBasic :: IsBasic a -> IsBasic b -> IsBasic (a ':>< b)
---   UnitIsBasic :: IsBasic 'TyUnit
---   BoolIsBasic :: IsBasic 'TyBool
---   IntIsBasic :: IsBasic 'TyInt
---   StringIsBasic :: IsBasic 'TyString
+-- class ( Basic (ConcOf a) ) => IsPrim (a :: PrimTy)
+--
+-- instance IsPrim 'TyBool
+-- instance IsPrim 'TyInt
+-- instance IsPrim 'TyString
+
+
+
+-- Basics ----------------------------------------------------------------------
 
 
 class ( Basic (ConcOf a) ) => IsBasic (a :: Ty)
 
-instance IsBasic 'TyBool
-instance IsBasic 'TyInt
-instance IsBasic 'TyString
+instance IsBasic ('TyPrim 'TyBool)
+instance IsBasic ('TyPrim 'TyInt)
+instance IsBasic ('TyPrim 'TyString)
+
 instance IsBasic 'TyUnit
 instance ( IsBasic a, IsBasic b ) => IsBasic (a ':>< b)

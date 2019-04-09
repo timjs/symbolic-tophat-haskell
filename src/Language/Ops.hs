@@ -10,7 +10,7 @@ import Language.Types
 -- Unary -
 
 
-data Un (a :: Ty) (b :: Ty) where
+data Un (a :: PrimTy) (b :: PrimTy) where
   Not :: Un 'TyBool 'TyBool
   Neg :: Un 'TyInt  'TyInt
 
@@ -25,7 +25,7 @@ instance Pretty (Un a b) where
 -- Binary --
 
 
-data Bn (a :: Ty) (b :: Ty) (c :: Ty) where
+data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Conj :: Bn 'TyBool 'TyBool 'TyBool
   Disj :: Bn 'TyBool 'TyBool 'TyBool
 

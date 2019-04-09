@@ -17,7 +17,7 @@ import Language.Ops
 -- Expressions -----------------------------------------------------------------
 
 
-data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
+data Expr (cxt :: List Ty) (sxt :: List PrimTy) (t :: Ty) where
   Lam :: Expr (a ': cxt) sxt b -> Expr cxt sxt (a ':-> b)
   App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
   Var :: HasType cxt a -> Expr cxt sxt a
@@ -25,12 +25,12 @@ data Expr (cxt :: List Ty) (sxt :: List Ty) (t :: Ty) where
   -- | Symbolic variable
   -- |
   -- | Note we demand the symbolic context to be non-empty when using any symbol.
-  Sym :: HasType (t ': ts) a -> Expr cxt (t ': ts) a
-  Con :: IsPrim a -> ConcOf a -> Expr cxt sxt a
+  Sym :: HasType (t ': ts) a -> Expr cxt (t ': ts) ('TyPrim a)
+  Con :: IsPrim a -> ConcOf a -> Expr cxt sxt ('TyPrim a)
 
-  Un :: Un a b -> Expr cxt sxt a -> Expr cxt sxt b
-  Bn :: Bn a b c -> Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt c
-  If :: Mergeable (SymbOf a) => Expr cxt sxt 'TyBool -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
+  Un :: Un a b -> Expr cxt sxt ('TyPrim a) -> Expr cxt sxt ('TyPrim b)
+  Bn :: Bn a b c -> Expr cxt sxt ('TyPrim a) -> Expr cxt sxt ('TyPrim b) -> Expr cxt sxt ('TyPrim c)
+  If :: Mergeable (SymbOf a) => Expr cxt sxt ('TyPrim 'TyBool) -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
 
   Unit :: Expr cxt sxt 'TyUnit
   Pair :: Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt (a ':>< b)
@@ -72,7 +72,7 @@ instance Pretty (Expr cxt sxt t) where
 -- Tasks -----------------------------------------------------------------------
 
 
-data Pretask (cxt :: List Ty)  (sxt :: List Ty) (t :: Ty) where
+data Pretask (cxt :: List Ty)  (sxt :: List PrimTy) (t :: Ty) where
   Edit :: IsBasic a => Expr cxt sxt a -> Pretask cxt sxt ('TyTask a)
   Enter :: IsBasic a => Pretask cxt sxt ('TyTask a)
   -- Store :: Loc a -> Pretask cxt sxt ('TyTask a)
