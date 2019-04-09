@@ -1,7 +1,7 @@
 module Language.Types
   ( module Data.Universe
   , Ty(..), PrimTy(..)
-  , pattern TyPrimBool, pattern TyPrimInt, pattern TyPrimString
+  -- , TyPrimBool, TyPrimInt, TyPrimString
   , IsPrim(..), IsBasic
   ) where
 
@@ -52,9 +52,9 @@ data PrimTy
   | TyString
 
 
-pattern TyPrimBool = TyPrim TyBool
-pattern TyPrimInt = TyPrim TyInt
-pattern TyPrimString = TyPrim TyString
+-- type TyPrimBool = TyPrim TyBool
+-- type TyPrimInt = TyPrim TyInt
+-- type TyPrimString = TyPrim TyString
 
 
 instance Universe PrimTy where
