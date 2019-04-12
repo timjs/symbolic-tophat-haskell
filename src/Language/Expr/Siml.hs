@@ -18,13 +18,16 @@ import qualified Language.Val as V
 
 
 subst
-  :: Typeable a
-  => Name a -- ^ Substitute a name of type `a`
-  -> Expr a -- ^ with expression of type `a`
-  -> Expr b -- ^ in an expression of type `b` containing a variable of type `a`
-  -> Expr b -- ^ giving the modified expression of type `b`.
+  :: Typeable s
+  => Name s  -- ^ Substitute a name of type `s`
+  -> Expr s  -- ^ with expression of type `s`
+  -> Expr t  -- ^ in an expression of type `t` containing a variable of type `a`
+  -> Expr t  -- ^ giving the modified expression of type `t`.
 subst j s = \case
-  E.Lam e -> E.Lam (subst (j + 1) (shift 0 s) e)
+  E.Lam e -> go e
+    where
+      go :: forall a b. Typeable a => Expr b -> Expr (a ':-> b)
+      go = E.Lam << subst (j + 1) (shift (0 :: Name a) s)  -- We need to tell Haskell that `0` is of type `Name a` here
   E.App f a -> E.App (subst j s f) (subst j s a)
   E.Var i
     | Just Refl <- i ~= j, i == j -> s
@@ -45,40 +48,51 @@ subst j s = \case
 
 subst' :: Typeable a => Name a -> Expr a -> Pretask b -> Pretask b
 subst' j s = \case
-  E.Edit x -> E.Edit (subst j s x)
+  E.Edit a -> E.Edit (subst j s a)
   E.Enter -> E.Enter
   -- Store ->
-  E.And x y -> E.And (subst j s x) (subst j s y)
-  E.Or x y -> E.Or (subst j s x) (subst j s y)
-  E.Xor x y -> E.Xor (subst j s x) (subst j s y)
+  E.And a b -> E.And (subst j s a) (subst j s b)
+  E.Or a b -> E.Or (subst j s a) (subst j s b)
+  E.Xor a b -> E.Xor (subst j s a) (subst j s b)
   E.Fail -> E.Fail
-  E.Then x c -> E.Then (subst j s x) (subst j s c)
-  E.Next x c -> E.Next (subst j s x) (subst j s c)
+  E.Then a b -> E.Then (subst j s a) (subst j s b)
+  E.Next a b -> E.Next (subst j s a) (subst j s b)
 
 
--- -- | The one-place shift of an expression `e` after cutof `c`.
--- shift :: forall a b. Name a -> Expr b -> Expr b
--- shift c = \case
---   E.Var i
---     | Just Refl <- ra ~~ rb -> if
---       | i <  c -> E.Var i
---       | i >= c -> E.Var (i + 1)
---   E.App f a -> E.App (shift c f) (shift c a)
---   where
---     ra = typeRep :: TypeRep a
---     rb = typeRep :: TypeRep b
-
-
-shift :: Name a -> Expr b -> Expr b
-shift c@(Name j) = \case
-  E.Var (Name i)
-    | i <  j -> E.Var (Name i)
-    | i >= j -> E.Var (Name $ i + 1)
+-- | The one-place shift of an expression `e` after cutof `c`.
+shift :: Typeable a => Name a -> Expr b -> Expr b
+shift c = \case
+  E.Lam e -> E.Lam $ shift (c + 1) e
   E.App f a -> E.App (shift c f) (shift c a)
+  E.Var i
+    | Just Refl <- i ~= c
+    , i >= c -> E.Var (i + 1)
+    | otherwise -> E.Var i
+
+  E.Un o a -> E.Un o (shift c a)
+  E.Bn o a b -> E.Bn o (shift c a) (shift c b)
+  E.If p a b -> E.If (shift c p) (shift c a) (shift c b)
+  E.Pair a b -> E.Pair (shift c a) (shift c b)
+  E.Fst a -> E.Fst (shift c a)
+  E.Snd a -> E.Snd (shift c a)
+  E.Task p -> E.Task (shift' c p)
+
+  E.Sym i -> E.Sym i
+  E.Con p x -> E.Con p x
+  E.Unit -> E.Unit
 
 
-
-
+shift' :: Typeable a => Name a -> Pretask b -> Pretask b
+shift' c = \case
+  E.Edit a -> E.Edit (shift c a)
+  E.Enter -> E.Enter
+  -- Store ->
+  E.And a b -> E.And (shift c a) (shift c b)
+  E.Or a b -> E.Or (shift c a) (shift c b)
+  E.Xor a b -> E.Xor (shift c a) (shift c b)
+  E.Fail -> E.Fail
+  E.Then a b -> E.Then (shift c a) (shift c b)
+  E.Next a b -> E.Next (shift c a) (shift c b)
 
 
 
@@ -134,3 +148,6 @@ eval = \case
     [ ( V.Con p x, Yes ) ]
   E.Unit ->
     [ ( V.Unit, Yes )]
+
+  E.Var i ->
+    error $ "Free variable in expression: " <> show (pretty i)

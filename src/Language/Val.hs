@@ -20,7 +20,7 @@ import qualified Language.Pred as P
 
 
 data Val (t :: Ty) where
-  Lam :: E.Expr b -> Val (a ':-> b)
+  Lam :: Typeable a => E.Expr b -> Val (a ':-> b)
 
   Sym :: E.Name ('TyPrim a) -> Val ('TyPrim a)
   Con :: IsPrim a -> ConcOf a -> Val ('TyPrim a)
