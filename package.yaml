@@ -46,8 +46,9 @@ default-extensions:
   - DeriveFunctor
   - DeriveFoldable
   - DeriveTraversable
-  - GeneralizedNewtypeDeriving
-  - StandaloneDeriving
+  # - GeneralizedNewtypeDeriving
+  - DerivingVia
+  # - StandaloneDeriving
 
   # Syntactic adjustments:
   - BangPatterns
