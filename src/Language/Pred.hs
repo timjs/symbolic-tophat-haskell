@@ -26,3 +26,13 @@ pattern Not x = Un O.Not x
 
 pattern (:/\:) x y = Bn O.Conj x y
 pattern (:\/:) x y = Bn O.Disj x y
+
+instance Pretty (Pred t) where
+  pretty = \case
+    Con BoolIsPrim x -> pretty x
+    Con IntIsPrim x -> pretty x
+    Con StringIsPrim x -> pretty x
+    Sym i -> "s" <> pretty i
+
+    Un o a -> parens (sep [ pretty o, pretty a ])
+    Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])

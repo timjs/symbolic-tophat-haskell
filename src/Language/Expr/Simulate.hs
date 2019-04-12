@@ -1,4 +1,4 @@
-module Language.Expr.Siml where
+module Language.Expr.Simulate where
 
 import Language.Names
 import Language.Types

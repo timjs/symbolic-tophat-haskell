@@ -1,7 +1,7 @@
 module Language.Expr
   ( module Language.Types
   , module Language.Names
-  , Name, Expr(..), Un(..), Bn(..)
+  , Expr(..), Un(..), Bn(..)
   , pattern B, pattern I, pattern S
   , Pretask(..)
   , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
@@ -23,7 +23,7 @@ data Expr (t :: Ty) where
   Lam :: Typeable a => Expr b -> Expr (a ':-> b)
   App :: Typeable a => Expr (a ':-> b) -> Expr a -> Expr b
   Var :: Typeable a => Name a -> Expr a
-  
+
   Sym :: Name ('TyPrim a) -> Expr ('TyPrim a)
   Con :: IsPrim a -> ConcOf a -> Expr ('TyPrim a)
 

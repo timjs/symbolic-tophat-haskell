@@ -3,9 +3,6 @@ module Test.Solver where
 
 import Data.SBV
 
-import qualified Test.Exprs
-import qualified Test.Tasks
-
 
 
 intInSymEither :: SInteger -> SEither Integer Integer

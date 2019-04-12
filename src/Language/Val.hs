@@ -113,6 +113,7 @@ asPred :: Val ('TyPrim a) -> P.Pred a
 asPred = \case
   Sym i -> P.Sym i
   Con p x -> P.Con p x
+
   Un o v1 -> P.Un o (asPred v1)
   Bn o v1 v2 -> P.Bn o (asPred v1) (asPred v2)
 
@@ -121,7 +122,6 @@ asExpr :: Val a -> E.Expr a
 asExpr = \case
   Lam f -> E.Lam f
   Sym i -> E.Sym i
-
   Con p x -> E.Con p x
 
   Un o a -> E.Un o (asExpr a)

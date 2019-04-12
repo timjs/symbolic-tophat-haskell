@@ -8,4 +8,4 @@ import qualified Test.Tasks
 
 
 main :: IO ()
-main = Test.Solver.main
+main = Test.Exprs.main
