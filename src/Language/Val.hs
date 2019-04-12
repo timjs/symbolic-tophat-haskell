@@ -4,7 +4,7 @@ module Language.Val
   , pattern B, pattern I, pattern S
   , Task(..)
   , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
-  , toPred
+  , asPred, asExpr, asPretask
   ) where
 
 
@@ -20,7 +20,7 @@ import qualified Language.Pred as P
 
 
 data Val (cxt :: List Ty) (sxt :: List PrimTy) (t :: Ty) where
-  Lam :: Val (a ': cxt) sxt b -> Val cxt sxt (a ':-> b)
+  Lam :: E.Expr (a ': cxt) sxt b -> Val cxt sxt (a ':-> b)
 
   Sym :: HasType (t ': ts) a -> Val cxt (t ': ts) ('TyPrim a)
   Con :: IsPrim a -> ConcOf a -> Val cxt sxt ('TyPrim a)
@@ -108,9 +108,40 @@ instance Pretty (Task cxt sxt t) where
 
 -- Translation -----------------------------------------------------------------
 
-toPred :: Val '[] sxt ('TyPrim a) -> P.Pred sxt a
-toPred = \case
+
+--FIXME: what about `cxt` and `sxt`??
+asPred :: Val cxt sxt ('TyPrim a) -> P.Pred sxt a
+asPred = \case
   Sym i -> P.Sym i
   Con p x -> P.Con p x
-  Un o v1 -> P.Un o (toPred v1)
-  Bn o v1 v2 -> P.Bn o (toPred v1) (toPred v2)
+  Un o v1 -> P.Un o (asPred v1)
+  Bn o v1 v2 -> P.Bn o (asPred v1) (asPred v2)
+
+
+asExpr :: Val cxt sxt a -> E.Expr cxt sxt a
+asExpr = \case
+  Lam f -> E.Lam f
+  Sym i -> E.Sym i
+
+  Con p x -> E.Con p x
+
+  Un o a -> E.Un o (asExpr a)
+  Bn o a b -> E.Bn o (asExpr a) (asExpr b)
+
+  Unit -> E.Unit
+  Pair a b -> E.Pair (asExpr a) (asExpr b)
+
+  Task p -> E.Task (asPretask p)
+
+
+asPretask :: Task cxt sxt a -> E.Pretask cxt sxt a
+asPretask = \case
+  Edit x -> E.Edit (asExpr x)
+  Enter -> E.Enter
+  -- Store ->
+  And x y -> E.And (asExpr x) (asExpr y)
+  Or x y -> E.Or (asExpr x) (asExpr y)
+  Xor x y -> E.Xor x y
+  Fail -> E.Fail
+  Then x c -> E.Then (asExpr x) c
+  Next x c -> E.Next (asExpr x) c
