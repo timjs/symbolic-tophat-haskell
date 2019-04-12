@@ -23,12 +23,25 @@ type SymbOf a = TypeOf 'Symbolic a
 
 
 data HasType (cxt :: List u) (t :: u) where
-  Here :: HasType (t ': ts) t
-  There :: HasType ts t -> HasType (t2 ': ts) t
+  Here :: HasType (a ': cxt) a
+  There :: HasType cxt a -> HasType (b ': cxt) a
 
 
 instance Pretty (HasType cxt t) where
   pretty = pretty << idx
+
+
+instance Eq (HasType cxt t) where
+  Here    == Here    = True
+  There i == There j = i == j
+  _       == _       = False
+
+
+instance Ord (HasType cxt t) where
+  compare Here Here = EQ
+  compare Here (There _) = LT
+  compare (There _) Here = GT
+  compare (There i) (There j) = compare i j
 
 
 idx :: HasType cxt t -> Int
