@@ -19,19 +19,19 @@ import qualified Language.Pred as P
 -- Expressions -----------------------------------------------------------------
 
 
-data Val (cxt :: List Ty) (sxt :: List PrimTy) (t :: Ty) where
-  Lam :: E.Expr (a ': cxt) sxt b -> Val cxt sxt (a ':-> b)
+data Val (t :: Ty) where
+  Lam :: E.Expr b -> Val (a ':-> b)
 
-  Sym :: HasType (t ': ts) a -> Val cxt (t ': ts) ('TyPrim a)
-  Con :: IsPrim a -> ConcOf a -> Val cxt sxt ('TyPrim a)
+  Sym :: E.Name ('TyPrim a) -> Val ('TyPrim a)
+  Con :: IsPrim a -> ConcOf a -> Val ('TyPrim a)
 
-  Un :: Un a b -> Val cxt sxt ('TyPrim a) -> Val cxt sxt ('TyPrim b)
-  Bn :: Bn a b c -> Val cxt sxt ('TyPrim a) -> Val cxt sxt ('TyPrim b) -> Val cxt sxt ('TyPrim c)
+  Un :: Un a b -> Val ('TyPrim a) -> Val ('TyPrim b)
+  Bn :: Bn a b c -> Val ('TyPrim a) -> Val ('TyPrim b) -> Val ('TyPrim c)
 
-  Unit :: Val cxt sxt 'TyUnit
-  Pair :: Val cxt sxt a -> Val cxt sxt b -> Val cxt sxt (a ':>< b)
+  Unit :: Val 'TyUnit
+  Pair :: Val a -> Val b -> Val (a ':>< b)
 
-  Task :: Task cxt sxt ('TyTask a) -> Val cxt sxt ('TyTask a)
+  Task :: Task ('TyTask a) -> Val ('TyTask a)
 
 
 pattern B x = Con BoolIsPrim x
@@ -39,7 +39,7 @@ pattern I x = Con IntIsPrim x
 pattern S x = Con StringIsPrim x
 
 
-instance Pretty (Val cxt sxt t) where
+instance Pretty (Val t) where
   pretty = \case
     Lam f -> "λ." <> pretty f
     Sym i -> "s" <> pretty i
@@ -61,19 +61,19 @@ instance Pretty (Val cxt sxt t) where
 -- Tasks -----------------------------------------------------------------------
 
 
-data Task (cxt :: List Ty)  (sxt :: List PrimTy) (t :: Ty) where
-  Edit :: IsBasic a => Val cxt sxt a -> Task cxt sxt ('TyTask a)
-  Enter :: IsBasic a => Task cxt sxt ('TyTask a)
-  -- Store :: Loc a -> Task cxt sxt ('TyTask a)
+data Task (t :: Ty) where
+  Edit :: IsBasic a => Val a -> Task ('TyTask a)
+  Enter :: IsBasic a => Task ('TyTask a)
+  -- Store :: Loc a -> Task ('TyTask a)
 
-  Fail :: Task cxt sxt ('TyTask a)
+  Fail :: Task ('TyTask a)
 
-  And :: Val cxt sxt ('TyTask a) -> Val cxt sxt ('TyTask b) -> Task cxt sxt ('TyTask (a ':>< b))
-  Or  :: Val cxt sxt ('TyTask a) -> Val cxt sxt ('TyTask a) -> Task cxt sxt ('TyTask a)
-  Xor :: E.Expr cxt sxt ('TyTask a) -> E.Expr cxt sxt ('TyTask a) -> Task cxt sxt ('TyTask a)
+  And :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
+  Or  :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
+  Xor :: E.Expr ('TyTask a) -> E.Expr ('TyTask a) -> Task ('TyTask a)
 
-  Then :: Val cxt sxt ('TyTask a) -> E.Expr cxt sxt (a ':-> 'TyTask b) -> Task cxt sxt ('TyTask b)
-  Next :: Val cxt sxt ('TyTask a) -> E.Expr cxt sxt (a ':-> 'TyTask b) -> Task cxt sxt ('TyTask b)
+  Then :: Val ('TyTask a) -> E.Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
+  Next :: Val ('TyTask a) -> E.Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
 
 
 infixl 3 :&&:
@@ -92,7 +92,7 @@ pattern (:>>=) t c = Then (Task t) (E.Lam (E.Task c))
 pattern (:>>?) t c = Next (Task t) (E.Lam (E.Task c))
 
 
-instance Pretty (Task cxt sxt t) where
+instance Pretty (Task t) where
   pretty = \case
     Edit x -> cat [ "□(", pretty x, ")" ]
     Enter -> "□(_)"
@@ -109,8 +109,7 @@ instance Pretty (Task cxt sxt t) where
 -- Translation -----------------------------------------------------------------
 
 
---FIXME: what about `cxt` and `sxt`??
-asPred :: Val cxt sxt ('TyPrim a) -> P.Pred sxt a
+asPred :: Val ('TyPrim a) -> P.Pred a
 asPred = \case
   Sym i -> P.Sym i
   Con p x -> P.Con p x
@@ -118,7 +117,7 @@ asPred = \case
   Bn o v1 v2 -> P.Bn o (asPred v1) (asPred v2)
 
 
-asExpr :: Val cxt sxt a -> E.Expr cxt sxt a
+asExpr :: Val a -> E.Expr a
 asExpr = \case
   Lam f -> E.Lam f
   Sym i -> E.Sym i
@@ -134,7 +133,7 @@ asExpr = \case
   Task p -> E.Task (asPretask p)
 
 
-asPretask :: Task cxt sxt a -> E.Pretask cxt sxt a
+asPretask :: Task a -> E.Pretask a
 asPretask = \case
   Edit x -> E.Edit (asExpr x)
   Enter -> E.Enter

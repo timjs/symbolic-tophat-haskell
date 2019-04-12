@@ -1,6 +1,7 @@
 module Language.Expr
   ( module Language.Types
-  , Expr(..), Un(..), Bn(..)
+  , module Language.Names
+  , Name, Expr(..), Un(..), Bn(..)
   , pattern B, pattern I, pattern S
   , Pretask(..)
   , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
@@ -9,6 +10,7 @@ module Language.Expr
 
 import Data.SBV
 
+import Language.Names
 import Language.Types
 import Language.Ops
 
@@ -17,27 +19,23 @@ import Language.Ops
 -- Expressions -----------------------------------------------------------------
 
 
-data Expr (cxt :: List Ty) (sxt :: List PrimTy) (t :: Ty) where
-  Lam :: Expr (a ': cxt) sxt b -> Expr cxt sxt (a ':-> b)
-  App :: Expr cxt sxt (a ':-> b) -> Expr cxt sxt a -> Expr cxt sxt b
-  Var :: HasType cxt a -> Expr cxt sxt a
+data Expr (t :: Ty) where
+  Lam :: Expr b -> Expr (a ':-> b)
+  App :: Typeable a => Expr (a ':-> b) -> Expr a -> Expr b
+  Var :: Typeable a => Name a -> Expr a
+  Sym :: Name ('TyPrim a) -> Expr ('TyPrim a)
+  Con :: IsPrim a -> ConcOf a -> Expr ('TyPrim a)
 
-  -- | Symbolic variable
-  -- |
-  -- | Note we demand the symbolic context to be non-empty when using any symbol.
-  Sym :: HasType (t ': ts) a -> Expr cxt (t ': ts) ('TyPrim a)
-  Con :: IsPrim a -> ConcOf a -> Expr cxt sxt ('TyPrim a)
+  Un :: Un a b -> Expr ('TyPrim a) -> Expr ('TyPrim b)
+  Bn :: Bn a b c -> Expr ('TyPrim a) -> Expr ('TyPrim b) -> Expr ('TyPrim c)
+  If :: Mergeable (SymbOf a) => Expr ('TyPrim 'TyBool) -> Expr a -> Expr a -> Expr a
 
-  Un :: Un a b -> Expr cxt sxt ('TyPrim a) -> Expr cxt sxt ('TyPrim b)
-  Bn :: Bn a b c -> Expr cxt sxt ('TyPrim a) -> Expr cxt sxt ('TyPrim b) -> Expr cxt sxt ('TyPrim c)
-  If :: Mergeable (SymbOf a) => Expr cxt sxt ('TyPrim 'TyBool) -> Expr cxt sxt a -> Expr cxt sxt a -> Expr cxt sxt a
+  Unit :: Expr 'TyUnit
+  Pair :: Expr a -> Expr b -> Expr (a ':>< b)
+  Fst :: Expr (a ':>< b) -> Expr a
+  Snd :: Expr (a ':>< b) -> Expr b
 
-  Unit :: Expr cxt sxt 'TyUnit
-  Pair :: Expr cxt sxt a -> Expr cxt sxt b -> Expr cxt sxt (a ':>< b)
-  Fst :: Expr cxt sxt (a ':>< b) -> Expr cxt sxt a
-  Snd :: Expr cxt sxt (a ':>< b) -> Expr cxt sxt b
-
-  Task :: Pretask cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a)
+  Task :: Pretask ('TyTask a) -> Expr ('TyTask a)
 
 
 pattern B x = Con BoolIsPrim x
@@ -45,7 +43,7 @@ pattern I x = Con IntIsPrim x
 pattern S x = Con StringIsPrim x
 
 
-instance Pretty (Expr cxt sxt t) where
+instance Pretty (Expr t) where
   pretty = \case
     Lam f -> "λ." <> pretty f
     App f a -> sep [ parens (pretty f), parens (pretty a) ]
@@ -72,19 +70,19 @@ instance Pretty (Expr cxt sxt t) where
 -- Tasks -----------------------------------------------------------------------
 
 
-data Pretask (cxt :: List Ty)  (sxt :: List PrimTy) (t :: Ty) where
-  Edit :: IsBasic a => Expr cxt sxt a -> Pretask cxt sxt ('TyTask a)
-  Enter :: IsBasic a => Pretask cxt sxt ('TyTask a)
-  -- Store :: Loc a -> Pretask cxt sxt ('TyTask a)
+data Pretask (t :: Ty) where
+  Edit :: IsBasic a => Expr a -> Pretask ('TyTask a)
+  Enter :: IsBasic a => Pretask ('TyTask a)
+  -- Store :: Loc a -> Pretask ('TyTask a)
 
-  Fail :: Pretask cxt sxt ('TyTask a)
+  Fail :: Pretask ('TyTask a)
 
-  And :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask b) -> Pretask cxt sxt ('TyTask (a ':>< b))
-  Or  :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
-  Xor :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt ('TyTask a) -> Pretask cxt sxt ('TyTask a)
+  And :: Expr ('TyTask a) -> Expr ('TyTask b) -> Pretask ('TyTask (a ':>< b))
+  Or  :: Expr ('TyTask a) -> Expr ('TyTask a) -> Pretask ('TyTask a)
+  Xor :: Expr ('TyTask a) -> Expr ('TyTask a) -> Pretask ('TyTask a)
 
-  Then :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
-  Next :: Expr cxt sxt ('TyTask a) -> Expr cxt sxt (a ':-> 'TyTask b) -> Pretask cxt sxt ('TyTask b)
+  Then :: Expr ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Pretask ('TyTask b)
+  Next :: Expr ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Pretask ('TyTask b)
 
 
 infixl 3 :&&:
@@ -103,7 +101,7 @@ pattern (:>>=) t c = Then (Task t) (Lam (Task c))
 pattern (:>>?) t c = Next (Task t) (Lam (Task c))
 
 
-instance Pretty (Pretask cxt sxt t) where
+instance Pretty (Pretask t) where
   pretty = \case
     Edit x -> cat [ "□(", pretty x, ")" ]
     Enter -> "□(_)"

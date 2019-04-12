@@ -7,7 +7,7 @@ import Language.Expr
 
 
 
--- Evaluation ------------------------------------------------------------------
+{- Evaluation ------------------------------------------------------------------
 
 
 un :: Un a b -> ConcOf a -> ConcOf b
@@ -38,7 +38,7 @@ bn = \case
 -- |
 -- | Evaluates any expression to its Haskell equivallent.
 -- | Note that this expression (statically!) cannot contain any symbolic variables!
-eval :: ConcEnv cxt -> Expr cxt '[] t -> ConcOf t
+eval :: ConcEnv cxt -> Expr t -> ConcOf t
 eval vars = \case
   Lam f -> \x -> eval (Cons x vars) f
   App f a -> eval vars f $ eval vars a
@@ -60,7 +60,7 @@ eval vars = \case
   Task x -> preval vars x
 
 
-preval :: ConcEnv cxt -> Pretask cxt '[] t -> ConcOf t
+preval :: ConcEnv cxt -> Pretask t -> ConcOf t
 preval vars = \case
   Edit x -> Task.Edit $ Just $ eval vars x
   Enter -> Task.Edit Nothing
@@ -73,5 +73,7 @@ preval vars = \case
   Next t c -> Task.Next (eval vars t) (eval vars c)
 
 
-eval' :: Expr '[] '[] t -> ConcOf t
+eval' :: Expr t -> ConcOf t
 eval' = eval Nil
+
+-}

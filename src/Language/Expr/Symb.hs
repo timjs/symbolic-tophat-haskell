@@ -7,7 +7,7 @@ import Language.Expr
 
 
 
--- Symbolic --------------------------------------------------------------------
+{- Symbolic --------------------------------------------------------------------
 
 
 un :: Un a b -> SymbOf a -> SymbOf b
@@ -34,7 +34,7 @@ bn = \case
   Div -> sDiv
 
 
-eval :: SymbEnv cxt -> Expr cxt sxt t -> SymbEnv sxt -> SymbOf t
+eval :: SymbEnv cxt -> Expr t -> SymbEnv sxt -> SymbOf t
 eval vars = \case
   Lam f -> \syms x -> eval (Cons x vars) f syms
   App f a -> eval vars f <*> eval vars a
@@ -57,11 +57,11 @@ eval vars = \case
   Task p -> evalTask vars p
 
 
-eval' :: Expr '[] sxt t -> SymbEnv sxt -> SymbOf t
+eval' :: Expr t -> SymbEnv sxt -> SymbOf t
 eval' = eval Nil
 
 
-eval'' :: Expr '[] '[] t -> SymbOf t
+eval'' :: Expr t -> SymbOf t
 eval'' e = eval Nil e Nil
 
 
@@ -69,7 +69,7 @@ eval'' e = eval Nil e Nil
 -- Tasks --
 
 
-evalTask :: SymbEnv cxt -> Pretask cxt sxt t -> SymbEnv sxt -> SymbOf t
+evalTask :: SymbEnv cxt -> Pretask t -> SymbEnv sxt -> SymbOf t
 evalTask _ = undefined
 {-
   Edit x -> _
@@ -84,11 +84,11 @@ evalTask _ = undefined
 -}
 
 
-{- Gathering ------------------------------------------------------------------
+-- Gathering ------------------------------------------------------------------
 
 
 --FIXME: Use something other than List for optimisation
-gather :: SymbEnv cxt -> Expr cxt sxt t -> Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t)
+gather :: SymbEnv cxt -> Expr t -> Writer (List (Pred sxt 'TyBool)) (Expr t)
 gather vars = \case
 
   Lam f -> _ -- \x -> gather (Cons x vars) f
@@ -118,7 +118,7 @@ gather vars = \case
 
 
 --FIXME: Should `cxt` be empty?
-toPred :: Expr cxt sxt t -> Pred sxt t
+toPred :: Expr t -> Pred sxt t
 toPred = \case
   Lam _ -> error "left over lambda"
   App _ _ -> error "left over application"
@@ -138,7 +138,7 @@ toPred = \case
 -}
 
 {-
-gather :: SymbEnv cxt -> Expr cxt sxt t -> List (Writer (List (Pred sxt 'TyBool)) (Expr cxt sxt t))
+gather :: SymbEnv cxt -> Expr t -> List (Writer (List (Pred sxt 'TyBool)) (Expr t))
 gather vars = \case
 
   -- Lam f -> \x -> gather (Cons x vars) f

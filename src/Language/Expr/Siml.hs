@@ -1,5 +1,6 @@
 module Language.Expr.Siml where
 
+import Language.Names
 import Language.Types
 
 import Language.Expr (Expr, Pretask)
@@ -9,58 +10,25 @@ import Language.Val (Val, asPred, asExpr)
 import qualified Language.Expr as E
 import qualified Language.Pred as P
 import qualified Language.Val as V
-import qualified Language.Ops as O
 
 
 --------------------------------------------------------------------------------
 
 -- Substitution --
 
-{-
-• Could not deduce: a1 ~ a
-  from the context: t ~ (a1 ':-> b)
-    bound by a pattern with constructor:
-               E.Lam :: forall (a :: Ty) (cxt :: List Ty) (sxt :: List PrimTy) (b :: Ty).
-                        Expr (a : cxt) sxt b -> Expr cxt sxt (a ':-> b),
-             in a case alternative
-  ‘a1’ is a rigid type variable bound by
-    a pattern with constructor:
-      E.Lam :: forall (a :: Ty) (cxt :: List Ty) (sxt :: List PrimTy) (b :: Ty).
-               Expr (a : cxt) sxt b -> Expr cxt sxt (a ':-> b),
-    in a case alternative
-  ‘a’ is a rigid type variable bound by
-    the type signature for:
-      subst :: forall (a :: Ty) (cxt :: [Ty]) (sxt :: List PrimTy) (t :: Ty).
-               HasType (a : cxt) a -> Expr cxt sxt a -> Expr (a : cxt) sxt t -> Expr cxt sxt t
-  Expected type: Expr (a : a : cxt) sxt b
-    Actual type: Expr (a1 : a : cxt) sxt b
-• In the third argument of ‘subst’, namely ‘e’
-  In the first argument of ‘E.Lam’, namely ‘(subst (There j) (shift s) e)’
-  In the expression: E.Lam (subst (There j) (shift s) e)
-• Relevant bindings include
-    j :: HasType (a : cxt) a
-    j' :: HasType (a : a : cxt) a
-    s :: Expr cxt sxt a
-    s' :: Expr (a : cxt) sxt a
-    e :: Expr (a1 : a : cxt) sxt b
-    subst :: HasType (a : cxt) a -> Expr cxt sxt a -> Expr (a : cxt) sxt t -> Expr cxt sxt t
 
-    j' :: HasType (x : a : cxt) a
-    s' :: Expr (y : cxt) sxt a
-    e :: Expr (z : a : cxt) sxt b
-    subst @j' @s' @e :: HasType (x : a : cxt) a -> Expr (y : cxt) sxt a -> Expr (z : a : cxt) sxt b -> Expr cxt sxt t
--}
-subst :: HasType (a ': cxt) a -> Expr cxt sxt a -> Expr (a ': cxt) sxt t -> Expr cxt sxt t
+subst
+  :: Typeable a
+  => Name a -- ^ Substitute a name of type `a`
+  -> Expr a -- ^ with expression of type `a`
+  -> Expr b -- ^ in an expression of type `b` containing a variable of type `a`
+  -> Expr b -- ^ giving the modified expression of type `b`.
 subst j s = \case
-  E.Lam e ->
-    let
-      j' = There j -- :: HasType (x : a : cxt) a
-      s' = shift j s -- :: Expr (x : cxt) sxt a
-      e' = subst j' s' e -- :: Expr (a : cxt) sxt b
-    in E.Lam e'
+  E.Lam e -> E.Lam (subst (j + 1) (shift 0 s) e)
   E.App f a -> E.App (subst j s f) (subst j s a)
-  E.Var Here -> s
-  -- E.Var (There j) -> E.Var (There j)
+  E.Var i
+    | Just Refl <- i ~= j, i == j -> s
+    | otherwise -> E.Var i
 
   E.Un o a -> E.Un o (subst j s a)
   E.Bn o a b -> E.Bn o (subst j s a) (subst j s b)
@@ -74,26 +42,8 @@ subst j s = \case
   E.Con p x -> E.Con p x
   E.Unit -> E.Unit
 
-shift c = \case
-  E.Var i
-    -- shift :: HasType cxt t -> Expr cxt sxt t -> Expr cxt sxt t
-    -- | i <  c -> E.Var i
-    -- shift :: HasType cxt t -> Expr cxt sxt t -> Expr (b : cxt) sxt t
-    | i >= c -> E.Var (There i)
-  -- E.App f a ->
-  --   let
-  --     f' = shift c f
-  --     a' = shift c a
-  --   in E.App _ _
-  --
--- shift :: Expr cxt sxt t -> Expr (a ': cxt) sxt t
--- shift = \case
---   -- E.Lam e -> E.Lam (shift e)
---   E.App f a -> E.App (shift f) (shift a)
---   E.Var i -> E.Var (There i)
 
-
-subst' :: HasType (a ': cxt) a -> Expr cxt sxt a -> Pretask (a ': cxt) sxt b -> Pretask cxt sxt b
+subst' :: Typeable a => Name a -> Expr a -> Pretask b -> Pretask b
 subst' j s = \case
   E.Edit x -> E.Edit (subst j s x)
   E.Enter -> E.Enter
@@ -106,6 +56,31 @@ subst' j s = \case
   E.Next x c -> E.Next (subst j s x) (subst j s c)
 
 
+-- -- | The one-place shift of an expression `e` after cutof `c`.
+-- shift :: forall a b. Name a -> Expr b -> Expr b
+-- shift c = \case
+--   E.Var i
+--     | Just Refl <- ra ~~ rb -> if
+--       | i <  c -> E.Var i
+--       | i >= c -> E.Var (i + 1)
+--   E.App f a -> E.App (shift c f) (shift c a)
+--   where
+--     ra = typeRep :: TypeRep a
+--     rb = typeRep :: TypeRep b
+
+
+shift :: Name a -> Expr b -> Expr b
+shift c@(Name j) = \case
+  E.Var (Name i)
+    | i <  j -> E.Var (Name i)
+    | i >= j -> E.Var (Name $ i + 1)
+  E.App f a -> E.App (shift c f) (shift c a)
+
+
+
+
+
+
 
 -- Semantics -------------------------------------------------------------------
 
@@ -116,15 +91,12 @@ combined with the predicate which has to hold to get that value.
 Note that the context of symbolic values `sxt` is the same for the expression
 and the resulting predicate.
 -}
-eval :: Expr cxt sxt t -> List ( Val cxt sxt t, Pred sxt 'TyBool )
+eval :: Expr t -> List ( Val t, Pred 'TyBool )
 eval = \case
   E.App e1 e2 -> do
-    -- e1' :: Expr (a ': cxt ) sxt b
-    -- v2  :: Val  cxt sxt a  ~~>  Expr cxt sxt a
-    -- sub :: HasType (a ': cxt) a -> Expr cxt sxt a -> Expr (a ': cxt) sxt b -> Expr cxt sxt b
     ( V.Lam e1', p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
-    ( v1, p3 ) <- eval $ subst Here (asExpr v2) e1'
+    ( v1, p3 ) <- eval $ subst 0 (asExpr v2) e1'
     pure ( v1, p1 :/\: p2 :/\: p3 )
 
   E.Un o e1 -> do

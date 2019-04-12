@@ -5,18 +5,19 @@ module Language.Pred
   ) where
 
 import Language.Types
+import Language.Names
 
 import qualified Language.Ops as O
 
 
 -- Predicates ------------------------------------------------------------------
 
-data Pred (sxt :: List PrimTy) (t :: PrimTy) where
-  Con :: IsPrim a -> ConcOf a -> Pred sxt a
-  Sym :: HasType (t ': ts) a -> Pred (t ': ts) a
+data Pred (t :: PrimTy) where
+  Con :: IsPrim a -> ConcOf a -> Pred a
+  Sym :: Name ('TyPrim a) -> Pred a
 
-  Un :: O.Un a b -> Pred sxt a -> Pred sxt b
-  Bn :: O.Bn a b c -> Pred sxt a -> Pred sxt b -> Pred sxt c
+  Un :: O.Un a b -> Pred a -> Pred b
+  Bn :: O.Bn a b c -> Pred a -> Pred b -> Pred c
 
 pattern Yes = Con BoolIsPrim True
 pattern No  = Con BoolIsPrim False
