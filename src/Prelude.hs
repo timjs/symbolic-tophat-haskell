@@ -57,21 +57,23 @@ neutral = mempty
 
 
 infixr 9 <<
-{-# INLINE (<<) #-}
+infixr 9 >>
+infixl 1 #
+
+
 (<<) :: (b -> c) -> (a -> b) -> a -> c
 f << g = \x -> f (g x)
+{-# INLINE (<<) #-}
 
 
-infixr 9 >>
-{-# INLINE (>>) #-}
 (>>) :: (a -> b) -> (b -> c) -> a -> c
 (>>) = flip (<<)
+{-# INLINE (>>) #-}
 
 
-infixl 1 #
-{-# INLINE (#) #-}
 (#) :: a -> (a -> b) -> b
 (#) = flip ($)
+{-# INLINE (#) #-}
 
 
 
@@ -79,9 +81,11 @@ infixl 1 #
 
 
 infixl 1 <#>
-{-# INLINE (<#>) #-}
+
+
 (<#>) :: Functor f => f a -> (a -> b) -> f b
 (<#>) = flip (<$>)
+{-# INLINE (<#>) #-}
 
 
 map :: Functor f => (a -> b) -> f a -> f b
@@ -90,6 +94,11 @@ map = Relude.fmap
 
 
 -- Applicatives ----------------------------------------------------------------
+
+
+infixr 1 <-<
+infixr 1 >->
+infixl 5 <&>
 
 
 lift1 :: Functor f => (a -> b) -> f a -> f b
@@ -104,27 +113,24 @@ lift3 :: Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
 lift3 = Relude.liftA3
 
 
-infixr 1 <-<
-{-# INLINE (<-<) #-}
 (<-<) :: Applicative f => f (b -> c) -> f (a -> b) -> f (a -> c)
 f <-< g = (<<) <$> f <*> g
+{-# INLINE (<-<) #-}
 
 
-infixr 1 >->
-{-# INLINE (>->) #-}
 (>->) :: Applicative f => f (a -> b) -> f (b -> c) -> f (a -> c)
 (>->) = flip (<-<)
+{-# INLINE (>->) #-}
 
 
-infixl 5 <&>
-{-# INLINE (<&>) #-}
 (<&>) :: Applicative f => f a -> f b -> f ( a, b )
 (<&>) x y = (,) <$> x <*> y
+{-# INLINE (<&>) #-}
 
 
-{-# INLINE skip #-}
 skip :: Applicative f => f ()
 skip = pure ()
+{-# INLINE skip #-}
 
 
 
@@ -133,19 +139,19 @@ skip = pure ()
 -- Errors --
 
 
-{-# INLINE ok #-}
 ok :: MonadError e m => a -> m a
 ok = pure
+{-# INLINE ok #-}
 
 
-{-# INLINE throw #-}
 throw :: MonadError e m => e -> m a
 throw = throwError
+{-# INLINE throw #-}
 
 
-{-# INLINE catch #-}
 catch :: MonadError e m => m a -> (e -> m a) -> m a
 catch = catchError
+{-# INLINE catch #-}
 
 
 
@@ -153,25 +159,27 @@ catch = catchError
 
 
 infix 4 ~=
-{-# INLINE (~=) #-}
+infix 4 ~~
+
+
 (~=) :: ( Typeable a, Typeable b ) => a -> b -> Maybe (a :~: b)
 (~=) x y = typeOf x ~~ typeOf y
+{-# INLINE (~=) #-}
 
 
-infix 4 ~~
-{-# INLINE (~~) #-}
 (~~) :: TestEquality f => f a -> f b -> Maybe (a :~: b)
 (~~) = testEquality
+{-# INLINE (~~) #-}
 
 
-{-# INLINE proxyOf #-}
 proxyOf :: a -> Proxy a
 proxyOf _ = Proxy
+{-# INLINE proxyOf #-}
 
 
-{-# INLINE someTypeOf #-}
 someTypeOf :: forall a. Typeable a => a -> SomeTypeRep
 someTypeOf = someTypeRep << proxyOf
+{-# INLINE someTypeOf #-}
 
 
 instance Pretty SomeTypeRep where
