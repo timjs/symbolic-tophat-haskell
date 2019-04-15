@@ -46,7 +46,7 @@ subst j s = \case
   E.Unit -> E.Unit
 
 
-subst' :: Typeable a => Name a -> Expr a -> Pretask b -> Pretask b
+subst' :: Typeable s => Name s -> Expr s -> Pretask t -> Pretask t
 subst' j s = \case
   E.Edit a -> E.Edit (subst j s a)
   E.Enter -> E.Enter
@@ -60,7 +60,7 @@ subst' j s = \case
 
 
 -- | The one-place shift of an expression `e` after cutof `c`.
-shift :: Typeable a => Name a -> Expr b -> Expr b
+shift :: Typeable s => Name s -> Expr t -> Expr t
 shift c = \case
   E.Lam e -> E.Lam $ shift (c + 1) e
   E.App f a -> E.App (shift c f) (shift c a)
@@ -82,7 +82,7 @@ shift c = \case
   E.Unit -> E.Unit
 
 
-shift' :: Typeable a => Name a -> Pretask b -> Pretask b
+shift' :: Typeable s => Name s -> Pretask t -> Pretask t
 shift' c = \case
   E.Edit a -> E.Edit (shift c a)
   E.Enter -> E.Enter
@@ -93,6 +93,42 @@ shift' c = \case
   E.Fail -> E.Fail
   E.Then a b -> E.Then (shift c a) (shift c b)
   E.Next a b -> E.Next (shift c a) (shift c b)
+
+
+
+-- Observations ----------------------------------------------------------------
+
+
+value :: Val ('TyTask t) -> Maybe (Val t)
+value (V.Task t) = case t of
+  V.Edit v1   -> Just v1
+  V.Enter     -> Nothing
+  -- V.Store l   -> Just <$> deref l
+  V.And t1 t2 -> case ( value t1, value t2 ) of
+    ( Just v1, Just v2 ) -> Just $ V.Pair v1 v2
+    ( _      , _       ) -> Nothing
+  V.Or t1 t2  -> case value t1 of
+    Just v1 -> Just v1
+    Nothing -> case value t2 of
+      Just v2 -> Just v2
+      Nothing -> Nothing
+  V.Xor _ _   -> Nothing
+  V.Fail      -> Nothing
+  V.Then _ _  -> Nothing
+  V.Next _ _  -> Nothing
+
+
+failing :: Val ('TyTask t) -> Bool
+failing (V.Task t) = case t of
+  V.Edit _    -> False
+  V.Enter     -> False
+  -- V.Store _   -> False
+  V.And t1 t2 -> failing t1 && failing t2
+  V.Or  t1 t2 -> failing t1 && failing t2
+  V.Xor _ _   -> True --FIXME
+  V.Fail      -> True
+  V.Then t1 _ -> failing t1
+  V.Next t1 _ -> failing t1
 
 
 
@@ -181,3 +217,42 @@ eval' = \case
   E.Next e1 e2 -> do
     ( t1, p1 ) <- eval e1
     pure ( V.Next t1 e2, p1 )
+
+
+stride :: Val ('TyTask t) -> List ( Val ('TyTask t), Pred 'TyBool )
+stride (V.Task t) = case t of
+  -- Step:
+  V.Then t1 e2 -> do
+    ( t1', p1 ) <- stride t1
+    let v = value t1'
+    case v of
+      Nothing ->
+        pure ( V.Task $ V.Then t1' e2, p1 )
+      Just v1 -> do
+        ( t2, p2 ) <- eval $ E.App e2 (asExpr v1)
+        if failing t2
+          then pure ( V.Task $ V.Then t1' e2, p1 )
+          else pure ( t2, p1 :/\: p2 )
+  -- Choose:
+  V.Or t1 t2 -> do
+    ( t1', p1 ) <- stride t1
+    let v1 = value t1'
+    case v1 of
+      Just _  -> pure ( t1', p1 )
+      Nothing -> do
+        ( t2', p2 ) <- stride t2
+        let v2 = value t2'
+        case v2 of
+          Just _  -> pure ( t2', p1 :/\: p2 )
+          Nothing -> pure ( V.Task $ V.Or t1' t2', p1 :/\: p2 )
+  -- Evaluate:
+  V.And t1 t2 -> do
+    ( t1', p1 ) <- stride t1
+    ( t2', p2 ) <- stride t2
+    pure ( V.Task $ V.And t1' t2', p1 :/\: p2 )
+  V.Next t1 e2 -> do
+    ( t1', p1 ) <- stride t1
+    pure ( V.Task $ V.Next t1' e2, p1 )
+  -- Ready:
+  t1 ->
+    [ ( V.Task t1, Yes ) ]
