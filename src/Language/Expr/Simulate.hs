@@ -5,7 +5,7 @@ import Language.Types
 
 import Language.Expr (Expr, Pretask)
 import Language.Pred (Pred, pattern Yes, pattern (:/\:))
-import Language.Val (Val, asPred, asExpr)
+import Language.Val (Val, Task, asPred, asExpr)
 
 import qualified Language.Expr as E
 import qualified Language.Pred as P
@@ -137,9 +137,6 @@ eval = \case
     ( V.Pair _ v, p ) <- eval e
     pure ( v, p )
 
-  E.Task x ->
-    undefined
-
   E.Lam e ->
     [ ( V.Lam e, Yes ) ]
   E.Sym i ->
@@ -149,5 +146,38 @@ eval = \case
   E.Unit ->
     [ ( V.Unit, Yes )]
 
+  E.Task e1 -> do
+    ( t1, p1 ) <- eval' e1
+    [ ( V.Task t1, p1 ) ]
+
   E.Var i ->
     error $ "Free variable in expression: " <> show (pretty i)
+
+
+eval' :: Pretask t -> List ( Task t, Pred 'TyBool )
+eval' = \case
+  E.Edit e1 -> do
+    ( v1, p1 ) <- eval e1
+    pure ( V.Edit v1, p1 )
+  E.Enter ->
+    [ ( V.Enter, Yes ) ]
+  -- E.Store -> do
+  E.And e1 e2 -> do
+    ( t1, p1 ) <- eval e1
+    ( t2, p2 ) <- eval e2
+    pure ( V.And t1 t2, p1 :/\: p2 )
+  E.Or e1 e2 -> do
+    ( t1, p1 ) <- eval e1
+    ( t2, p2 ) <- eval e2
+    pure ( V.Or t1 t2, p1 :/\: p2 )
+  E.Xor e1 e2 ->
+    -- | Here we do not need to evaluate because `Xor` is lazy.
+    [ ( V.Xor e1 e2, Yes ) ]
+  E.Fail ->
+    [ ( V.Fail, Yes ) ]
+  E.Then e1 e2 -> do
+    ( t1, p1 ) <- eval e1
+    pure ( V.Then t1 e2, p1 )
+  E.Next e1 e2 -> do
+    ( t1, p1 ) <- eval e1
+    pure ( V.Next t1 e2, p1 )
