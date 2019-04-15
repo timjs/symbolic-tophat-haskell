@@ -57,6 +57,10 @@ instance Pretty (Val t) where
     Task p -> pretty p
 
 
+instance Eq (Val t) where
+  _ == _ = undefined
+
+
 
 -- Tasks -----------------------------------------------------------------------
 
@@ -103,6 +107,10 @@ instance Pretty (Task t) where
     Fail -> "↯"
     Then x c -> sep [ pretty x, "▶", pretty c ]
     Next x c -> sep [ pretty x, "▷…", pretty c ]
+
+
+instance Eq (Task t) where
+  _ == _ = undefined
 
 
 

@@ -256,3 +256,14 @@ stride (V.Task t) = case t of
   -- Ready:
   t1 ->
     [ ( V.Task t1, Yes ) ]
+
+
+normalise :: Expr ('TyTask t) -> List ( Val ('TyTask t), Pred 'TyBool )
+normalise e0 = do
+  ( t0, p0 ) <- eval e0
+  ( t1, p1 ) <- stride t0
+  if t0 == t1
+    then pure ( t1, p0 :/\: p1 )
+    else do
+      ( t2, p2 ) <- normalise $ asExpr t1
+      pure ( t2, p0 :/\: p1 :/\: p2 )
