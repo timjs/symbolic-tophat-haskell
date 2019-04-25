@@ -67,11 +67,7 @@ watching = \case
 inputs :: forall m a. MonadZero m => MonadRef m => TaskT m a -> m (List (Input Dummy))
 inputs = \case
   Edit _ -> pure [ ToHere (AChange tau), ToHere AEmpty ]
-    where
-      tau = Proxy :: Proxy a
   Store _ -> pure [ ToHere (AChange tau) ]
-    where
-      tau = Proxy :: Proxy a
   And left rght -> (\l r -> map ToFirst l ++ map ToSecond r) <$> inputs left <*> inputs rght
   Or  left rght -> (\l r -> map ToFirst l ++ map ToSecond r) <$> inputs left <*> inputs rght
   Xor left rght -> pure $ map (ToHere << APick) choices
@@ -87,6 +83,8 @@ inputs = \case
     [ [ToHere AContinue]
     | Just v <- value this, cont <- normalise (next v), not $ failing cont
     ]
+  where
+    tau = Proxy :: Proxy a
 
 
 
