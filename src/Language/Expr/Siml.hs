@@ -52,14 +52,14 @@ import qualified Language.Ops as O
 -}
 subst :: HasType (a ': cxt) a -> Expr cxt sxt a -> Expr (a ': cxt) sxt t -> Expr cxt sxt t
 subst j s = \case
-  E.Lam e ->
-    let
-      j' = There j -- :: HasType (x : a : cxt) a
-      s' = shift j s -- :: Expr (x : cxt) sxt a
-      e' = subst j' s' e -- :: Expr (a : cxt) sxt b
-    in E.Lam e'
-  E.App f a -> E.App (subst j s f) (subst j s a)
-  E.Var Here -> s
+  -- E.Lam e ->
+  --   let
+  --     j' = There j -- :: HasType (x : a : cxt) a
+  --     s' = shift j s -- :: Expr (x : cxt) sxt a
+  --     e' = subst j' s' e -- :: Expr (a : cxt) sxt b
+  --   in E.Lam e'
+  -- E.App f a -> E.App (subst j s f) (subst j s a)
+  -- E.Var Here -> s
   -- E.Var (There j) -> E.Var (There j)
 
   E.Un o a -> E.Un o (subst j s a)
