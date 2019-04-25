@@ -1,10 +1,12 @@
 module Language.Expr.Simulate where
 
+import Data.Some
+import Language.Inputs
 import Language.Names
 import Language.Types
 
 import Language.Expr (Expr, Pretask)
-import Language.Pred (Pred, pattern Yes, pattern (:/\:))
+import Language.Pred (Pred, pattern Yes, pattern Nop, pattern (:/\:))
 import Language.Val (Val, Task, asPred, asExpr)
 
 import qualified Language.Expr as E
@@ -267,3 +269,37 @@ normalise e0 = do
     else do
       ( t2, p2 ) <- normalise $ asExpr t1
       pure ( t2, p0 :/\: p1 :/\: p2 )
+
+
+handle :: Name a -> Val ('TyTask t) -> List ( Val ('TyTask t), Input t, Pred 'TyBool )
+handle c (V.Task t) = case t of
+  V.Edit _ -> do
+    let s = fresh c
+    pure ( V.Task $ V.Edit (V.Sym s), SChange s, Yes )
+  V.Enter -> do
+    let s = fresh c
+    pure ( V.Task $ V.Edit (V.Sym s), SChange s, Yes )
+  V.And t1 t2 -> (do
+    ( t1', i1, p1 ) <- handle c t1
+    pure ( V.Task $ V.And t1' t2, ToFirst i1, p1 )) ++ (do
+    ( t2', i2, p2 ) <- handle c t2
+    pure ( V.Task $ V.And t1 t2', ToSecond i2, p2 ))
+  V.Or t1 t2 -> do
+    ( t1', i1, p1 ) <- handle c t1
+    ( t2', i2, p2 ) <- handle c t2
+    pure [ ( V.Task $ V.Or t1' t2, ToFirst i1, p1 ), ( V.Task $ V.Or t1 t2', ToSecond i2, p2 )]
+  V.Xor e1 e2 -> do
+    ( t1, p1 ) <- normalise e1
+    ( t2, p2 ) <- normalise e2
+    let s = fresh c
+    pure [ ( t1, SChange s, p1 :/\: P.Sym s ), ( t2, SChange s, p2 :/\: P.Sym s ) ]
+  V.Fail -> do
+    let s = fresh c
+    pure ( V.Task $ V.Fail, SChange s, Nop )
+  V.Then t1 e2 -> _
+  V.Next t1 e2 -> _
+
+
+-- drive :: MonadTrace NotApplicable m => MonadRef m => TaskT m a -> Input Action -> m (TaskT m a)
+-- drive task input =
+--   handle task input >>= normalise
