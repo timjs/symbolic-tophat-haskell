@@ -1,7 +1,7 @@
 module Language.Pred
   ( module Language.Types
   , Pred(..)
-  , pattern Yes, pattern No, pattern Not, pattern (:/\:), pattern (:\/:)
+  , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:)
   ) where
 
 import Language.Types
@@ -20,7 +20,7 @@ data Pred (t :: PrimTy) where
   Bn :: O.Bn a b c -> Pred a -> Pred b -> Pred c
 
 pattern Yes = Con BoolIsPrim True
-pattern No  = Con BoolIsPrim False
+pattern Nop = Con BoolIsPrim False
 
 pattern Not x = Un O.Not x
 
