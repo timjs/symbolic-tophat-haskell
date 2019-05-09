@@ -1,13 +1,13 @@
 module Language.Pred
-  ( module Language.Types
+  ( module Language.Type
   , Pred(..)
   , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:)
   ) where
 
-import Language.Types
-import Language.Names
+import Language.Type
+import Language.Name
 
-import qualified Language.Ops as O
+import qualified Language.Op as O
 
 
 -- Predicates ------------------------------------------------------------------

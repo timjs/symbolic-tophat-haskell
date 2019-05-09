@@ -1,4 +1,4 @@
-module Language.Types
+module Language.Type
   ( module Data.Universe
   , Ty(..), PrimTy(..)
   , IsPrim(..)

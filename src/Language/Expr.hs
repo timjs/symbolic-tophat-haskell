@@ -1,6 +1,6 @@
 module Language.Expr
-  ( module Language.Types
-  , module Language.Names
+  ( module Language.Type
+  , module Language.Name
   , Expr(..), Un(..), Bn(..)
   , pattern B, pattern I, pattern S
   , Pretask(..)
@@ -10,9 +10,9 @@ module Language.Expr
 
 import Data.Editable
 
-import Language.Names
-import Language.Types
-import Language.Ops
+import Language.Name
+import Language.Type
+import Language.Op
 
 
 

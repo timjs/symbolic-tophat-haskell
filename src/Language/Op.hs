@@ -1,7 +1,7 @@
-module Language.Ops where
+module Language.Op where
 
 
-import Language.Types
+import Language.Type
 
 
 

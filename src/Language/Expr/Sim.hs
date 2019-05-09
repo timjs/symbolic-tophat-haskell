@@ -1,9 +1,9 @@
 module Language.Expr.Sim where
 
 import Data.Some
-import Language.Inputs
-import Language.Names
-import Language.Types
+import Language.Inp
+import Language.Name
+import Language.Type
 
 import Language.Expr (Expr, Pretask)
 import Language.Pred (Pred, pattern Yes, pattern Nop, pattern (:/\:))
@@ -271,7 +271,7 @@ normalise e0 = do
       pure ( t2, p0 :/\: p1 :/\: p2 )
 
 
-handle :: Name a -> Val ('TyTask t) -> List ( Val ('TyTask t), Input t, Pred 'TyBool )
+handle :: Name t -> Val ('TyTask t) -> List ( Val ('TyTask t), Input t, Pred 'TyBool )
 handle c (V.Task t) = case t of
   V.Edit _ -> do
     let s = fresh c

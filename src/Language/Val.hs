@@ -1,5 +1,5 @@
 module Language.Val
-  ( module Language.Types
+  ( module Language.Type
   , Val(..), Un(..), Bn(..)
   , pattern B, pattern I, pattern S
   , Task(..)
@@ -14,9 +14,9 @@ module Language.Val
 -- | distinct.
 
 import Data.Editable
-import Language.Types
-import Language.Names
-import Language.Ops
+import Language.Type
+import Language.Name
+import Language.Op
 
 import Language.Expr (Expr)
 

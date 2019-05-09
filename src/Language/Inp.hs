@@ -1,9 +1,9 @@
-module Language.Inputs
+module Language.Inp
   ( Input(..)
   ) where
 
-import Language.Names
-import Language.Types
+import Language.Name
+import Language.Type
 
 
 -- Names -----------------------------------------------------------------------

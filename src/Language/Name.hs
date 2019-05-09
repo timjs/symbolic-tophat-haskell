@@ -1,9 +1,9 @@
-module Language.Names
+module Language.Name
   ( Name
   , fresh
   ) where
 
-import Language.Types
+import Language.Type
 
 
 -- Names -----------------------------------------------------------------------
