@@ -7,7 +7,6 @@ module Language.Types
 
 
 import Data.Basic
-import Data.Task
 import Data.Universe
 
 import Data.SBV (SBV)
@@ -29,7 +28,7 @@ instance Universe Ty where
   type TypeOf s (a ':-> b) = TypeOf s a -> TypeOf s b
   type TypeOf s (a ':>< b) = ( TypeOf s a, TypeOf s b )
   type TypeOf _ 'TyUnit = ()
-  type TypeOf s ('TyTask a) = Task (TypeOf s a)
+  -- type TypeOf s ('TyTask a) = Task (TypeOf s a)
 
   type TypeOf s ('TyPrim p) = TypeOf s p
 
