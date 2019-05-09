@@ -1,4 +1,4 @@
-module Language.Expr.Simulate where
+module Language.Expr.Sim where
 
 import Data.Some
 import Language.Inputs
