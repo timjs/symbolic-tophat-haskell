@@ -7,9 +7,18 @@ module Language.Val
   , asPred, asExpr, asPretask
   ) where
 
+-- | NOTE:
+-- | If we were programming in a dependently typed language,
+-- | We could make a predicate `IsVal` over `Expr`.
+-- | Alas, here we use a separate data type to keep values and expressions
+-- | distinct.
 
+import Data.Editable
 import Language.Types
+import Language.Names
 import Language.Ops
+
+import Language.Expr (Expr)
 
 import qualified Language.Expr as E
 import qualified Language.Pred as P
@@ -20,10 +29,10 @@ import qualified Language.Pred as P
 
 
 data Val (t :: Ty) where
-  Lam :: Typeable a => E.Expr b -> Val (a ':-> b)
+  Lam :: Typeable a => Expr b -> Val (a ':-> b)
 
-  Sym :: E.Name ('TyPrim a) -> Val ('TyPrim a)
-  Con :: IsPrim a -> ConcOf a -> Val ('TyPrim a)
+  Sym :: Name ('TyPrim a) -> Val ('TyPrim a)
+  Con :: IsPrim a -> TypeOf a -> Val ('TyPrim a)
 
   Un :: Un a b -> Val ('TyPrim a) -> Val ('TyPrim b)
   Bn :: Bn a b c -> Val ('TyPrim a) -> Val ('TyPrim b) -> Val ('TyPrim c)
@@ -66,18 +75,18 @@ instance Eq (Val t) where
 
 
 data Task (t :: Ty) where
-  Edit :: IsBasic a => Val a -> Task ('TyTask a)
-  Enter :: IsBasic a => Task ('TyTask a)
+  Edit :: Editable (TypeOf a) => Val a -> Task ('TyTask a)
+  Enter :: Editable (TypeOf a) => Task ('TyTask a)
   -- Store :: Loc a -> Task ('TyTask a)
 
   Fail :: Task ('TyTask a)
 
   And :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
   Or  :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
-  Xor :: E.Expr ('TyTask a) -> E.Expr ('TyTask a) -> Task ('TyTask a)
+  Xor :: Expr ('TyTask a) -> Expr ('TyTask a) -> Task ('TyTask a)
 
-  Then :: Val ('TyTask a) -> E.Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
-  Next :: Val ('TyTask a) -> E.Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
+  Then :: Val ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
+  Next :: Val ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
 
 
 infixl 3 :&&:
@@ -126,7 +135,7 @@ asPred = \case
   Bn o v1 v2 -> P.Bn o (asPred v1) (asPred v2)
 
 
-asExpr :: Val a -> E.Expr a
+asExpr :: Val a -> Expr a
 asExpr = \case
   Lam f -> E.Lam f
   Sym i -> E.Sym i

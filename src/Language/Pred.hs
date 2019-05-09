@@ -13,7 +13,7 @@ import qualified Language.Ops as O
 -- Predicates ------------------------------------------------------------------
 
 data Pred (t :: PrimTy) where
-  Con :: IsPrim a -> ConcOf a -> Pred a
+  Con :: IsPrim a -> TypeOf a -> Pred a
   Sym :: Name ('TyPrim a) -> Pred a
 
   Un :: O.Un a b -> Pred a -> Pred b

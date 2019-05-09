@@ -8,7 +8,7 @@ module Language.Expr
   ) where
 
 
-import Data.SBV
+import Data.Editable
 
 import Language.Names
 import Language.Types
@@ -20,16 +20,17 @@ import Language.Ops
 
 
 data Expr (t :: Ty) where
+  -- | FIXME: Explain why Typeable.
   Lam :: Typeable a => Expr b -> Expr (a ':-> b)
   App :: Expr (a ':-> b) -> Expr a -> Expr b
   Var :: Typeable a => Name a -> Expr a
 
   Sym :: Name ('TyPrim a) -> Expr ('TyPrim a)
-  Con :: IsPrim a -> ConcOf a -> Expr ('TyPrim a)
+  Con :: IsPrim a -> TypeOf a -> Expr ('TyPrim a)
 
   Un :: Un a b -> Expr ('TyPrim a) -> Expr ('TyPrim b)
   Bn :: Bn a b c -> Expr ('TyPrim a) -> Expr ('TyPrim b) -> Expr ('TyPrim c)
-  If :: Mergeable (SymbOf a) => Expr ('TyPrim 'TyBool) -> Expr a -> Expr a -> Expr a
+  If :: Expr ('TyPrim 'TyBool) -> Expr a -> Expr a -> Expr a
 
   Unit :: Expr 'TyUnit
   Pair :: Expr a -> Expr b -> Expr (a ':>< b)
@@ -68,12 +69,12 @@ instance Pretty (Expr t) where
 
 
 
--- Tasks -----------------------------------------------------------------------
+-- Pretasks --------------------------------------------------------------------
 
 
 data Pretask (t :: Ty) where
-  Edit :: IsBasic a => Expr a -> Pretask ('TyTask a)
-  Enter :: IsBasic a => Pretask ('TyTask a)
+  Edit :: Editable (TypeOf a) => Expr a -> Pretask ('TyTask a)
+  Enter :: Editable (TypeOf a) => Pretask ('TyTask a)
   -- Store :: Loc a -> Pretask ('TyTask a)
 
   Fail :: Pretask ('TyTask a)
