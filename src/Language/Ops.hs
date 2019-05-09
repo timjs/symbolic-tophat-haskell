@@ -11,14 +11,16 @@ import Language.Types
 
 
 data Un (a :: PrimTy) (b :: PrimTy) where
-  Not :: Un 'TyBool 'TyBool
-  Neg :: Un 'TyInt  'TyInt
+  Not :: Un 'TyBool   'TyBool
+  Neg :: Un 'TyInt    'TyInt
+  Len :: Un 'TyString 'TyInt
 
 
 instance Pretty (Un a b) where
   pretty = \case
     Not -> "not"
     Neg -> "neg"
+    Len -> "len"
 
 
 
@@ -41,6 +43,8 @@ data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Mul :: Bn 'TyInt 'TyInt 'TyInt
   Div :: Bn 'TyInt 'TyInt 'TyInt
 
+  Cat :: Bn 'TyString 'TyString 'TyString
+
 
 instance Pretty (Bn a b c) where
   pretty = \case
@@ -48,13 +52,15 @@ instance Pretty (Bn a b c) where
     Disj -> "∨"
 
     Lt -> "<"
-    Le -> "≤"
-    Eq -> "≡"
-    Nq -> "≢"
-    Ge -> "≥"
+    Le -> "<="
+    Eq -> "=="
+    Nq -> "/="
+    Ge -> ">="
     Gt -> ">"
 
     Add -> "+"
     Sub -> "-"
-    Mul -> "×"
-    Div -> "÷"
+    Mul -> "*"
+    Div -> "/"
+
+    Cat -> "++"
