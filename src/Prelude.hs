@@ -5,18 +5,22 @@ module Prelude
   , List, Unit
   , Pretty(..), read
   , neutral
-  , (<<), (>>), (#), (<#>), map
-  , (<-<), (>->), (<&>), skip
+  , (<<), (>>), (#), map
+  , (<-<), (>->)
+  , Monoidal((<&>), skip, (<&), (&>)), applyDefault, pureDefault
+  , Selective(branch, select, biselect), check, when
   , lift1, lift2, lift3
   , ok, throw, catch
-  , (~=), (~~), proxyOf, typeOf, someTypeOf, typeRep, TypeRep, SomeTypeRep
+  , clear, evalWriterT
+  , (~=), (~~), proxyOf, typeOf, someTypeOf, typeRep, TypeRep, someTypeRep, SomeTypeRep
   ) where
 
 
-import Relude hiding ((.), (>>), (&), (<&>), map, fail, trace, readMaybe, liftA2, liftA3)
+import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3)
 import qualified Relude
 
 import Control.Monad.Except (MonadError(..))
+import Control.Monad.Writer (MonadWriter(..), WriterT, runWriterT)
 
 import Data.Text (unpack)
 import Data.Text.Prettyprint.Doc hiding (group)
@@ -47,9 +51,9 @@ read = Relude.readMaybe << unpack
 -- Monoids ---------------------------------------------------------------------
 
 
-{-# INLINE neutral #-}
 neutral :: Monoid m => m
 neutral = mempty
+{-# INLINE neutral #-}
 
 
 
@@ -80,12 +84,12 @@ f << g = \x -> f (g x)
 -- Functors --------------------------------------------------------------------
 
 
-infixl 1 <#>
+-- infixl 1 <#>
 
 
-(<#>) :: Functor f => f a -> (a -> b) -> f b
-(<#>) = flip (<$>)
-{-# INLINE (<#>) #-}
+-- (<#>) :: Functor f => f a -> (a -> b) -> f b
+-- (<#>) = flip map
+-- {-# INLINE (<#>) #-}
 
 
 map :: Functor f => (a -> b) -> f a -> f b
@@ -98,23 +102,30 @@ map = Relude.fmap
 
 infixr 1 <-<
 infixr 1 >->
-infixl 5 <&>
 
 
-lift1 :: Functor f => (a -> b) -> f a -> f b
+lift0 :: Applicative f => a -> f a
+lift0 = pure
+{-# INLINE lift0 #-}
+
+
+lift1 :: Applicative f => (a -> b) -> f a -> f b
 lift1 = fmap
+{-# INLINE lift1 #-}
 
 
 lift2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
 lift2 = Relude.liftA2
+{-# INLINE lift2 #-}
 
 
 lift3 :: Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
 lift3 = Relude.liftA3
+{-# INLINE lift3 #-}
 
 
 (<-<) :: Applicative f => f (b -> c) -> f (a -> b) -> f (a -> c)
-f <-< g = (<<) <$> f <*> g
+f <-< g = pure (<<) <*> f <*> g
 {-# INLINE (<-<) #-}
 
 
@@ -123,20 +134,73 @@ f <-< g = (<<) <$> f <*> g
 {-# INLINE (>->) #-}
 
 
-(<&>) :: Applicative f => f a -> f b -> f ( a, b )
-(<&>) x y = (,) <$> x <*> y
-{-# INLINE (<&>) #-}
+
+-- Monoidal functors -----------------------------------------------------------
 
 
-skip :: Applicative f => f ()
-skip = pure ()
-{-# INLINE skip #-}
+infixl 6 <&>
+infixl 6 <&
+infixl 6 &>
+
+
+class Applicative f => Monoidal f where
+  (<&>) :: f a -> f b -> f ( a, b )
+  (<&>) x y = pure (,) <*> x <*> y
+
+  skip :: f ()
+  skip = pure ()
+
+  (<&) :: f a -> f b -> f a
+  (<&) x y = map fst $ x <&> y
+
+  (&>) :: f a -> f b -> f b
+  (&>) x y = map snd $ x <&> y
+
+
+applyDefault :: Monoidal f => f (a -> b) -> f a -> f b
+applyDefault fg fx = map (\( g, x ) -> g x) $ fg <&> fx
+
+
+pureDefault :: Monoidal f => a -> f a
+pureDefault x = map (const x) skip
+
+
+instance Monoidal Maybe
+instance Monoidal (Either e)
+instance Monoidal IO
+
+
+
+-- Selective functors ----------------------------------------------------------
+
+
+class Applicative f => Selective f where
+  branch :: f (Either a b) -> f (a -> c) -> f (b -> c) -> f c
+  branch p x y = map (map Left) p `select` map (map Right) x `select` y
+
+  select :: f (Either a b) -> f (a -> b) -> f b
+  select x y = branch x y (pure identity)
+
+  biselect :: f (Either a b) -> f (Either a c) -> f (Either a ( b, c ))
+  biselect x y = select (pure (map Left << swp) <*> x) (pure (\e a -> map ( a, ) e) <*> y)
+    where
+      swp = either Right Left
+
+
+check :: Selective f => f Bool -> f a -> f a -> f a
+check p t e = branch (map go p) (map const t) (map const e)
+  where
+    go x = if x then Right () else Left ()
+
+
+when :: Selective f => f Bool -> f Unit -> f Unit
+when p t = check p t (pure ())
 
 
 
 -- Monads ----------------------------------------------------------------------
 
--- Errors --
+-- Error --
 
 
 ok :: MonadError e m => a -> m a
@@ -152,6 +216,17 @@ throw = throwError
 catch :: MonadError e m => m a -> (e -> m a) -> m a
 catch = catchError
 {-# INLINE catch #-}
+
+
+-- Writer --
+
+
+clear :: MonadWriter w m => m ()
+clear = pass $ lift0 ((), const neutral)
+
+
+evalWriterT :: Monad m => WriterT w m a -> m a
+evalWriterT m = lift1 fst (runWriterT m)
 
 
 
