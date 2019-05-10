@@ -1,15 +1,17 @@
 -- | Support for computations which consume values from an _infinite_ supply.
 -- | See <http://www.haskell.org/haskellwiki/New_monads/MonadSupply> for details.
+-- FIXME: Make use of DerivingVia
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Control.Monad.Supply
   ( MonadSupply (..)
-  , SupplyT, Supply
+  , SupplyT(..), Supply
   , evalSupplyT, evalSupply
   , runSupplyT, runSupply
   -- , supplies
   ) where
 
 import Control.Monad.Except
+import Control.Monad.List
 import Control.Monad.Writer
 
 import Data.Stream (Stream(..))
@@ -32,7 +34,7 @@ instance Monad m => MonadSupply s (SupplyT s m) where
   supply = SupplyT do
     (Cons x xs) <- get
     put xs
-    return x
+    pure x
   peek = SupplyT $ gets Stream.head
 
 -- Monad transformer instances
@@ -52,11 +54,15 @@ instance (Monoid w, MonadSupply s m) => MonadSupply s (WriterT w m) where
   supply = lift supply
   peek = lift peek
 
+instance MonadSupply s m => MonadSupply s (ListT m) where
+  supply = lift supply
+  peek = lift peek
+
 instance Semigroup a => Semigroup (Supply s a) where
   m1 <> m2 = pure (<>) <*> m1 <*> m2
 
 instance (Semigroup a, Monoid a) => Monoid (Supply s a) where
-  mempty = return mempty
+  mempty = pure mempty
 
 -- -- | Get n supplies.
 -- supplies :: MonadSupply s m => Int -> m (Stream s)
