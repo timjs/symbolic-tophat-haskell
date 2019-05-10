@@ -11,5 +11,5 @@ import Language.Type
 
 data Input (a :: Ty) where
   SChange :: Name a -> Input a
-  ToFirst :: Input a -> Input a
-  ToSecond :: Input a -> Input a
+  ToFirst :: Input a -> Input (a ':>< b)
+  ToSecond :: Input b -> Input (a ':>< b)
