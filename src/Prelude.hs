@@ -33,7 +33,7 @@ import Type.Reflection (typeOf, typeRep, someTypeRep, TypeRep, SomeTypeRep)
 -- Synonyms --------------------------------------------------------------------
 
 
-type List a = [a]
+type List = []
 
 
 type Unit = ()
