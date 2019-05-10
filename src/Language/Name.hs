@@ -1,18 +1,23 @@
 module Language.Name
-  ( Name
+  ( Name(..)
   , fresh
   ) where
 
-import Language.Type
+import Control.Monad.Supply(MonadSupply(..))
+-- import Data.Stream (Stream(..))
+import Language.Type (Ty)
 
 
 -- Names -----------------------------------------------------------------------
-
 
 newtype Name (a :: Ty)
   = Name Int
   deriving ( Pretty, Eq, Ord, Num ) via Int
 
+-- fresh :: Stream Int -> ( Name t, Stream Int )
+-- fresh (Cons i is) = ( Name i, is )
 
-fresh :: Name a -> Name b
-fresh (Name n) = Name (n + 1)
+fresh :: MonadSupply Int m => m (Name t)
+fresh = do
+  i <- supply
+  pure $ Name i
