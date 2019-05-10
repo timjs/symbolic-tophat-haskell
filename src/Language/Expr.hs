@@ -8,8 +8,6 @@ module Language.Expr
   ) where
 
 
-import Data.Editable
-
 import Language.Name
 import Language.Type
 import Language.Op
@@ -73,8 +71,8 @@ instance Pretty (Expr t) where
 
 
 data Pretask (t :: Ty) where
-  Edit :: Editable (TypeOf a) => Expr a -> Pretask ('TyTask a)
-  Enter :: Editable (TypeOf a) => Pretask ('TyTask a)
+  Edit :: Expr ('TyPrim a) -> Pretask ('TyTask ('TyPrim a))
+  Enter :: Pretask ('TyTask ('TyPrim a))
   -- Store :: Loc a -> Pretask ('TyTask a)
 
   Fail :: Pretask ('TyTask a)

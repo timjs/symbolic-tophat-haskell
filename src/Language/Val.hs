@@ -13,7 +13,6 @@ module Language.Val
 -- | Alas, here we use a separate data type to keep values and expressions
 -- | distinct.
 
-import Data.Editable
 import Language.Type
 import Language.Name
 import Language.Op
@@ -75,8 +74,8 @@ instance Eq (Val t) where
 
 
 data Task (t :: Ty) where
-  Edit :: Editable (TypeOf a) => Val a -> Task ('TyTask a)
-  Enter :: Editable (TypeOf a) => Task ('TyTask a)
+  Edit :: Val ('TyPrim a) -> Task ('TyTask ('TyPrim a))
+  Enter :: Task ('TyTask ('TyPrim a))
   -- Store :: Loc a -> Task ('TyTask a)
 
   Fail :: Task ('TyTask a)
