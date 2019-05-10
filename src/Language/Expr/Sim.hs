@@ -1,10 +1,13 @@
 module Language.Expr.Sim where
 
-import Data.Some
+import Control.Monad.List
+import Control.Monad.Nondet
+import Control.Monad.Supply
 import Language.Inp
 import Language.Name
 import Language.Type
 
+import Data.Stream (Stream)
 import Language.Expr (Expr, Pretask)
 import Language.Pred (Pred, pattern Yes, pattern Nop, pattern (:/\:))
 import Language.Val (Val, Task, asPred, asExpr)
@@ -143,7 +146,7 @@ combined with the predicate which has to hold to get that value.
 Note that the context of symbolic values `sxt` is the same for the expression
 and the resulting predicate.
 -}
-eval :: Expr t -> List ( Val t, Pred 'TyBool )
+eval :: MonadFail m => MonadNondet m => Expr t -> m ( Val t, Pred 'TyBool )
 eval = \case
   E.App e1 e2 -> do
     ( V.Lam e1', p1 ) <- eval e1
@@ -162,7 +165,7 @@ eval = \case
     ( v1, p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
     ( v3, p3 ) <- eval e3
-    [ ( v2, p1 :/\: p2 :/\: asPred v1 ), ( v3, p1 :/\: p3 :/\: P.Not (asPred v1) ) ]
+    merge ( v2, p1 :/\: p2 :/\: asPred v1 ) ( v3, p1 :/\: p3 :/\: P.Not (asPred v1) )
 
   E.Pair e1 e2 -> do
     ( v1, p1 ) <- eval e1
@@ -176,29 +179,29 @@ eval = \case
     pure ( v, p )
 
   E.Lam e ->
-    [ ( V.Lam e, Yes ) ]
+    pure ( V.Lam e, Yes )
   E.Sym i ->
-    [ ( V.Sym i, Yes ) ]
+    pure ( V.Sym i, Yes )
   E.Con p x ->
-    [ ( V.Con p x, Yes ) ]
+    pure ( V.Con p x, Yes )
   E.Unit ->
-    [ ( V.Unit, Yes )]
+    pure ( V.Unit, Yes )
 
   E.Task e1 -> do
     ( t1, p1 ) <- eval' e1
-    [ ( V.Task t1, p1 ) ]
+    pure ( V.Task t1, p1 )
 
   E.Var i ->
     error $ "Free variable in expression: " <> show (pretty i)
 
 
-eval' :: Pretask t -> List ( Task t, Pred 'TyBool )
+eval' :: MonadFail m => MonadNondet m => Pretask t -> m ( Task t, Pred 'TyBool )
 eval' = \case
   E.Edit e1 -> do
     ( v1, p1 ) <- eval e1
     pure ( V.Edit v1, p1 )
   E.Enter ->
-    [ ( V.Enter, Yes ) ]
+    pure ( V.Enter, Yes )
   -- E.Store -> do
   E.And e1 e2 -> do
     ( t1, p1 ) <- eval e1
@@ -210,9 +213,9 @@ eval' = \case
     pure ( V.Or t1 t2, p1 :/\: p2 )
   E.Xor e1 e2 ->
     -- | Here we do not need to evaluate because `Xor` is lazy.
-    [ ( V.Xor e1 e2, Yes ) ]
+    pure ( V.Xor e1 e2, Yes )
   E.Fail ->
-    [ ( V.Fail, Yes ) ]
+    pure ( V.Fail, Yes )
   E.Then e1 e2 -> do
     ( t1, p1 ) <- eval e1
     pure ( V.Then t1 e2, p1 )
@@ -221,7 +224,7 @@ eval' = \case
     pure ( V.Next t1 e2, p1 )
 
 
-stride :: Val ('TyTask t) -> List ( Val ('TyTask t), Pred 'TyBool )
+stride :: MonadFail m => MonadNondet m => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
@@ -257,10 +260,10 @@ stride (V.Task t) = case t of
     pure ( V.Task $ V.Next t1' e2, p1 )
   -- Ready:
   t1 ->
-    [ ( V.Task t1, Yes ) ]
+    pure ( V.Task t1, Yes )
 
 
-normalise :: Expr ('TyTask t) -> List ( Val ('TyTask t), Pred 'TyBool )
+normalise :: MonadFail m => MonadNondet m => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
   ( t1, p1 ) <- stride t0
@@ -271,30 +274,45 @@ normalise e0 = do
       pure ( t2, p0 :/\: p1 :/\: p2 )
 
 
-handle :: Name t -> Val ('TyTask t) -> List ( Val ('TyTask t), Input t, Pred 'TyBool )
-handle c (V.Task t) = case t of
+-- fresh :: MonadSupply Int m => m (Name t)
+-- fresh = do
+--   s <- supply
+--   let n = Name s
+--   pure n
+
+-- type Runner = ListT (SupplyT Int Identity)
+  -- == Stream Int -> ( List a, Stream Int )
+
+-- merge :: List a -> List a -> Runner a
+-- merge xs ys = ListT $ SupplyT $ StateT \s -> Identity ( xs ++ ys, s )
+
+-- merge :: a -> a -> Runner a
+-- merge x y = ListT $ SupplyT $ StateT \s -> Identity ( [ x, y ], s )
+
+-- handle :: Val ('TyTask t) -> Runner ( Val ('TyTask t), Input t, Pred 'TyBool )
+handle :: MonadSupply Int m => MonadFail m => MonadNondet m => Val ('TyTask t) -> m ( Val ('TyTask t), Input t, Pred 'TyBool )
+handle (V.Task t) = case t of
   V.Edit _ -> do
-    let s = fresh c
+    s <- fresh
     pure ( V.Task $ V.Edit (V.Sym s), SChange s, Yes )
   V.Enter -> do
-    let s = fresh c
+    s <- fresh
     pure ( V.Task $ V.Edit (V.Sym s), SChange s, Yes )
-  V.And t1 t2 -> (do
-    ( t1', i1, p1 ) <- handle c t1
-    pure ( V.Task $ V.And t1' t2, ToFirst i1, p1 )) ++ (do
-    ( t2', i2, p2 ) <- handle c t2
-    pure ( V.Task $ V.And t1 t2', ToSecond i2, p2 ))
+  V.And t1 t2 -> do
+    ( t1', i1, p1 ) <- handle t1
+    ( t2', i2, p2 ) <- handle t2
+    merge ( V.Task $ V.And t1' t2, ToFirst i1, p1 ) ( V.Task $ V.And t1 t2', ToSecond i2, p2 )
   V.Or t1 t2 -> do
-    ( t1', i1, p1 ) <- handle c t1
-    ( t2', i2, p2 ) <- handle c t2
-    pure [ ( V.Task $ V.Or t1' t2, ToFirst i1, p1 ), ( V.Task $ V.Or t1 t2', ToSecond i2, p2 )]
+    ( t1', i1, p1 ) <- handle t1
+    ( t2', i2, p2 ) <- handle t2
+    merge ( V.Task $ V.Or t1' t2, ToFirst i1, p1 ) ( V.Task $ V.Or t1 t2', ToSecond i2, p2 )
   V.Xor e1 e2 -> do
     ( t1, p1 ) <- normalise e1
     ( t2, p2 ) <- normalise e2
-    let s = fresh c
-    pure [ ( t1, SChange s, p1 :/\: P.Sym s ), ( t2, SChange s, p2 :/\: P.Sym s ) ]
+    s <- fresh  -- NOTE: This is a symbol of type Bool
+    merge ( t1, SChange s, p1 :/\: P.Sym s ) ( t2, SChange s, p2 :/\: P.Sym s )
   V.Fail -> do
-    let s = fresh c
+    s <- supply
     pure ( V.Task $ V.Fail, SChange s, Nop )
   V.Then t1 e2 -> _
   V.Next t1 e2 -> _
