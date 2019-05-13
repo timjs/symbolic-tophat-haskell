@@ -1,7 +1,7 @@
 module Language.Expr.Sim where
 
 import Control.Monad.Supply
-import Language.Inp
+import Language.Input
 import Language.Name
 import Language.Type
 
