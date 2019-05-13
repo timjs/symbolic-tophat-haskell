@@ -1,9 +1,16 @@
 module Test.Exprs where
 
+import Data.Stream (Stream)
+import Language.Input (Input)
+import Language.Pred (Pred, pattern (:/\:))
+import Language.Val (Val, asExpr)
 
+import Control.Monad.List
+import Control.Monad.Supply
 import Language.Expr
-import Language.Expr.Simulate
+import Language.Expr.Sim
 
+import qualified Data.Stream as Stream
 
 
 -- Examples --------------------------------------------------------------------
@@ -39,37 +46,54 @@ fact = Lam
 
 
 
-{- Tasks --
-
-enterInt' :: Pretask ('TyTask ('TyPrim 'TyInt))
-enterInt' =
-  Enter
-
+-- Tasks --
 
 echo :: Pretask ('TyTask ('TyPrim 'TyInt))
 echo =
-  Enter :>>=
+  Enter @'TyInt :>>=
   View (Var 0)
 
 
 add_seq :: Pretask ('TyTask ('TyPrim 'TyInt))
 add_seq =
-  Enter :>>=
-  Enter :>>=
+  Enter @'TyInt :>>=
+  Enter @'TyInt :>>=
   View (Bn Add (Var 0) (Var 1))
 
 
-add_par :: Pretask ('TyTask ('TyPrim 'TyInt))
-add_par = Enter :&&: Enter :>>=
-  View (Bn Add (Fst (Var 0)) (Snd (Var 0)))
+type TyIntInt = 'TyPrim 'TyInt ':>< 'TyPrim 'TyInt
 
--}
+add_par :: Pretask ('TyTask ('TyPrim 'TyInt))
+add_par =
+  Enter @'TyInt :&&: Enter @'TyInt :>>=
+  View (Bn Add (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0)))
+
+
+guard :: Pretask ('TyTask ('TyPrim 'TyInt))
+guard =
+  Task (Enter @'TyInt) `Then` Lam (
+    If (Bn Gt (Var @('TyPrim 'TyInt) 0) (I 0)) (Task $ View (Var @('TyPrim 'TyInt) 0)) (Task $ Fail)
+  )
+
 
 
 -- Main ------------------------------------------------------------------------
 
 
-main :: IO ()
-main = do
-  let result = eval $ App double_mul (I 3)
-  print $ pretty result
+type Runner = ListT (Supply Int)
+  -- == Stream Int -> ( List a, Stream Int )
+
+ids :: Stream Int
+ids = Stream.iterate succ 0
+
+run :: Runner a -> List a
+run r = fst $ runSupply (runListT r) ids
+
+
+test :: Pretask ('TyTask t) -> List ( Val ('TyTask t), List Input, Pred 'TyBool )
+test t0 = run do
+  ( t1, p1 ) <- initialise (Task t0)
+  simulate t1 empty p1
+
+-- main = do
+--   print $ pretty $ test echo

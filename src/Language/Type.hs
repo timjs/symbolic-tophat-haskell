@@ -1,6 +1,7 @@
 module Language.Type
   ( module Data.Universe
   , Ty(..), PrimTy(..)
+  , TyPrimBool, TyPrimInt, TyPrimString
   , IsPrim(..)
   ) where
 
@@ -31,6 +32,10 @@ instance Universe PrimTy where
   type TypeOf 'TyBool = Bool
   type TypeOf 'TyInt = Integer
   type TypeOf 'TyString = String
+
+type TyPrimBool = 'TyPrim 'TyBool
+type TyPrimInt = 'TyPrim 'TyInt
+type TyPrimString = 'TyPrim 'TyString
 
 -- | Proof that some `PrimTy` is primitive.
 -- |

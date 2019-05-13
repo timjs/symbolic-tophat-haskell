@@ -1,6 +1,7 @@
 module Language.Expr.Sim where
 
 import Control.Monad.Supply
+import Control.Monad.Trace
 import Language.Input
 import Language.Name
 import Language.Type
@@ -67,8 +68,7 @@ shift c = \case
   E.Lam e -> E.Lam $ shift (c + 1) e
   E.App f a -> E.App (shift c f) (shift c a)
   E.Var i
-    | Just Refl <- i ~= c
-    , i >= c -> E.Var (i + 1)
+    | Just Refl <- i ~= c, i >= c -> E.Var (i + 1)
     | otherwise -> E.Var i
 
   E.Un o a -> E.Un o (shift c a)
@@ -260,21 +260,29 @@ stride (V.Task t) = case t of
     pure ( V.Task t1, Yes )
 
 
-normalise :: MonadFail m => MonadPlus m => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+normalise
+  :: MonadFail m => MonadPlus m
+  => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
   ( t1, p1 ) <- stride t0
-  if t0 == t1
-    then pure ( t1, p0 :/\: p1 )
-    else do
-      ( t2, p2 ) <- normalise $ asExpr t1
-      pure ( t2, p0 :/\: p1 :/\: p2 )
+  -- if t0 == t1
+  --   then pure ( t1, p0 :/\: p1 )
+  --   else do
+  --     ( t2, p2 ) <- normalise $ asExpr t1
+  --     pure ( t2, p0 :/\: p1 :/\: p2 )
+  pure ( t1, p0 :/\: p1 )
 
 
--- type Runner = ListT (SupplyT Int Identity)
-  -- == Stream Int -> ( List a, Stream Int )
+initialise
+  :: MonadFail m => MonadPlus m
+  => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+initialise = normalise
 
-handle :: MonadSupply Int m => MonadFail m => MonadPlus m => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
+
+handle
+  :: MonadSupply Int m => MonadFail m => MonadPlus m
+  => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 handle (V.Task t) = case t of
   V.Edit _ -> do
     s <- fresh
@@ -319,6 +327,31 @@ handle (V.Task t) = case t of
           else ls <|> pure ( t2, Continue, p2 )
       Nothing -> ls
 
--- drive :: MonadTrace NotApplicable m => MonadRef m => TaskT m a -> Input Action -> m (TaskT m a)
--- drive task input =
---   handle task input >>= normalise
+
+drive
+  :: MonadSupply Int m => MonadFail m => MonadPlus m
+  => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
+drive t0 = do
+  ( t1, i1, p1 ) <- handle t0
+  ( t2, p2 ) <- normalise (asExpr t1)
+  pure ( t2, i1, p1 :/\: p2 )
+
+
+-- | Call `drive` till the moment we have an observable value.
+-- | Collects all inputs and predicates created in the mean time.
+simulate
+  :: MonadSupply Int m => MonadFail m => MonadPlus m 
+  => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
+simulate t0 is0 p0 = do
+  ( t1, i1, p1 ) <- drive t0
+  let p = p0 :/\: p1
+  let is = i1 : is0
+  if not (satisfiable p)
+    then empty
+    else case value t1 of
+      Just v1 -> pure ( t1, is, p )
+      Nothing -> simulate t1 is p
+
+
+satisfiable :: Pred 'TyBool -> Bool
+satisfiable _ = True
