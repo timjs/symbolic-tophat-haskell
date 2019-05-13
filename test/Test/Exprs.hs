@@ -70,16 +70,18 @@ add_par =
   View (Bn Add (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0)))
 
 
-guard1 :: Pretask ('TyTask ('TyPrim 'TyInt))
-guard1 =
+guard :: Pretask ('TyTask ('TyPrim 'TyInt))
+guard =
   Enter @'TyInt :>>\
   If (Bn Gt (Var @('TyPrim 'TyInt) 0) (I 0)) (Task $ View (Var @('TyPrim 'TyInt) 0)) (Task $ Fail)
 
 
-guard2 :: Pretask ('TyTask ('TyPrim 'TyInt))
-guard2 =
-  Edit (Sym @'TyInt -1) :>>\
-  If (Bn Gt (Var @('TyPrim 'TyInt) 0) (I 0)) (Task $ View (Var @('TyPrim 'TyInt) 0)) (Task $ Fail)
+machine :: Pretask ('TyTask ('TyPrim 'TyString))
+machine =
+  Enter @'TyInt :>>\
+  If (Bn Eq (Var @('TyPrim 'TyInt) 0) (I 1)) (Task $ View (S "Biscuit")) (
+  If (Bn Eq (Var @('TyPrim 'TyInt) 0) (I 2)) (Task $ View (S "Chocolate")) (
+  Task $ Fail))
 
 
 
@@ -130,7 +132,7 @@ exec r = fst $ fst $ runTracer (runSupplyT (runListT r) ids)
  ,(F s6, □(s6) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))    , True),(, □(s6) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0)), ((True ∧ True) ∧ (True ∧ True))),(S s7, □(s4) ⋈ □(s7) ▶ λ.□((fst x0 + snd x0)), True),(
 ...
 ]
-
+--- new version with cutof
 [,(    , ⊠ ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))        , ((True ∧ True) ∧ (True ∧ True)))
  ,(F s0, □(s0) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))    , True)
  ,(    , □(s0) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))    , ((True ∧ True) ∧ (True ∧ True)))
@@ -144,5 +146,10 @@ exec r = fst $ fst $ runTracer (runSupplyT (runListT r) ids)
  ,(    , □((s4 + s1))                          , ((True ∧ True) ∧ ((True ∧ True) ∧ ((True ∧ (True ∧ True)) ∧ ((True ∧ True) ∧ (True ∧ True))))) )
  ,(S s5, ⊠ ⋈ □(s5) ▶ λ.□((fst x0 + snd x0))    , True)
  ,(    , ⊠ ⋈ □(s5) ▶ λ.□((fst x0 + snd x0))    , ((True ∧ True) ∧ (True ∧ True)))
+]
+
+>>> print $ pretty $ exec $ run Test.Exprs.add_par
+[ ( □((s0 + s3)) , [S s3, F s0] , ((((True ∧ True) ∧ (True ∧ True)) ∧ (True ∧ ((True ∧ True) ∧ (True ∧ True)))) ∧ (True ∧ ((True ∧ True) ∧ ((True ∧ True) ∧ ((True ∧ (True ∧ True)) ∧ ((True ∧ True) ∧ (True ∧ True))))))) )
+, ( □((s4 + s1)) , [F s4, S s1] , ((((True ∧ True) ∧ (True ∧ True)) ∧ (True ∧ ((True ∧ True) ∧ (True ∧ True)))) ∧ (True ∧ ((True ∧ True) ∧ ((True ∧ True) ∧ ((True ∧ (True ∧ True)) ∧ ((True ∧ True) ∧ (True ∧ True))))))) )
 ]
 -}
