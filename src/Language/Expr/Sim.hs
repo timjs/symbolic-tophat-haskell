@@ -357,7 +357,7 @@ simulate t0 is0 p0 = do
   if not (satisfiable p)
     then empty
     else case value t1 of
-      Just _  -> pure ( t1, is, simplify p )
+      Just _  -> pure ( t1, reverse is, simplify p )
       Nothing -> if t0 == t1
         then empty
         else simulate t1 is p
