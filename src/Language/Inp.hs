@@ -9,7 +9,9 @@ import Language.Type
 -- Names -----------------------------------------------------------------------
 
 
-data Input (a :: Ty) where
-  SChange :: Name a -> Input a
-  ToFirst :: Input a -> Input (a ':>< b)
-  ToSecond :: Input b -> Input (a ':>< b)
+data Input where
+  Change :: Name a -> Input
+  Continue :: Input
+
+  ToFirst :: Input -> Input
+  ToSecond :: Input -> Input
