@@ -62,7 +62,7 @@ default-extensions:
 
   # Type annotations:
   - ScopedTypeVariables
-  # - TypeApplications
+  - TypeApplications
   - PartialTypeSignatures
   - NamedWildCards
 
@@ -113,7 +113,7 @@ library:
 tests:
   translation-test:
     main:                Main.hs
-    source-dirs:         tst
+    source-dirs:         test
     ghc-options:
       - -threaded
       - -rtsopts
