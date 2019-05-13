@@ -7,7 +7,7 @@ import Language.Name
 import Language.Type
 
 import Language.Expr (Expr, Pretask)
-import Language.Pred (Pred, pattern Yes, pattern (:/\:))
+import Language.Pred (Pred, simplify, pattern Yes, pattern (:/\:))
 import Language.Val (Val, Task, asPred, asExpr)
 
 import qualified Language.Expr as E
@@ -357,7 +357,7 @@ simulate t0 is0 p0 = do
   if not (satisfiable p)
     then empty
     else case value t1 of
-      Just _  -> pure ( t1, is, p )
+      Just _  -> pure ( t1, is, simplify p )
       Nothing -> if t0 == t1
         then empty
         else simulate t1 is p

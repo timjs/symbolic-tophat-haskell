@@ -1,7 +1,8 @@
 module Language.Pred
   ( module Language.Type
   , Pred(..)
-  , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:)
+  , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:), pattern B, pattern I, pattern S
+  , simplify
   ) where
 
 import Language.Type
@@ -27,6 +28,11 @@ pattern Not x = Un O.Not x
 pattern (:/\:) x y = Bn O.Conj x y
 pattern (:\/:) x y = Bn O.Disj x y
 
+pattern B x = Con BoolIsPrim x
+pattern I x = Con IntIsPrim x
+pattern S x = Con StringIsPrim x
+
+
 instance Pretty (Pred t) where
   pretty = \case
     Con BoolIsPrim x -> pretty x
@@ -36,3 +42,16 @@ instance Pretty (Pred t) where
 
     Un o a -> parens (sep [ pretty o, pretty a ])
     Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])
+
+
+simplify :: Pred t -> Pred t
+simplify = \case
+  x :/\: y -> case ( simplify x, simplify y ) of
+    ( B True, p ) -> p
+    ( p, B True ) -> p
+    ( p, q )      -> p :/\: q
+
+  Un o x -> Un o (simplify x)
+  Bn o x y -> Bn o (simplify x) (simplify y)
+
+  p -> p
