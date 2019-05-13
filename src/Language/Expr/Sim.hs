@@ -1,15 +1,12 @@
 module Language.Expr.Sim where
 
-import Control.Monad.List
-import Control.Monad.Nondet
 import Control.Monad.Supply
 import Language.Inp
 import Language.Name
 import Language.Type
 
-import Data.Stream (Stream)
 import Language.Expr (Expr, Pretask)
-import Language.Pred (Pred, pattern Yes, pattern Nop, pattern (:/\:))
+import Language.Pred (Pred, pattern Yes, pattern (:/\:))
 import Language.Val (Val, Task, asPred, asExpr)
 
 import qualified Language.Expr as E
@@ -146,7 +143,7 @@ combined with the predicate which has to hold to get that value.
 Note that the context of symbolic values `sxt` is the same for the expression
 and the resulting predicate.
 -}
-eval :: MonadFail m => MonadNondet m => Expr t -> m ( Val t, Pred 'TyBool )
+eval :: MonadFail m => MonadPlus m => Expr t -> m ( Val t, Pred 'TyBool )
 eval = \case
   E.App e1 e2 -> do
     ( V.Lam e1', p1 ) <- eval e1
@@ -165,7 +162,7 @@ eval = \case
     ( v1, p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
     ( v3, p3 ) <- eval e3
-    merge ( v2, p1 :/\: p2 :/\: asPred v1 ) ( v3, p1 :/\: p3 :/\: P.Not (asPred v1) )
+    pure ( v2, p1 :/\: p2 :/\: asPred v1 ) <|> pure ( v3, p1 :/\: p3 :/\: P.Not (asPred v1) )
 
   E.Pair e1 e2 -> do
     ( v1, p1 ) <- eval e1
@@ -195,7 +192,7 @@ eval = \case
     error $ "Free variable in expression: " <> show (pretty i)
 
 
-eval' :: MonadFail m => MonadNondet m => Pretask t -> m ( Task t, Pred 'TyBool )
+eval' :: MonadFail m => MonadPlus m => Pretask t -> m ( Task t, Pred 'TyBool )
 eval' = \case
   E.Edit e1 -> do
     ( v1, p1 ) <- eval e1
@@ -224,7 +221,7 @@ eval' = \case
     pure ( V.Next t1 e2, p1 )
 
 
-stride :: MonadFail m => MonadNondet m => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+stride :: MonadFail m => MonadPlus m => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
@@ -263,7 +260,7 @@ stride (V.Task t) = case t of
     pure ( V.Task t1, Yes )
 
 
-normalise :: MonadFail m => MonadNondet m => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+normalise :: MonadFail m => MonadPlus m => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
   ( t1, p1 ) <- stride t0
@@ -274,49 +271,53 @@ normalise e0 = do
       pure ( t2, p0 :/\: p1 :/\: p2 )
 
 
--- fresh :: MonadSupply Int m => m (Name t)
--- fresh = do
---   s <- supply
---   let n = Name s
---   pure n
-
 -- type Runner = ListT (SupplyT Int Identity)
   -- == Stream Int -> ( List a, Stream Int )
 
--- merge :: List a -> List a -> Runner a
--- merge xs ys = ListT $ SupplyT $ StateT \s -> Identity ( xs ++ ys, s )
-
--- merge :: a -> a -> Runner a
--- merge x y = ListT $ SupplyT $ StateT \s -> Identity ( [ x, y ], s )
-
--- handle :: Val ('TyTask t) -> Runner ( Val ('TyTask t), Input t, Pred 'TyBool )
-handle :: MonadSupply Int m => MonadFail m => MonadNondet m => Val ('TyTask t) -> m ( Val ('TyTask t), Input t, Pred 'TyBool )
+handle :: MonadSupply Int m => MonadFail m => MonadPlus m => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 handle (V.Task t) = case t of
   V.Edit _ -> do
     s <- fresh
-    pure ( V.Task $ V.Edit (V.Sym s), SChange s, Yes )
+    pure ( V.Task $ V.Edit (V.Sym s), Change s, Yes )
   V.Enter -> do
     s <- fresh
-    pure ( V.Task $ V.Edit (V.Sym s), SChange s, Yes )
+    pure ( V.Task $ V.Edit (V.Sym s), Change s, Yes )
   V.And t1 t2 -> do
     ( t1', i1, p1 ) <- handle t1
     ( t2', i2, p2 ) <- handle t2
-    merge ( V.Task $ V.And t1' t2, ToFirst i1, p1 ) ( V.Task $ V.And t1 t2', ToSecond i2, p2 )
+    pure ( V.Task $ V.And t1' t2, ToFirst i1, p1 ) <|> pure ( V.Task $ V.And t1 t2', ToSecond i2, p2 )
   V.Or t1 t2 -> do
     ( t1', i1, p1 ) <- handle t1
     ( t2', i2, p2 ) <- handle t2
-    merge ( V.Task $ V.Or t1' t2, ToFirst i1, p1 ) ( V.Task $ V.Or t1 t2', ToSecond i2, p2 )
+    pure ( V.Task $ V.Or t1' t2, ToFirst i1, p1 ) <|> pure ( V.Task $ V.Or t1 t2', ToSecond i2, p2 )
   V.Xor e1 e2 -> do
     ( t1, p1 ) <- normalise e1
     ( t2, p2 ) <- normalise e2
     s <- fresh  -- NOTE: This is a symbol of type Bool
-    merge ( t1, SChange s, p1 :/\: P.Sym s ) ( t2, SChange s, p2 :/\: P.Sym s )
-  V.Fail -> do
-    s <- supply
-    pure ( V.Task $ V.Fail, SChange s, Nop )
-  V.Then t1 e2 -> _
-  V.Next t1 e2 -> _
-
+    let ls = pure ( t1, Change s, p1 :/\: P.Sym s )
+    let rs = pure ( t2, Change s, p2 :/\: P.Not (P.Sym s) )
+    case ( failing t1, failing t2 ) of
+      ( False, False ) -> ls <|> rs
+      ( False, True  ) -> ls
+      ( True,  False ) -> rs
+      ( True,  True  ) -> empty
+  V.Fail -> empty
+    -- NOTE: Alternative: users can input anything, but nothing will ever come out of `fail`
+    -- s <- fresh
+    -- pure ( V.Task $ V.Fail, Change s, Nop )
+  V.Then t1 e2 -> do
+    ( t1', i1, p1 ) <- handle t1
+    pure ( V.Task $ V.Then t1' e2, i1, p1 )
+  V.Next t1 e2 -> do
+    ( t', i', p' ) <- handle t1
+    let ls = pure ( V.Task $ V.Next t' e2, i', p' )
+    case value t1 of
+      Just v1 -> do
+        ( t2, p2 ) <- normalise (E.App e2 (asExpr v1))
+        if not (failing t2)
+          then ls
+          else ls <|> pure ( t2, Continue, p2 )
+      Nothing -> ls
 
 -- drive :: MonadTrace NotApplicable m => MonadRef m => TaskT m a -> Input Action -> m (TaskT m a)
 -- drive task input =
