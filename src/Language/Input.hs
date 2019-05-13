@@ -1,4 +1,4 @@
-module Language.Inp
+module Language.Input
   ( Input(..)
   ) where
 
