@@ -3,7 +3,7 @@ module Language.Val
   , Val(..), Un(..), Bn(..)
   , pattern B, pattern I, pattern S
   , Task(..)
-  , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
+  , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>\), pattern (:>>?)
   , asPred, asExpr, asPretask
   ) where
 
@@ -65,8 +65,8 @@ instance Pretty (Val t) where
     Task p -> pretty p
 
 
-instance Eq (Val t) where
-  _ == _ = undefined
+-- instance Eq (Val t) where
+--   _ == _ = undefined
 
 
 
@@ -93,7 +93,7 @@ infixr 2 :||:, :??:
 -- | NOTE:
 -- | Fixity of bind is left associative in a normal setting because of the scoping of lambdas.
 -- | Because we can't use lambdas in our DSL, bind should be right associative.
-infixr 1 :>>=, :>>?
+infixr 1 :>>=, :>>?, :>>\
 
 
 pattern View x = Edit x
@@ -101,6 +101,7 @@ pattern (:&&:) x y = And (Task x) (Task y)
 pattern (:||:) x y = Or (Task x) (Task y)
 pattern (:??:) x y = Xor (E.Task x) (E.Task y)
 pattern (:>>=) t c = Then (Task t) (E.Lam (E.Task c))
+pattern (:>>\) t c = Then (Task t) (Lam c)
 pattern (:>>?) t c = Next (Task t) (E.Lam (E.Task c))
 
 
@@ -117,8 +118,8 @@ instance Pretty (Task t) where
     Next x c -> sep [ pretty x, "▷…", pretty c ]
 
 
-instance Eq (Task t) where
-  _ == _ = undefined
+-- instance Eq (Task t) where
+--   _ == _ = undefined
 
 
 
