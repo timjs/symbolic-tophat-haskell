@@ -23,6 +23,13 @@ instance Pretty (Un a b) where
     Len -> "len"
 
 
+instance Eq (Un a b) where
+  Not == Not = True
+  Neg == Neg = True
+  Len == Len = True
+  _   == _   = False
+
+
 
 -- Binary --
 
@@ -64,3 +71,24 @@ instance Pretty (Bn a b c) where
     Div -> "/"
 
     Cat -> "++"
+
+
+instance Eq (Bn a b c) where
+    Conj == Conj = True
+    Disj == Disj = True
+
+    Lt   == Lt = True
+    Le   == Le = True
+    Eq   == Eq = True
+    Nq   == Nq = True
+    Ge   == Ge = True
+    Gt   == Gt = True
+
+    Add  == Add = True
+    Sub  == Sub = True
+    Mul  == Mul = True
+    Div  == Div = True
+
+    Cat  == Cat = True
+
+    _    == _   = False

@@ -33,8 +33,8 @@ data Val (t :: Ty) where
   Sym :: Name ('TyPrim a) -> Val ('TyPrim a)
   Con :: IsPrim a -> TypeOf a -> Val ('TyPrim a)
 
-  Un :: Un a b -> Val ('TyPrim a) -> Val ('TyPrim b)
-  Bn :: Bn a b c -> Val ('TyPrim a) -> Val ('TyPrim b) -> Val ('TyPrim c)
+  Un :: ( Typeable a, Typeable b ) => Un a b -> Val ('TyPrim a) -> Val ('TyPrim b)
+  Bn :: ( Typeable a, Typeable b, Typeable c ) => Bn a b c -> Val ('TyPrim a) -> Val ('TyPrim b) -> Val ('TyPrim c)
 
   Unit :: Val 'TyUnit
   Pair :: Val a -> Val b -> Val (a ':>< b)
@@ -65,8 +65,29 @@ instance Pretty (Val t) where
     Task p -> pretty p
 
 
--- instance Eq (Val t) where
---   _ == _ = undefined
+-- | Syntactic equality for Values.
+instance Eq (Val t) where
+  Lam f1                == Lam f2                = f1 == f2  -- FIXME: is this ok?
+  Sym i1                == Sym i2                = i1 == i2
+
+  Con BoolIsPrim x1     == Con BoolIsPrim x2     = x1 == x2
+  Con IntIsPrim x1      == Con IntIsPrim x2      = x1 == x2
+  Con StringIsPrim x1   == Con StringIsPrim x2   = x1 == x2
+
+  Un o1 a1              == Un o2 a2
+    | Just Refl <- o1 ~= o2                      = o1 == o2 && a1 == a2
+    | otherwise                                  = False
+  Bn o1 a1 b1           == Bn o2 a2 b2
+    | Just Refl <- o1 ~= o2                      = o1 == o2 && a1 == a2 && b1 == b2
+    | otherwise                                  = False
+
+  Unit                  == Unit                  = True
+  Pair a1 b1            == Pair a2 b2            = a1 == a2 && b1 == b2
+
+  Task p1               == Task p2               = p1 == p2
+
+  _                     == _                     = False
+
 
 
 
@@ -78,14 +99,14 @@ data Task (t :: Ty) where
   Enter :: Task ('TyTask ('TyPrim a))
   -- Store :: Loc a -> Task ('TyTask a)
 
-  Fail :: Task ('TyTask a)
-
   And :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
   Or  :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
   Xor :: Expr ('TyTask a) -> Expr ('TyTask a) -> Task ('TyTask a)
+  Fail :: Task ('TyTask a)
 
-  Then :: Val ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
-  Next :: Val ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
+  -- | `a` and `b` should be typable for testing syntactic equality of terms.
+  Then :: ( Typeable a, Typeable b ) => Val ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
+  Next :: ( Typeable a, Typeable b ) => Val ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
 
 
 infixl 3 :&&:
@@ -101,7 +122,7 @@ pattern (:&&:) x y = And (Task x) (Task y)
 pattern (:||:) x y = Or (Task x) (Task y)
 pattern (:??:) x y = Xor (E.Task x) (E.Task y)
 pattern (:>>=) t c = Then (Task t) (E.Lam (E.Task c))
-pattern (:>>\) t c = Then (Task t) (Lam c)
+pattern (:>>\) t c = Then (Task t) (E.Lam c)
 pattern (:>>?) t c = Next (Task t) (E.Lam (E.Task c))
 
 
@@ -118,8 +139,31 @@ instance Pretty (Task t) where
     Next x c -> sep [ pretty x, "▷…", pretty c ]
 
 
--- instance Eq (Task t) where
---   _ == _ = undefined
+-- | Syntactic equality for Tasks.
+instance Eq (Task t) where
+  -- | This is where the magic happens!
+  -- | Every editor with some symbol in it are regarded equal,
+  -- | regardless of the concrete symbol they contain.
+  Edit (Sym _) == Edit (Sym _) = True
+  Edit x1      == Edit x2      = x1 == x2
+  Enter        == Enter        = True
+  -- Store     == -- Store     = _
+
+  And x1 y1    == And x2 y2    = x1 == x2 && y1 == y2
+  Or x1 y1     == Or x2 y2     = x1 == x2 && y1 == y2
+  Xor x1 y1    == Xor x2 y2    = x1 == x2 && y1 == y2
+  Fail         == Fail         = True
+
+  Then x1 c1   == Then x2 c2
+    | Just Refl <- x1 ~= x2
+    , Just Refl <- c1 ~= c2    = x1 == x2 && c1 == c2
+    | otherwise                = False
+  Next x1 c1   == Next x2 c2
+    | Just Refl <- x1 ~= x2
+    , Just Refl <- c1 ~= c2    = x1 == x2 && c1 == c2
+    | otherwise                = False
+
+  _            == _            = False
 
 
 

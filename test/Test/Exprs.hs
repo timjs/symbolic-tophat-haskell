@@ -130,4 +130,19 @@ exec r = fst $ fst $ runTracer (runSupplyT (runListT r) ids)
  ,(F s6, □(s6) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))    , True),(, □(s6) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0)), ((True ∧ True) ∧ (True ∧ True))),(S s7, □(s4) ⋈ □(s7) ▶ λ.□((fst x0 + snd x0)), True),(
 ...
 ]
+
+[,(    , ⊠ ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))        , ((True ∧ True) ∧ (True ∧ True)))
+ ,(F s0, □(s0) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))    , True)
+ ,(    , □(s0) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))    , ((True ∧ True) ∧ (True ∧ True)))
+ ,(S s1, ⊠ ⋈ □(s1) ▶ λ.□((fst x0 + snd x0))    , True)
+ ,(    , ⊠ ⋈ □(s1) ▶ λ.□((fst x0 + snd x0))    , ((True ∧ True) ∧ (True ∧ True)))
+ ,(F s2, □(s2) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))    , True)
+ ,(    , □(s2) ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))    , ((True ∧ True) ∧ (True ∧ True)))
+ ,(S s3, □(s0) ⋈ □(s3) ▶ λ.□((fst x0 + snd x0)), True)
+ ,(    , □((s0 + s3))                          , ((True ∧ True) ∧ ((True ∧ True) ∧ ((True ∧ (True ∧ True)) ∧ ((True ∧ True) ∧ (True ∧ True))))) )
+ ,(F s4, □(s4) ⋈ □(s1) ▶ λ.□((fst x0 + snd x0)), True)
+ ,(    , □((s4 + s1))                          , ((True ∧ True) ∧ ((True ∧ True) ∧ ((True ∧ (True ∧ True)) ∧ ((True ∧ True) ∧ (True ∧ True))))) )
+ ,(S s5, ⊠ ⋈ □(s5) ▶ λ.□((fst x0 + snd x0))    , True)
+ ,(    , ⊠ ⋈ □(s5) ▶ λ.□((fst x0 + snd x0))    , ((True ∧ True) ∧ (True ∧ True)))
+]
 -}

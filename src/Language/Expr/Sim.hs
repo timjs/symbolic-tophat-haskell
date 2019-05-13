@@ -358,7 +358,9 @@ simulate t0 is0 p0 = do
     then empty
     else case value t1 of
       Just _  -> pure ( t1, is, p )
-      Nothing -> simulate t1 is p
+      Nothing -> if t0 == t1
+        then empty
+        else simulate t1 is p
 
 
 satisfiable :: Pred 'TyBool -> Bool
