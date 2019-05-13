@@ -328,19 +328,27 @@ handle (V.Task t) = case t of
       Nothing -> ls
 
 
+type Execution t = ( Maybe Input, Val ('TyTask t), Pred 'TyBool )
+
+none :: Maybe Input
+none = Nothing
+
+
 drive
-  :: MonadSupply Int m => MonadFail m => MonadPlus m
+  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
+  trace ( Just i1, t1, p1 )
   ( t2, p2 ) <- normalise (asExpr t1)
+  trace ( none, t2, p2 )
   pure ( t2, i1, p1 :/\: p2 )
 
 
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate
-  :: MonadSupply Int m => MonadFail m => MonadPlus m 
+  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate t0 is0 p0 = do
   ( t1, i1, p1 ) <- drive t0
@@ -349,9 +357,18 @@ simulate t0 is0 p0 = do
   if not (satisfiable p)
     then empty
     else case value t1 of
-      Just v1 -> pure ( t1, is, p )
+      Just _  -> pure ( t1, is, p )
       Nothing -> simulate t1 is p
 
 
 satisfiable :: Pred 'TyBool -> Bool
 satisfiable _ = True
+
+
+run
+  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m
+  => Pretask ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
+run t0 = do
+  ( t1, p1 ) <- initialise (E.Task t0)
+  trace ( none, t1, p1 )
+  simulate t1 empty p1
