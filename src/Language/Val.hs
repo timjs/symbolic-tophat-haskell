@@ -107,7 +107,7 @@ pattern (:>>?) t c = Next (Task t) (E.Lam (E.Task c))
 instance Pretty (Task t) where
   pretty = \case
     Edit x -> cat [ "□(", pretty x, ")" ]
-    Enter -> "□(_)"
+    Enter -> "⊠"
     -- Store -> "■(_)"
     And x y -> sep [ pretty x, "⋈", pretty y ]
     Or x y -> sep [ pretty x, "◆", pretty y ]
