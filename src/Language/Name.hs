@@ -1,5 +1,5 @@
 module Language.Name
-  ( Name(..)
+  ( Name
   , fresh
   ) where
 
