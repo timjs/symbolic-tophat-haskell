@@ -322,7 +322,7 @@ handle (V.Task t) = case t of
     case value t1 of
       Just v1 -> do
         ( t2, p2 ) <- normalise (E.App e2 (asExpr v1))
-        if not (failing t2)
+        if failing t2
           then ls
           else ls <|> pure ( t2, Continue, p2 )
       Nothing -> ls
