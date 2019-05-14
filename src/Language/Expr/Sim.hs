@@ -354,19 +354,15 @@ simulate t0 is0 ps0 = do
   ( t1, i1, p1 ) <- drive t0
   let ps1 = ps0 :/\: p1
   let is1 = i1 : is0
-  if not (satisfiable ps1)
-    then empty
-    else case value t1 of
-      Just _  -> pure ( t1, reverse is1, simplify ps1 )
-      Nothing -> if t0 /= t1
-        then simulate t1 is1 ps1
-        else do
-          ( t2, i2, p2 ) <- drive t1
-          let ps2 = ps1 :/\: p2
-          let is2 = i2 : is1
-          if t1 /= t2
-            then simulate t2 is2 ps2
-            else empty
+  if| not (satisfiable ps1) -> empty
+    | Just _ <- value t1    -> pure ( t1, reverse is1, simplify ps1 )
+    | t0 /= t1              -> simulate t1 is1 ps1
+    | otherwise             -> do
+        ( t2, i2, p2 ) <- drive t1
+        let ps2 = ps1 :/\: p2
+        let is2 = i2 : is1
+        if| t1 /= t2        -> simulate t2 is2 ps2
+          | otherwise       -> empty
 
 
 satisfiable :: Pred 'TyBool -> Bool
