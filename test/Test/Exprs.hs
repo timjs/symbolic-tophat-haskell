@@ -1,15 +1,11 @@
 module Test.Exprs where
 
 import Data.Stream (Stream)
-import Language.Input (Input)
-import Language.Pred (Pred, pattern (:/\:))
-import Language.Val (Val, asExpr)
 
 import Control.Monad.List
 import Control.Monad.Supply
 import Control.Monad.Trace
 import Language.Expr
-import Language.Expr.Sim
 
 import qualified Data.Stream as Stream
 
@@ -55,6 +51,12 @@ echo =
   View (Var 0)
 
 
+echo' :: Pretask ('TyTask ('TyPrim 'TyInt))
+echo' =
+  Enter @'TyInt :>>?
+  View (Var 0)
+
+
 add_seq :: Pretask ('TyTask ('TyPrim 'TyInt))
 add_seq =
   Enter @'TyInt :>>=
@@ -74,6 +76,18 @@ guard :: Pretask ('TyTask ('TyPrim 'TyInt))
 guard =
   Enter @'TyInt :>>\
   If (Bn Gt (Var @('TyPrim 'TyInt) 0) (I 0)) (Task $ View (Var @('TyPrim 'TyInt) 0)) (Task $ Fail)
+
+
+preguard :: Pretask ('TyTask ('TyPrim 'TyString))
+preguard =
+  Enter @'TyBool :>>\
+  If (Un Not (Var @('TyPrim 'TyBool) 0)) (Task $ guard2 (Var @('TyPrim 'TyBool) 0)) (Task $ Fail)
+
+guard2 :: Expr ('TyPrim 'TyBool) -> Pretask ('TyTask ('TyPrim 'TyString))
+guard2 x =
+  Task (Edit x) `Next` Lam (
+    If (Var @('TyPrim 'TyBool) 0) (Task $ View (S "done")) (Task $ Fail)
+  )
 
 
 machine :: Pretask ('TyTask ('TyPrim 'TyString))
@@ -153,3 +167,11 @@ exec r = fst $ fst $ runTracer (runSupplyT (runListT r) ids)
 , ( □((s4 + s1)) , [F s4, S s1] , ((((True ∧ True) ∧ (True ∧ True)) ∧ (True ∧ ((True ∧ True) ∧ (True ∧ True)))) ∧ (True ∧ ((True ∧ True) ∧ ((True ∧ True) ∧ ((True ∧ (True ∧ True)) ∧ ((True ∧ True) ∧ (True ∧ True))))))) )
 ]
 -}
+
+
+-- [,(  , ⊠ ▷… λ.□(x0)    , (True ∧ True))
+--  ,(s0, □(s0) ▷… λ.□(x0), True)
+--  ,(  , □(s0) ▷… λ.□(x0), (True ∧ True))
+--  ,(s1, □(s1) ▷… λ.□(x0), True)
+--  ,(  , □(s1) ▷… λ.□(x0), (True ∧ True))
+-- ]

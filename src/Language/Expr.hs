@@ -96,7 +96,7 @@ instance Eq (Expr t) where
     | otherwise                                  = False
 
   Task p1               == Task p2               = p1 == p2
-  
+
   _                     == _                     = False
 
 
