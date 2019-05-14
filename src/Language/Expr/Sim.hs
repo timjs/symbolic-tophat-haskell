@@ -350,21 +350,27 @@ drive t0 = do
 simulate
   :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
-simulate t0 is0 p0 = do
+simulate t0 is0 ps0 = do
   ( t1, i1, p1 ) <- drive t0
-  let p = p0 :/\: p1
-  let is = i1 : is0
-  if not (satisfiable p)
+  let ps1 = ps0 :/\: p1
+  let is1 = i1 : is0
+  if not (satisfiable ps1)
     then empty
     else case value t1 of
-      Just _  -> pure ( t1, reverse is, simplify p )
-      Nothing -> if t0 == t1
-        then empty
-        else simulate t1 is p
+      Just _  -> pure ( t1, reverse is1, simplify ps1 )
+      Nothing -> if t0 /= t1
+        then simulate t1 is1 ps1
+        else do
+          ( t2, i2, p2 ) <- drive t1
+          let ps2 = ps1 :/\: p2
+          let is2 = i2 : is1
+          if t1 /= t2
+            then simulate t2 is2 ps2
+            else empty
 
 
 satisfiable :: Pred 'TyBool -> Bool
-satisfiable _ = True
+satisfiable _ = True  -- FIXME: use SBV here
 
 
 run
