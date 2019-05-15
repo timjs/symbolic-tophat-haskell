@@ -36,8 +36,8 @@ data Expr (t :: Ty) where
   Fst :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr a
   Snd :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr b
 
-  Ref :: Expr ('TyPrim a) -> Expr ('TyRef a)
-  Deref :: Expr ('TyRef a) -> Expr ('TyPrim a)
+  Ref :: Typeable a => Expr ('TyPrim a) -> Expr ('TyRef a)
+  Deref :: Typeable a => Expr ('TyRef a) -> Expr ('TyPrim a)
   Assign :: Typeable a => Expr ('TyRef a) -> Expr ('TyPrim a) -> Expr ('TyUnit)
 
   Task :: Pretask ('TyTask a) -> Expr ('TyTask a)
