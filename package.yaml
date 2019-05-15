@@ -96,14 +96,22 @@ default-extensions:
 
 
 ghc-options:
-  - -Weverything
 
-  - -Wno-safe
-  - -Wno-unsafe
-  - -Wno-implicit-prelude
-  - -Wno-missing-pattern-synonym-signatures
-  - -Wno-missing-import-lists
-  - -Wno-missing-export-lists
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wpartial-fields
+  - -Wredundant-constraints
+
+  # - -Weverything
+  # - -Wno-safe
+  # - -Wno-unsafe
+  # - -Wno-implicit-prelude
+  # - -Wno-missing-pattern-synonym-signatures
+  # - -Wno-missing-import-lists
+  # - -Wno-missing-export-lists
 
 
 library:
