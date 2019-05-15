@@ -23,6 +23,7 @@ data Expr (t :: Ty) where
   App :: ( Typeable a, Typeable b ) => Expr (a ':-> b) -> Expr a -> Expr b
   Var :: Typeable a => Name a -> Expr a
 
+  Loc :: Name ('TyPrim a) -> Expr ('TyRef a)
   Sym :: Name ('TyPrim a) -> Expr ('TyPrim a)
   Con :: IsPrim a -> TypeOf a -> Expr ('TyPrim a)
 
@@ -35,6 +36,10 @@ data Expr (t :: Ty) where
   Fst :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr a
   Snd :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr b
 
+  Ref :: Expr ('TyPrim a) -> Expr ('TyRef a)
+  Deref :: Expr ('TyRef a) -> Expr ('TyPrim a)
+  Assign :: Typeable a => Expr ('TyRef a) -> Expr ('TyPrim a) -> Expr ('TyUnit)
+
   Task :: Pretask ('TyTask a) -> Expr ('TyTask a)
 
 
@@ -45,10 +50,11 @@ pattern S x = Con StringIsPrim x
 
 instance Pretty (Expr t) where
   pretty = \case
-    Lam f -> "λ." <> pretty f
+    Lam f -> cat [ "λ.", pretty f ]
     App f a -> sep [ parens (pretty f), parens (pretty a) ]
-    Var i -> "x" <> pretty i
-    Sym i -> "s" <> pretty i
+    Var i -> cat [ "x", pretty i ]
+    Sym i -> cat [ "s", pretty i ]
+    Loc i -> cat [ "l", pretty i ]
 
     Con BoolIsPrim x -> pretty x
     Con IntIsPrim x -> pretty x
@@ -59,9 +65,13 @@ instance Pretty (Expr t) where
     If p a b -> sep [ "if", pretty p, "then", pretty a, "else", pretty b ]
 
     Unit -> angles neutral
-    Pair a b -> angles $ pretty a <> comma <> pretty b
-    Fst a -> "fst" <+> pretty a
-    Snd a -> "snd" <+> pretty a
+    Pair a b -> angles $ cat [ pretty a, comma, pretty b ]
+    Fst a -> sep [ "fst", pretty a ]
+    Snd a -> sep [ "snd", pretty a ]
+
+    Ref a -> sep [ "ref", pretty a ]
+    Deref a -> cat [ "!", pretty a ]
+    Assign a b -> sep [ pretty a, ":=", pretty b ]
 
     Task p -> pretty p
 
@@ -73,6 +83,7 @@ instance Eq (Expr t) where
     | otherwise                                  = False
   Var i1                == Var i2                = i1 == i2
   Sym i1                == Sym i2                = i1 == i2
+  Loc i1                == Loc i2                = i1 == i2
 
   Con BoolIsPrim x1     == Con BoolIsPrim x2     = x1 == x2
   Con IntIsPrim x1      == Con IntIsPrim x2      = x1 == x2
@@ -93,6 +104,12 @@ instance Eq (Expr t) where
     | otherwise                                  = False
   Snd a1                == Snd a2
     | Just Refl <- a1 ~= a2                      = a1 == a2
+    | otherwise                                  = False
+
+  Ref a1                == Ref a2                = a1 == a2
+  Deref a1              == Deref a2              = a1 == a2
+  Assign a1 b1          == Assign a2 b2
+    | Just Refl <- a1 ~= a2                      = a1 == a2 && b1 == b2
     | otherwise                                  = False
 
   Task p1               == Task p2               = p1 == p2

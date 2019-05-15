@@ -30,6 +30,7 @@ import qualified Language.Pred as P
 data Val (t :: Ty) where
   Lam :: Typeable a => Expr b -> Val (a ':-> b)
 
+  Loc :: Name ('TyPrim a) -> Val ('TyRef a)
   Sym :: Name ('TyPrim a) -> Val ('TyPrim a)
   Con :: IsPrim a -> TypeOf a -> Val ('TyPrim a)
 
@@ -49,18 +50,19 @@ pattern S x = Con StringIsPrim x
 
 instance Pretty (Val t) where
   pretty = \case
-    Lam f -> "λ." <> pretty f
-    Sym i -> "s" <> pretty i
+    Lam f -> cat [ "λ.", pretty f ]
+    Sym i -> cat [ "s", pretty i ]
+    Loc i -> cat [ "l", pretty i ]
 
     Con BoolIsPrim x -> pretty x
     Con IntIsPrim x -> pretty x
     Con StringIsPrim x -> pretty x
 
-    Un o a -> parens (sep [ pretty o, pretty a ])
-    Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])
+    Un o a -> parens $ sep [ pretty o, pretty a ]
+    Bn o a b -> parens $ sep [ pretty a, pretty o, pretty b ]
 
     Unit -> angles neutral
-    Pair a b -> angles $ pretty a <> comma <> pretty b
+    Pair a b -> angles $ cat [ pretty a, comma, pretty b ]
 
     Task p -> pretty p
 
@@ -69,6 +71,7 @@ instance Pretty (Val t) where
 instance Eq (Val t) where
   Lam f1                == Lam f2                = f1 == f2  -- FIXME: is this ok?
   Sym i1                == Sym i2                = i1 == i2
+  Loc i1                == Loc i2                = i1 == i2
 
   Con BoolIsPrim x1     == Con BoolIsPrim x2     = x1 == x2
   Con IntIsPrim x1      == Con IntIsPrim x2      = x1 == x2
@@ -183,6 +186,7 @@ asExpr :: Val a -> Expr a
 asExpr = \case
   Lam f -> E.Lam f
   Sym i -> E.Sym i
+  Loc i -> E.Loc i
   Con p x -> E.Con p x
 
   Un o a -> E.Un o (asExpr a)

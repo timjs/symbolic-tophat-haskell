@@ -13,6 +13,7 @@ data {- kind -} Ty
   | Ty :>< Ty
   | TyUnit
   | TyTask Ty
+  | TyRef PrimTy
   | TyPrim PrimTy
 
 instance Universe Ty where
@@ -20,6 +21,7 @@ instance Universe Ty where
   type TypeOf (a ':>< b) = ( TypeOf a, TypeOf b )
   type TypeOf 'TyUnit = ()
   -- type TypeOf ('TyTask a) = Task (TypeOf a)
+  -- type TypeOf ('TyRef p) = Ref (TypeOf a)
   type TypeOf ('TyPrim p) = TypeOf p
 
 
