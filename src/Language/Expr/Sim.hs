@@ -8,10 +8,12 @@ import Language.Type
 
 import Language.Expr (Expr, Pretask)
 import Language.Pred (Pred, simplify, pattern Yes, pattern (:/\:))
+import Language.Store (MonadStore)
 import Language.Val (Val, Task, asPred, asExpr)
 
 import qualified Language.Expr as E
 import qualified Language.Pred as P
+import qualified Language.Store as S
 import qualified Language.Val as V
 
 
@@ -42,8 +44,12 @@ subst j s = \case
   E.Pair a b -> E.Pair (subst j s a) (subst j s b)
   E.Fst a -> E.Fst (subst j s a)
   E.Snd a -> E.Snd (subst j s a)
+  E.Ref a -> E.Ref (subst j s a)
+  E.Deref a -> E.Deref (subst j s a)
+  E.Assign a b -> E.Assign (subst j s a) (subst j s b)
   E.Task p -> E.Task (subst' j s p)
 
+  E.Loc i -> E.Loc i
   E.Sym i -> E.Sym i
   E.Con p x -> E.Con p x
   E.Unit -> E.Unit
@@ -77,8 +83,12 @@ shift c = \case
   E.Pair a b -> E.Pair (shift c a) (shift c b)
   E.Fst a -> E.Fst (shift c a)
   E.Snd a -> E.Snd (shift c a)
+  E.Ref a -> E.Ref (shift c a)
+  E.Deref a -> E.Deref (shift c a)
+  E.Assign a b -> E.Assign (shift c a) (shift c b)
   E.Task p -> E.Task (shift' c p)
 
+  E.Loc i -> E.Loc i
   E.Sym i -> E.Sym i
   E.Con p x -> E.Con p x
   E.Unit -> E.Unit
@@ -143,7 +153,7 @@ combined with the predicate which has to hold to get that value.
 Note that the context of symbolic values `sxt` is the same for the expression
 and the resulting predicate.
 -}
-eval :: MonadFail m => MonadPlus m => Expr t -> m ( Val t, Pred 'TyBool )
+eval :: MonadFail m => MonadPlus m => MonadStore m => Expr t -> m ( Val t, Pred 'TyBool )
 eval = \case
   E.App e1 e2 -> do
     ( V.Lam e1', p1 ) <- eval e1
@@ -175,8 +185,24 @@ eval = \case
     ( V.Pair _ v, p ) <- eval e
     pure ( v, p )
 
+  E.Ref e1 -> do
+    ( v1, p1 ) <- eval e1
+    l1 <- S.new v1
+    pure ( l1, p1 )
+  E.Deref e1 -> do
+    ( l1, p1 ) <- eval e1
+    v1 <- S.read l1
+    pure ( v1, p1 )
+  E.Assign e1 e2 -> do
+    ( l1, p1 ) <- eval e1
+    ( v2, p2 ) <- eval e2
+    S.write l1 v2
+    pure ( V.Unit, p1 :/\: p2 )
+
   E.Lam e ->
     pure ( V.Lam e, Yes )
+  E.Loc i ->
+    pure ( V.Loc i, Yes )
   E.Sym i ->
     pure ( V.Sym i, Yes )
   E.Con p x ->
@@ -192,7 +218,7 @@ eval = \case
     error $ "Free variable in expression: " <> show (pretty i)
 
 
-eval' :: MonadFail m => MonadPlus m => Pretask t -> m ( Task t, Pred 'TyBool )
+eval' :: MonadFail m => MonadPlus m => MonadStore m => Pretask t -> m ( Task t, Pred 'TyBool )
 eval' = \case
   E.Edit e1 -> do
     ( v1, p1 ) <- eval e1
@@ -221,7 +247,7 @@ eval' = \case
     pure ( V.Next t1 e2, p1 )
 
 
-stride :: MonadFail m => MonadPlus m => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+stride :: MonadFail m => MonadPlus m => MonadStore m => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
@@ -261,7 +287,7 @@ stride (V.Task t) = case t of
 
 
 normalise
-  :: MonadFail m => MonadPlus m
+  :: MonadFail m => MonadPlus m => MonadStore m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
@@ -275,13 +301,13 @@ normalise e0 = do
 
 
 initialise
-  :: MonadFail m => MonadPlus m
+  :: MonadFail m => MonadPlus m => MonadStore m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 initialise = normalise
 
 
 handle
-  :: MonadSupply Int m => MonadFail m => MonadPlus m
+  :: MonadSupply Int m => MonadFail m => MonadPlus m => MonadStore m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 handle (V.Task t) = case t of
   V.Edit _ -> do
@@ -335,7 +361,7 @@ none = Nothing
 
 
 drive
-  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m
+  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m => MonadStore m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
@@ -348,7 +374,7 @@ drive t0 = do
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate
-  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m
+  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m => MonadStore m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate = go $ go $ end
   where
@@ -368,7 +394,7 @@ satisfiable _ = True  -- FIXME: use SBV here
 
 
 run
-  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m
+  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m => MonadStore m
   => Pretask ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 run t0 = do
   ( t1, p1 ) <- initialise (E.Task t0)
