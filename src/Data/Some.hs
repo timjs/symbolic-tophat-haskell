@@ -5,6 +5,10 @@ data Some f where
   Some :: Typeable (f a) => f a -> Some f
 
 
+instance ( forall a. Pretty (f a) ) => Pretty (Some f) where
+  pretty (Some x) = sep [ "Some", pretty x ]
+
+
 pack :: forall f a. Typeable (f a) => f a -> Some f
 pack = Some
 

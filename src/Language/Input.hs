@@ -3,7 +3,6 @@ module Language.Input
   ) where
 
 import Language.Name
-import Language.Type
 
 
 -- Names -----------------------------------------------------------------------

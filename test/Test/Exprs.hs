@@ -1,11 +1,14 @@
 module Test.Exprs where
 
 import Data.Stream (Stream)
+import Data.Some (Some)
+import Language.Val (Val)
 
 import Control.Monad.List
 import Control.Monad.Supply
 import Control.Monad.Trace
 import Language.Expr
+import Language.Store
 
 import qualified Data.Stream as Stream
 
@@ -45,74 +48,99 @@ fact = Lam
 
 -- Tasks --
 
-echo :: Pretask ('TyTask ('TyPrim 'TyInt))
-echo =
+echo :: Expr ('TyTask ('TyPrim 'TyInt))
+echo = Task $
   Enter @'TyInt :>>=
   View (Var 0)
 
 
-echo' :: Pretask ('TyTask ('TyPrim 'TyInt))
-echo' =
+echo' :: Expr ('TyTask ('TyPrim 'TyInt))
+echo' = Task $
   Enter @'TyInt :>>?
   View (Var 0)
 
 
-add_seq :: Pretask ('TyTask ('TyPrim 'TyInt))
-add_seq =
+add_seq :: Expr ('TyTask ('TyPrim 'TyInt))
+add_seq = Task $
   Enter @'TyInt :>>=
   Enter @'TyInt :>>=
   View (Bn Add (Var 0) (Var 1))
 
 
+add_seq' :: Expr ('TyTask ('TyPrim 'TyInt))
+add_seq' = Task $
+  Enter @'TyInt :>>=
+  Enter @'TyInt :>>=
+  View (Bn Add (Var 0) (Var 0))
+
+
 type TyIntInt = 'TyPrim 'TyInt ':>< 'TyPrim 'TyInt
 
-add_par :: Pretask ('TyTask ('TyPrim 'TyInt))
-add_par =
+add_par :: Expr ('TyTask ('TyPrim 'TyInt))
+add_par = Task $
   Enter @'TyInt :&&: Enter @'TyInt :>>=
   View (Bn Add (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0)))
 
 
-guard :: Pretask ('TyTask ('TyPrim 'TyInt))
-guard =
+guard :: Expr ('TyTask ('TyPrim 'TyInt))
+guard = Task $
   Enter @'TyInt :>>\
-  If (Bn Gt (Var @('TyPrim 'TyInt) 0) (I 0)) (Task $ View (Var @('TyPrim 'TyInt) 0)) (Task $ Fail)
+  If (Bn Gt (Var 0) (I 0)) (Task $ View (Var 0)) (Task $ Fail)
 
 
-preguard :: Pretask ('TyTask ('TyPrim 'TyString))
-preguard =
+preguard :: Expr ('TyTask ('TyPrim 'TyString))
+preguard = Task $
   Enter @'TyBool :>>\
-  If (Un Not (Var @('TyPrim 'TyBool) 0)) (Task $ guard2 (Var @('TyPrim 'TyBool) 0)) (Task $ Fail)
+  If (Un Not (Var 0)) (contguard (Var 0)) (Task $ Fail)
 
-guard2 :: Expr ('TyPrim 'TyBool) -> Pretask ('TyTask ('TyPrim 'TyString))
-guard2 x =
+contguard :: Expr ('TyPrim 'TyBool) -> Expr ('TyTask ('TyPrim 'TyString))
+contguard x = Task $
   Task (Edit x) `Next` Lam (
     If (Var @('TyPrim 'TyBool) 0) (Task $ View (S "done")) (Task $ Fail)
   )
 
 
-machine :: Pretask ('TyTask ('TyPrim 'TyString))
-machine =
+machine :: Expr ('TyTask ('TyPrim 'TyString))
+machine = Task $
   Enter @'TyInt :>>\
-  If (Bn Eq (Var @('TyPrim 'TyInt) 0) (I 1)) (Task $ View (S "Biscuit")) (
-  If (Bn Eq (Var @('TyPrim 'TyInt) 0) (I 2)) (Task $ View (S "Chocolate")) (
+  If (Bn Eq (Var 0) (I 1)) (Task $ View (S "Biscuit")) (
+  If (Bn Eq (Var 0) (I 2)) (Task $ View (S "Chocolate")) (
   Task $ Fail))
+
+
+share :: Expr ('TyTask ('TyPrim 'TyInt))
+share =
+  Let (Ref (I 0)) $ Task $
+  Update @'TyInt (Var 0)
+
+
+shareStep :: Expr ('TyTask ('TyPrim 'TyString))
+shareStep =
+  Let (Ref (I 0)) $ Task $
+  Update @'TyInt (Var 0) :>>\
+  If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail)
 
 
 
 -- Main ------------------------------------------------------------------------
 
 
-type Runner = ListT (SupplyT Int Tracer)
-  -- == Stream Int -> ( ( List a, Stream Int ), List (Doc n) )
+type Runner = ListT (SupplyT Nat (TraceT Store))
 
-ids :: Stream Int
+ids :: Stream Nat
 ids = Stream.iterate succ 0
 
-trace :: Runner a -> List (Doc ())
-trace r = snd $ runTracer (runSupplyT (runListT r) ids)
+runRunner :: Runner a -> ( ( ( List a, Stream Nat ), List (Doc ()) ), List (Some Val) )
+runRunner r = runStore (runTraceT (runSupplyT (runListT r) ids))
 
-exec :: Runner a -> List a
-exec r = fst $ fst $ runTracer (runSupplyT (runListT r) ids)
+traceRunner :: Runner a -> List (Doc ())
+traceRunner = snd << fst << runRunner
+
+evalRunner :: Runner a -> List a
+evalRunner = fst << fst << fst << runRunner
+
+execRunner :: Runner a -> List (Some Val)
+execRunner = snd << runRunner
 
 
 {-

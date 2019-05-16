@@ -11,13 +11,13 @@ import Language.Type (Ty)
 -- Names -----------------------------------------------------------------------
 
 newtype Name (a :: Ty)
-  = Name Int
-  deriving ( Pretty, Eq, Ord, Num ) via Int
+  = Name Nat
+  deriving ( Pretty, Eq, Ord, Num ) via Nat
 
--- fresh :: Stream Int -> ( Name t, Stream Int )
+-- fresh :: Stream Nat -> ( Name t, Stream Nat )
 -- fresh (Cons i is) = ( Name i, is )
 
-fresh :: MonadSupply Int m => m (Name t)
+fresh :: MonadSupply Nat m => m (Name t)
 fresh = do
   i <- supply
   pure $ Name i

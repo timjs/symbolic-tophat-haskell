@@ -27,7 +27,6 @@ instance Eq (Un a b) where
   Not == Not = True
   Neg == Neg = True
   Len == Len = True
-  _   == _   = False
 
 
 

@@ -8,7 +8,7 @@ import Language.Type
 
 import Language.Expr (Expr, Pretask)
 import Language.Pred (Pred, simplify, pattern Yes, pattern (:/\:))
-import Language.Store (MonadStore)
+import Language.Store (MonadStore(..))
 import Language.Val (Val, Task, asPred, asExpr)
 
 import qualified Language.Expr as E
@@ -59,7 +59,7 @@ subst' :: Typeable s => Name s -> Expr s -> Pretask t -> Pretask t
 subst' j s = \case
   E.Edit a -> E.Edit (subst j s a)
   E.Enter -> E.Enter
-  -- Store ->
+  E.Update a -> E.Update (subst j s a)
   E.And a b -> E.And (subst j s a) (subst j s b)
   E.Or a b -> E.Or (subst j s a) (subst j s b)
   E.Xor a b -> E.Xor (subst j s a) (subst j s b)
@@ -98,7 +98,7 @@ shift' :: Typeable s => Name s -> Pretask t -> Pretask t
 shift' c = \case
   E.Edit a -> E.Edit (shift c a)
   E.Enter -> E.Enter
-  -- Store ->
+  E.Update a -> E.Update (shift c a)
   E.And a b -> E.And (shift c a) (shift c b)
   E.Or a b -> E.Or (shift c a) (shift c b)
   E.Xor a b -> E.Xor (shift c a) (shift c b)
@@ -111,30 +111,37 @@ shift' c = \case
 -- Observations ----------------------------------------------------------------
 
 
-value :: Val ('TyTask t) -> Maybe (Val t)
+value :: MonadStore m => Val ('TyTask t) -> m (Maybe (Val t))
 value (V.Task t) = case t of
-  V.Edit v1   -> Just v1
-  V.Enter     -> Nothing
-  -- V.Store l   -> Just <$> deref l
-  V.And t1 t2 -> case ( value t1, value t2 ) of
-    ( Just v1, Just v2 ) -> Just $ V.Pair v1 v2
-    ( _      , _       ) -> Nothing
-  V.Or t1 t2  -> case value t1 of
-    Just v1 -> Just v1
-    Nothing -> case value t2 of
-      Just v2 -> Just v2
-      Nothing -> Nothing
-  V.Xor _ _   -> Nothing
-  V.Fail      -> Nothing
-  V.Then _ _  -> Nothing
-  V.Next _ _  -> Nothing
+  V.Edit v1                -> pure $ Just v1
+  V.Enter                  -> pure $ Nothing
+  V.Update l1              -> map Just $ read l1
+  V.And t1 t2              -> do
+    mv1 <- value t1
+    mv2 <- value t2
+    case ( mv1, mv2 ) of
+      ( Just v1, Just v2 ) -> pure $ Just $ V.Pair v1 v2
+      ( _      , _       ) -> pure $ Nothing
+  V.Or t1 t2               -> do
+    mv1 <- value t1
+    case mv1 of
+      Just v1              -> pure $ Just v1
+      Nothing              -> do
+        mv2 <- value t2
+        case mv2 of
+          Just v2          -> pure $ Just v2
+          Nothing          -> pure $ Nothing
+  V.Xor _ _                -> pure $ Nothing
+  V.Fail                   -> pure $ Nothing
+  V.Then _ _               -> pure $ Nothing
+  V.Next _ _               -> pure $ Nothing
 
 
 failing :: Val ('TyTask t) -> Bool
 failing (V.Task t) = case t of
   V.Edit _    -> False
   V.Enter     -> False
-  -- V.Store _   -> False
+  V.Update _  -> False
   V.And t1 t2 -> failing t1 && failing t2
   V.Or  t1 t2 -> failing t1 && failing t2
   V.Xor _ _   -> True --FIXME
@@ -153,12 +160,18 @@ combined with the predicate which has to hold to get that value.
 Note that the context of symbolic values `sxt` is the same for the expression
 and the resulting predicate.
 -}
-eval :: MonadFail m => MonadPlus m => MonadStore m => Expr t -> m ( Val t, Pred 'TyBool )
+eval
+  :: MonadStore m => MonadPlus m
+  => Expr t -> m ( Val t, Pred 'TyBool )
 eval = \case
   E.App e1 e2 -> do
-    ( V.Lam e1', p1 ) <- eval e1
+    -- | Apparently GHC can't do GADT pattern matching inside do-notation,
+    -- | the compiler complains it needs a `MonadFail` instance.
+    -- | Therefore we split out the pattern match in a separate let-binding.
+    ( e1', p1 ) <- eval e1
+    let V.Lam e11 = e1'
     ( v2, p2 ) <- eval e2
-    ( v1, p3 ) <- eval $ subst 0 (asExpr v2) e1'
+    ( v1, p3 ) <- eval $ subst 0 (asExpr v2) e11
     pure ( v1, p1 :/\: p2 :/\: p3 )
 
   E.Un o e1 -> do
@@ -179,10 +192,12 @@ eval = \case
     ( v2, p2 ) <- eval e2
     pure ( V.Pair v1 v2, p1 :/\: p2 )
   E.Fst e -> do --FIXME: missing
-    ( V.Pair v _, p ) <- eval e
+    ( e', p ) <- eval e
+    let V.Pair v _ = e'
     pure ( v, p )
   E.Snd e -> do --FIXME: missing
-    ( V.Pair _ v, p ) <- eval e
+    ( e', p ) <- eval e
+    let  V.Pair _ v = e'
     pure ( v, p )
 
   E.Ref e1 -> do
@@ -218,14 +233,18 @@ eval = \case
     error $ "Free variable in expression: " <> show (pretty i)
 
 
-eval' :: MonadFail m => MonadPlus m => MonadStore m => Pretask t -> m ( Task t, Pred 'TyBool )
+eval'
+  :: MonadStore m => MonadPlus m
+  => Pretask t -> m ( Task t, Pred 'TyBool )
 eval' = \case
   E.Edit e1 -> do
     ( v1, p1 ) <- eval e1
     pure ( V.Edit v1, p1 )
   E.Enter ->
     pure ( V.Enter, Yes )
-  -- E.Store -> do
+  E.Update e1 -> do
+    ( v1, p1 ) <- eval e1
+    pure ( V.Update v1, p1 )
   E.And e1 e2 -> do
     ( t1, p1 ) <- eval e1
     ( t2, p2 ) <- eval e2
@@ -247,13 +266,15 @@ eval' = \case
     pure ( V.Next t1 e2, p1 )
 
 
-stride :: MonadFail m => MonadPlus m => MonadStore m => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+stride
+  :: MonadStore m => MonadPlus m
+  => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
     ( t1', p1 ) <- stride t1
-    let v = value t1'
-    case v of
+    mv1 <- value t1'
+    case mv1 of
       Nothing ->
         pure ( V.Task $ V.Then t1' e2, p1 )
       Just v1 -> do
@@ -264,13 +285,13 @@ stride (V.Task t) = case t of
   -- Choose:
   V.Or t1 t2 -> do
     ( t1', p1 ) <- stride t1
-    let v1 = value t1'
-    case v1 of
+    mv1 <- value t1'
+    case mv1 of
       Just _  -> pure ( t1', p1 )
       Nothing -> do
         ( t2', p2 ) <- stride t2
-        let v2 = value t2'
-        case v2 of
+        mv2 <- value t2'
+        case mv2 of
           Just _  -> pure ( t2', p1 :/\: p2 )
           Nothing -> pure ( V.Task $ V.Or t1' t2', p1 :/\: p2 )
   -- Evaluate:
@@ -287,7 +308,7 @@ stride (V.Task t) = case t of
 
 
 normalise
-  :: MonadFail m => MonadPlus m => MonadStore m
+  :: MonadStore m => MonadPlus m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
@@ -301,13 +322,13 @@ normalise e0 = do
 
 
 initialise
-  :: MonadFail m => MonadPlus m => MonadStore m
+  :: MonadStore m => MonadPlus m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 initialise = normalise
 
 
 handle
-  :: MonadSupply Int m => MonadFail m => MonadPlus m => MonadStore m
+  :: MonadSupply Nat m => MonadStore m => MonadPlus m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 handle (V.Task t) = case t of
   V.Edit _ -> do
@@ -316,6 +337,10 @@ handle (V.Task t) = case t of
   V.Enter -> do
     s <- fresh
     pure ( V.Task $ V.Edit (V.Sym s), Change s, Yes )
+  V.Update l -> do
+    s <- fresh
+    write l (V.Sym s)
+    pure ( V.Task $ V.Update l, Change s, Yes )
   V.And t1 t2 -> do
     ( t1', i1, p1 ) <- handle t1
     ( t2', i2, p2 ) <- handle t2
@@ -345,7 +370,8 @@ handle (V.Task t) = case t of
   V.Next t1 e2 -> do
     ( t', i', p' ) <- handle t1
     let ls = pure ( V.Task $ V.Next t' e2, i', p' )
-    case value t1 of
+    mv1 <- value t1
+    case mv1 of
       Just v1 -> do
         ( t2, p2 ) <- normalise (E.App e2 (asExpr v1))
         if failing t2
@@ -361,7 +387,7 @@ none = Nothing
 
 
 drive
-  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m => MonadStore m
+  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadPlus m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
@@ -374,7 +400,7 @@ drive t0 = do
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate
-  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m => MonadStore m
+  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadPlus m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate = go $ go $ end
   where
@@ -383,9 +409,11 @@ simulate = go $ go $ end
       let ps1 = ps0 :/\: p1
       let is1 = i1 : is0
       if| not (satisfiable ps1) -> empty
-        | Just _ <- value t1    -> pure ( t1, reverse is1, simplify ps1 )
-        | t0 /= t1              -> simulate t1 is1 ps1
-        | otherwise             -> cont t1 is1 ps1
+        | otherwise             -> do
+            mv1 <- value t1
+            if| Just _ <- mv1   -> pure ( t1, reverse is1, simplify ps1 )
+              | t0 /= t1        -> simulate t1 is1 ps1
+              | otherwise       -> cont t1 is1 ps1
     end _ _ _ = empty
 
 
@@ -394,9 +422,9 @@ satisfiable _ = True  -- FIXME: use SBV here
 
 
 run
-  :: MonadTrace (Execution t) m => MonadSupply Int m => MonadFail m => MonadPlus m => MonadStore m
-  => Pretask ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
+  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadPlus m
+  => Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 run t0 = do
-  ( t1, p1 ) <- initialise (E.Task t0)
+  ( t1, p1 ) <- initialise t0
   trace ( none, t1, p1 )
   simulate t1 empty p1

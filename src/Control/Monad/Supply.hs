@@ -27,8 +27,7 @@ newtype SupplyT s m a = SupplyT (StateT (Stream s) m a)
   deriving ( Functor, Applicative, Monad, MonadTrans, MonadIO, MonadFix )
 
 -- | Supply monad.
-newtype Supply s a = Supply (SupplyT s Identity a)
-  deriving ( Functor, Applicative, Monad, MonadSupply s, MonadFix )
+type Supply s = SupplyT s Identity
 
 instance Monad m => MonadSupply s (SupplyT s m) where
   supply = SupplyT do
@@ -38,7 +37,7 @@ instance Monad m => MonadSupply s (SupplyT s m) where
   peek = SupplyT $ gets Stream.head
 
 -- Monad transformer instances
-instance (MonadSupply s m) => MonadSupply s (ExceptT e m) where
+instance MonadSupply s m => MonadSupply s (ExceptT e m) where
   supply = lift supply
   peek = lift peek
 
@@ -68,14 +67,14 @@ instance (Semigroup a, Monoid a) => Monoid (Supply s a) where
 -- supplies :: MonadSupply s m => Int -> m (Stream s)
 -- supplies n = replicateM n supply
 
-evalSupplyT :: Monad m => SupplyT s m a -> Stream s -> m a
-evalSupplyT (SupplyT s) = evalStateT s
-
-evalSupply :: Supply s a -> (Stream s) -> a
-evalSupply (Supply s) = runIdentity << evalSupplyT s
-
 runSupplyT :: SupplyT s m a -> Stream s -> m ( a, Stream s )
 runSupplyT (SupplyT s) = runStateT s
 
+evalSupplyT :: Monad m => SupplyT s m a -> Stream s -> m a
+evalSupplyT (SupplyT s) = evalStateT s
+
 runSupply :: Supply s a -> Stream s -> ( a, Stream s )
-runSupply (Supply s) = runIdentity << runSupplyT s
+runSupply s = runIdentity << runSupplyT s
+
+evalSupply :: Supply s a -> (Stream s) -> a
+evalSupply s = runIdentity << evalSupplyT s

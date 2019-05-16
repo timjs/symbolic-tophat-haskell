@@ -2,9 +2,9 @@ module Language.Expr
   ( module Language.Type
   , module Language.Name
   , Expr(..), Un(..), Bn(..)
-  , pattern B, pattern I, pattern S
+  , pattern B, pattern I, pattern S, pattern Let
   , Pretask(..)
-  , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>\), pattern (:>>?)
+  , pattern View, pattern Watch, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>\), pattern (:>>?)
   ) where
 
 
@@ -23,12 +23,12 @@ data Expr (t :: Ty) where
   App :: ( Typeable a, Typeable b ) => Expr (a ':-> b) -> Expr a -> Expr b
   Var :: Typeable a => Name a -> Expr a
 
-  Loc :: Name ('TyPrim a) -> Expr ('TyRef a)
-  Sym :: Name ('TyPrim a) -> Expr ('TyPrim a)
-  Con :: IsPrim a -> TypeOf a -> Expr ('TyPrim a)
+  Loc :: Name ('TyPrim p) -> Expr ('TyRef p)
+  Sym :: Name ('TyPrim p) -> Expr ('TyPrim p)
+  Con :: IsPrim p -> TypeOf p -> Expr ('TyPrim p)
 
-  Un :: ( Typeable a, Typeable b ) => Un a b -> Expr ('TyPrim a) -> Expr ('TyPrim b)
-  Bn :: ( Typeable a, Typeable b, Typeable c ) => Bn a b c -> Expr ('TyPrim a) -> Expr ('TyPrim b) -> Expr ('TyPrim c)
+  Un :: ( Typeable p, Typeable q ) => Un p q -> Expr ('TyPrim p) -> Expr ('TyPrim q)
+  Bn :: ( Typeable p, Typeable q, Typeable r ) => Bn p q r -> Expr ('TyPrim p) -> Expr ('TyPrim q) -> Expr ('TyPrim r)
   If :: Expr ('TyPrim 'TyBool) -> Expr a -> Expr a -> Expr a
 
   Unit :: Expr 'TyUnit
@@ -36,9 +36,9 @@ data Expr (t :: Ty) where
   Fst :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr a
   Snd :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr b
 
-  Ref :: Typeable a => Expr ('TyPrim a) -> Expr ('TyRef a)
-  Deref :: Typeable a => Expr ('TyRef a) -> Expr ('TyPrim a)
-  Assign :: Typeable a => Expr ('TyRef a) -> Expr ('TyPrim a) -> Expr ('TyUnit)
+  Ref :: Typeable p => Expr ('TyPrim p) -> Expr ('TyRef p)
+  Deref :: Typeable p => Expr ('TyRef p) -> Expr ('TyPrim p)
+  Assign :: Typeable p => Expr ('TyRef p) -> Expr ('TyPrim p) -> Expr ('TyUnit)
 
   Task :: Pretask ('TyTask a) -> Expr ('TyTask a)
 
@@ -46,6 +46,8 @@ data Expr (t :: Ty) where
 pattern B x = Con BoolIsPrim x
 pattern I x = Con IntIsPrim x
 pattern S x = Con StringIsPrim x
+
+pattern Let x b = App (Lam b) x
 
 
 instance Pretty (Expr t) where
@@ -122,9 +124,9 @@ instance Eq (Expr t) where
 
 
 data Pretask (t :: Ty) where
-  Edit :: Expr ('TyPrim a) -> Pretask ('TyTask ('TyPrim a))
-  Enter :: Pretask ('TyTask ('TyPrim a))
-  -- Store :: Loc a -> Pretask ('TyTask a)
+  Edit :: Expr ('TyPrim p) -> Pretask ('TyTask ('TyPrim p))
+  Enter :: Pretask ('TyTask ('TyPrim p))
+  Update :: Typeable p => Expr ('TyRef p) -> Pretask ('TyTask ('TyPrim p))
 
   And :: Expr ('TyTask a) -> Expr ('TyTask b) -> Pretask ('TyTask (a ':>< b))
   Or  :: Expr ('TyTask a) -> Expr ('TyTask a) -> Pretask ('TyTask a)
@@ -144,6 +146,7 @@ infixr 1 :>>=, :>>?, :>>\
 
 
 pattern View x = Edit x
+pattern Watch x = Update x
 pattern (:&&:) x y = And (Task x) (Task y)
 pattern (:||:) x y = Or (Task x) (Task y)
 pattern (:??:) x y = Xor (Task x) (Task y)
@@ -156,7 +159,7 @@ instance Pretty (Pretask t) where
   pretty = \case
     Edit x -> cat [ "□(", pretty x, ")" ]
     Enter -> "⊠"
-    -- Store -> "■(_)"
+    Update x -> cat [ "■(", pretty x, ")" ]
     And x y -> sep [ pretty x, "⋈", pretty y ]
     Or x y -> sep [ pretty x, "◆", pretty y ]
     Xor x y -> sep [ pretty x, "◇", pretty y ]

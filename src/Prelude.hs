@@ -2,8 +2,8 @@ module Prelude
   ( module Relude
   , module Data.Text.Prettyprint.Doc
   , module Data.Type.Equality
-  , List, Unit
-  , Pretty(..), read
+  , List, Unit, Nat
+  , Pretty(..), scan
   , neutral
   , (<<), (>>), (#), map
   , (<-<), (>->)
@@ -16,7 +16,7 @@ module Prelude
   ) where
 
 
-import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3)
+import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3, Nat)
 import qualified Relude
 
 import Control.Monad.Except (MonadError(..))
@@ -39,12 +39,16 @@ type List = []
 type Unit = ()
 
 
+newtype Nat = Nat Word
+  deriving ( Eq, Ord, Num, Show, Read, Enum, Pretty ) via Word
+
+
 
 -- Reading & Showing -----------------------------------------------------------
 
 
-read :: Read a => Text -> Maybe a
-read = Relude.readMaybe << unpack
+scan :: Read a => Text -> Maybe a
+scan = Relude.readMaybe << unpack
 
 
 

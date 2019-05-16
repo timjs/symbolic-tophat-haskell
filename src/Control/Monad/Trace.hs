@@ -33,11 +33,11 @@ instance ( Monad m, Pretty a ) => MonadTrace a (WriterT (List (Doc n)) m) where
   trace x = do
     tell [ pretty x ]
 
-type TracerT = WriterT (List (Doc ()))
-type Tracer = TracerT Identity
+type TraceT = WriterT (List (Doc ()))
+type Trace = TraceT Identity
 
-runTracerT :: TracerT m a -> m ( a, List (Doc ()) )
-runTracerT = runWriterT
+runTraceT :: TraceT m a -> m ( a, List (Doc ()) )
+runTraceT = runWriterT
 
-runTracer :: Tracer a -> ( a, List (Doc ()) )
-runTracer = runWriter
+runTrace :: Trace a -> ( a, List (Doc ()) )
+runTrace = runWriter

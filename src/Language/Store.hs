@@ -1,9 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Language.Store
   ( MonadStore(..)
-  , StoreT(..), Store(..)
+  , StoreT(..), Store
+  , runStoreT, evalStoreT
+  , runStore, evalStore
   ) where
 
+import Control.Monad.List
+import Control.Monad.Writer
+import Control.Monad.Supply
 import Data.Some
 import Language.Name
 import Language.Type
@@ -11,17 +16,16 @@ import Language.Val
 
 
 class Monad m => MonadStore m where
-  new   :: Typeable a => Val ('TyPrim a) -> m (Val ('TyRef a))
-  read  :: Typeable a => Val ('TyRef a) -> m (Val ('TyPrim a))
-  write :: Typeable a => Val ('TyRef a) -> Val ('TyPrim a) -> m ()
+  new   :: Typeable p => Val ('TyPrim p) -> m (Val ('TyRef p))
+  read  :: Typeable p => Val ('TyRef p) -> m (Val ('TyPrim p))
+  write :: Typeable p => Val ('TyRef p) -> Val ('TyPrim p) -> m ()
 
 -- | Store monad transformer.
-newtype StoreT m a = StoreT (StateT ( Int, List (Some Val) ) m a)
+newtype StoreT m p = StoreT (StateT ( Nat, List (Some Val) ) m p)
   deriving ( Functor, Applicative, Monad, MonadTrans, MonadIO )
 
 -- | Store monad.
-newtype Store a = Store (StateT ( List (Some Val) ) Identity a)
-  deriving ( Functor, Applicative, Monad )
+type Store = StoreT Identity
 
 instance Monad m => MonadStore (StoreT m) where
   new x = StoreT do
@@ -30,26 +34,76 @@ instance Monad m => MonadStore (StoreT m) where
     pure $ Loc (Name n)
 
   read (Loc (Name i)) = StoreT do
-    ( n, xs ) <- get
-    -- let x =  index (n - i) xs >>= unpack >>= fromMaybe (error $ "Language.Store.read: could not find or unpack l" ++ show i)
-    case index (n - i) xs >>= unpack of
-      Just x -> pure x
-      Nothing -> error ""
+    ( _, xs ) <- get
+    case indexBack i xs of
+      Nothing -> error $ "Language.Store.read: could not find location " <> show i <> " in store " <> show (pretty $ reverse xs)
+      Just p -> case unpack p of
+        Nothing -> error $ "Language.Store.read: could not unpack location " <> show i <> " from store " <> show (pretty $ reverse xs)
+        Just x -> pure x
 
   write (Loc (Name i)) x = StoreT do
     ( n, xs ) <- get
-    put $ ( n, update (n - i) (pack x) xs )
+    put $ ( n, updateBack i (pack x) xs )
     pure ()
 
 
+instance MonadStore m => MonadStore (SupplyT s m) where
+  new = lift << new
+  read = lift << read
+  write l = lift << write l
+
+instance MonadStore m => MonadStore (ExceptT e m) where
+  new = lift << new
+  read = lift << read
+  write l = lift << write l
+
+instance MonadStore m => MonadStore (StateT s m) where
+  new = lift << new
+  read = lift << read
+  write l = lift << write l
+
+instance MonadStore m => MonadStore (ReaderT r m) where
+  new = lift << new
+  read = lift << read
+  write l = lift << write l
+
+instance ( Monoid w, MonadStore m ) => MonadStore (WriterT w m) where
+  new = lift << new
+  read = lift << read
+  write l = lift << write l
+
+instance MonadStore m => MonadStore (ListT m) where
+  new = lift << new
+  read = lift << read
+  write l = lift << write l
+
+
+runStoreT :: Monad m => StoreT m a -> m ( a, List (Some Val) )
+runStoreT (StoreT s) = map (\(a, (_, ss)) -> (a, ss)) $ runStateT s ( 0, [] )
+
+evalStoreT :: Monad m => StoreT m a -> m a
+evalStoreT (StoreT s) = evalStateT s ( 0, [] )
+
+runStore :: Store a -> ( a, List (Some Val) )
+runStore = runIdentity << runStoreT
+
+evalStore :: Store a -> a
+evalStore = runIdentity << evalStoreT
+
 --
 
-index :: Int -> List a -> Maybe a
+indexBack :: Nat -> List a -> Maybe a
+indexBack n = index n << reverse
+
+index :: Nat -> List a -> Maybe a
 index _ []       = Nothing
 index 0 (x : _)  = Just x
 index n (_ : xs) = index (pred n) xs
 
-update :: Int -> a -> List a -> List a
+updateBack :: Nat -> a -> List a -> List a
+updateBack n y = reverse << update n y << reverse
+
+update :: Nat -> a -> List a -> List a
 update _ _ []       = []
 update 0 y (_ : xs) = y : xs
 update n y (x : xs) = x : update (pred n) y xs

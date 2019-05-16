@@ -30,12 +30,12 @@ import qualified Language.Pred as P
 data Val (t :: Ty) where
   Lam :: Typeable a => Expr b -> Val (a ':-> b)
 
-  Loc :: Name ('TyPrim a) -> Val ('TyRef a)
-  Sym :: Name ('TyPrim a) -> Val ('TyPrim a)
-  Con :: IsPrim a -> TypeOf a -> Val ('TyPrim a)
+  Loc :: Name ('TyPrim p) -> Val ('TyRef p)
+  Sym :: Name ('TyPrim p) -> Val ('TyPrim p)
+  Con :: IsPrim p -> TypeOf p -> Val ('TyPrim p)
 
-  Un :: ( Typeable a, Typeable b ) => Un a b -> Val ('TyPrim a) -> Val ('TyPrim b)
-  Bn :: ( Typeable a, Typeable b, Typeable c ) => Bn a b c -> Val ('TyPrim a) -> Val ('TyPrim b) -> Val ('TyPrim c)
+  Un :: ( Typeable p, Typeable q ) => Un p q -> Val ('TyPrim p) -> Val ('TyPrim q)
+  Bn :: ( Typeable p, Typeable q, Typeable r ) => Bn p q r -> Val ('TyPrim p) -> Val ('TyPrim q) -> Val ('TyPrim r)
 
   Unit :: Val 'TyUnit
   Pair :: Val a -> Val b -> Val (a ':>< b)
@@ -98,9 +98,9 @@ instance Eq (Val t) where
 
 
 data Task (t :: Ty) where
-  Edit :: Val ('TyPrim a) -> Task ('TyTask ('TyPrim a))
-  Enter :: Task ('TyTask ('TyPrim a))
-  -- Store :: Loc a -> Task ('TyTask a)
+  Edit :: Val ('TyPrim p) -> Task ('TyTask ('TyPrim p))
+  Enter :: Task ('TyTask ('TyPrim p))
+  Update :: Typeable p => Val ('TyRef p) -> Task ('TyTask ('TyPrim p))
 
   And :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
   Or  :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
@@ -133,7 +133,7 @@ instance Pretty (Task t) where
   pretty = \case
     Edit x -> cat [ "□(", pretty x, ")" ]
     Enter -> "⊠"
-    -- Store -> "■(_)"
+    Update x -> cat [ "■(", pretty x, ")" ]
     And x y -> sep [ pretty x, "⋈", pretty y ]
     Or x y -> sep [ pretty x, "◆", pretty y ]
     Xor x y -> sep [ pretty x, "◇", pretty y ]
@@ -202,7 +202,7 @@ asPretask :: Task a -> E.Pretask a
 asPretask = \case
   Edit x -> E.Edit (asExpr x)
   Enter -> E.Enter
-  -- Store ->
+  Update x -> E.Update (asExpr x)
   And x y -> E.And (asExpr x) (asExpr y)
   Or x y -> E.Or (asExpr x) (asExpr y)
   Xor x y -> E.Xor x y
