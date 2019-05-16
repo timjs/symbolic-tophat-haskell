@@ -92,7 +92,7 @@ default-extensions:
   - PolyKinds
   - TypeFamilies
   # - TypeFamilyDependencies
-  # - QuantifiedConstraints
+  - QuantifiedConstraints
 
 
 ghc-options:
@@ -106,7 +106,8 @@ ghc-options:
   - -Wredundant-constraints
 
   - -Wno-missing-pattern-synonym-signatures
-  
+  - -Wno-deprecations
+
   # - -Weverything
   # - -Wno-safe
   # - -Wno-unsafe
