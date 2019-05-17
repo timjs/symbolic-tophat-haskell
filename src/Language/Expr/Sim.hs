@@ -406,14 +406,13 @@ simulate = go $ go $ end
   where
     go cont t0 is0 ps0 = do
       ( t1, i1, p1 ) <- drive t0
+      mv1 <- value t1
       let ps1 = ps0 :/\: p1
       let is1 = i1 : is0
       if| not (satisfiable ps1) -> empty
-        | otherwise             -> do
-            mv1 <- value t1
-            if| Just _ <- mv1   -> pure ( t1, reverse is1, simplify ps1 )
-              | t0 /= t1        -> simulate t1 is1 ps1
-              | otherwise       -> cont t1 is1 ps1
+        | Just _ <- mv1         -> pure ( t1, reverse is1, simplify ps1 )
+        | t0 /= t1              -> simulate t1 is1 ps1
+        | otherwise             -> cont t1 is1 ps1
     end _ _ _ = empty
 
 
