@@ -67,7 +67,12 @@ instance MonadStore m => MonadStore (ReaderT r m) where
   read = lift << read
   write l = lift << write l
 
-instance ( Monoid w, MonadStore m ) => MonadStore (WriterT w m) where
+instance ( Monoid w, MonadStore m ) => MonadStore (Lazy.WriterT w m) where
+  new = lift << new
+  read = lift << read
+  write l = lift << write l
+
+instance ( Monoid w, MonadStore m ) => MonadStore (Strict.WriterT w m) where
   new = lift << new
   read = lift << read
   write l = lift << write l

@@ -12,7 +12,8 @@ module Control.Monad.Supply
 
 import Control.Monad.Except
 import Control.Monad.List
-import Control.Monad.Writer
+import Control.Monad.Writer.Lazy as Lazy
+import Control.Monad.Writer.Strict as Strict
 
 import Data.Stream (Stream(..))
 import qualified Data.Stream as Stream
@@ -49,7 +50,11 @@ instance MonadSupply s m => MonadSupply s (ReaderT r m) where
   supply = lift supply
   peek = lift peek
 
-instance (Monoid w, MonadSupply s m) => MonadSupply s (WriterT w m) where
+instance ( Monoid w, MonadSupply s m ) => MonadSupply s (Lazy.WriterT w m) where
+  supply = lift supply
+  peek = lift peek
+
+instance ( Monoid w, MonadSupply s m ) => MonadSupply s (Strict.WriterT w m) where
   supply = lift supply
   peek = lift peek
 
