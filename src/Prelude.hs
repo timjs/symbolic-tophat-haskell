@@ -11,7 +11,7 @@ module Prelude
   , Selective(branch, select, biselect), check, when
   , lift1, lift2, lift3
   , ok, throw, catch
-  , clear, evalWriterT
+  , clear, trace, evalWriterT
   , (~=), (~~), proxyOf, typeOf, someTypeOf, typeRep, TypeRep, someTypeRep, SomeTypeRep
   ) where
 
@@ -19,7 +19,7 @@ module Prelude
 import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3, Nat)
 
 import Control.Monad.Except (MonadError(..))
-import Control.Monad.Writer (MonadWriter(..), WriterT, runWriterT)
+import Control.Monad.Writer.Strict (MonadWriter(..), WriterT, runWriterT)
 
 import Data.Text (unpack)
 import Data.Text.Prettyprint.Doc (Pretty(..), Doc, cat, sep, indent, parens, angles)
@@ -232,6 +232,10 @@ catch = catchError
 
 clear :: MonadWriter w m => m ()
 clear = pass $ lift0 ((), const neutral)
+
+
+trace :: Applicative f => MonadWriter (f a) m => a -> m ()
+trace = tell << pure
 
 
 evalWriterT :: Monad m => WriterT w m a -> m a

@@ -1,7 +1,7 @@
 module Language.Expr.Sim where
 
+import Control.Monad.Writer.Strict
 import Control.Monad.Supply
-import Control.Monad.Trace
 import Language.Input
 import Language.Name
 import Language.Type
@@ -387,7 +387,7 @@ none = Nothing
 
 
 drive
-  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadPlus m
+  :: MonadWriter (List (Execution t)) m => MonadSupply Nat m => MonadStore m => MonadPlus m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
@@ -400,7 +400,7 @@ drive t0 = do
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate
-  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadPlus m
+  :: MonadWriter (List (Execution t)) m => MonadSupply Nat m => MonadStore m => MonadPlus m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate = go $ go $ end
   where
@@ -421,7 +421,7 @@ satisfiable _ = True  -- FIXME: use SBV here
 
 
 run
-  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadPlus m
+  :: MonadWriter (List (Execution t)) m => MonadSupply Nat m => MonadStore m => MonadPlus m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 run t0 = do
   ( t1, p1 ) <- initialise t0
