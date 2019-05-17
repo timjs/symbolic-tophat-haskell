@@ -62,7 +62,7 @@ instance Pretty (Val t) where
     Bn o a b -> parens $ sep [ pretty a, pretty o, pretty b ]
 
     Unit -> angles neutral
-    Pair a b -> angles $ cat [ pretty a, comma, pretty b ]
+    Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
 
     Task p -> pretty p
 

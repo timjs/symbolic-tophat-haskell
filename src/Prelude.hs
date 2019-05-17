@@ -3,7 +3,7 @@ module Prelude
   , module Data.Text.Prettyprint.Doc
   , module Data.Type.Equality
   , List, Unit, Nat
-  , Pretty(..), scan
+  , scan, split
   , neutral
   , (<<), (>>), (#), map
   , (<-<), (>->)
@@ -17,17 +17,18 @@ module Prelude
 
 
 import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3, Nat)
-import qualified Relude
 
 import Control.Monad.Except (MonadError(..))
 import Control.Monad.Writer (MonadWriter(..), WriterT, runWriterT)
 
 import Data.Text (unpack)
-import Data.Text.Prettyprint.Doc hiding (group)
+import Data.Text.Prettyprint.Doc (Pretty(..), Doc, cat, sep, indent, parens, angles)
 import Data.Type.Equality
 
 import Type.Reflection (typeOf, typeRep, someTypeRep, TypeRep, SomeTypeRep)
 
+import qualified Data.Text.Prettyprint.Doc as Pretty
+import qualified Relude
 
 
 -- Synonyms --------------------------------------------------------------------
@@ -44,11 +45,15 @@ newtype Nat = Nat Word
 
 
 
--- Reading & Showing -----------------------------------------------------------
+-- Scanning & Printing ---------------------------------------------------------
 
 
 scan :: Read a => Text -> Maybe a
 scan = Relude.readMaybe << unpack
+
+
+split :: List (Doc ann) -> Doc ann
+split = Pretty.vsep
 
 
 
@@ -262,4 +267,4 @@ someTypeOf = someTypeRep << proxyOf
 
 
 instance Pretty SomeTypeRep where
-  pretty = viaShow
+  pretty = Pretty.viaShow

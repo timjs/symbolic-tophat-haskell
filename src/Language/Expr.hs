@@ -67,7 +67,7 @@ instance Pretty (Expr t) where
     If p a b -> sep [ "if", pretty p, "then", pretty a, "else", pretty b ]
 
     Unit -> angles neutral
-    Pair a b -> angles $ cat [ pretty a, comma, pretty b ]
+    Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
     Fst a -> sep [ "fst", pretty a ]
     Snd a -> sep [ "snd", pretty a ]
 
