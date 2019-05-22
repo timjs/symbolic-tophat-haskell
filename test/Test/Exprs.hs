@@ -121,7 +121,8 @@ fail = Task $
 
 
 iffail :: Expr ('TyTask ('TyPrim 'TyString))
-iffail =
+iffail = Task $
+  Enter @'TyInt :>>!
   If (B True) (Task $ Edit $ S "Biscuit") (Task $ Fail)
 
 
@@ -137,9 +138,8 @@ share' = Task $
 
 
 shareStep :: Expr ('TyTask ('TyPrim 'TyString))
-shareStep =
-  Let (Ref (I 0)) $ Task $
-  Update @'TyInt (Var 0) :>>!
+shareStep = Task $
+  Update @'TyInt (Ref (I 0)) :>>!
   If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail)
 
 
@@ -297,4 +297,9 @@ execStepper = snd << runStepper
   ,(          , □(s2)        , (True ∧ True))
   ,(          , ↯            , (((True ∧ True) ∧ (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (not (3 == 2)))) ∧ (not (3 == 1)))) ∧ True) )
 ]
+
+>>> traceRunner $ run Test.Exprs.shareStep
+[( , □("done") , ((True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (0 == 1))))) ∧ (True ∧ True)) )
+   ,(s0        , □(s0), True)
+   ,(          , □(s0), (True ∧ True))]
 -}

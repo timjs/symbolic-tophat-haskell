@@ -269,13 +269,17 @@ stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
     ( t1', p1 ) <- stride t1
+    -- s1 <- get
     mv1 <- value t1'
     case mv1 of
       Nothing -> pure ( V.Task $ V.Then t1' e2, p1 )
       Just v1 -> do
         ( t2, p2 ) <- eval $ E.App e2 (asExpr v1)
         if failing t2
-          then empty --pure ( V.Task $ V.Then t1' e2, p1 )
+          then do
+            -- put s1
+            pure ( V.Task $ V.Then t1' e2, p1 )
+            -- empty
           else pure ( t2, p1 :/\: p2 )
   -- Choose:
   V.Or t1 t2 -> do
@@ -381,7 +385,7 @@ drive t0 = do
 simulate
   :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
-simulate = go $ go $ end
+simulate t is p = go (go end) t is p
   where
     go cont t0 is0 ps0 = do
       ( t1, i1, p1 ) <- drive t0
@@ -393,6 +397,27 @@ simulate = go $ go $ end
         | t0 /= t1              -> simulate t1 is1 ps1
         | otherwise             -> cont t1 is1 ps1
     end _ _ _ = empty
+
+-- simulate
+--   :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
+--   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
+-- simulate t0 is0 ps0 =  do
+--   ( t1, i1, p1 ) <- drive t0
+--   mv1 <- value t1
+--   let ps1 = ps0 :/\: p1
+--   let is1 = i1 : is0
+--   if| not (satisfiable ps1) -> empty
+--     | Just _ <- mv1         -> pure ( t1, reverse is1, simplify ps1 )
+--     | t0 /= t1              -> simulate t1 is1 ps1
+--     | otherwise             -> do
+--         ( t2, i2, p2 ) <- drive t1
+--         mv2 <- value t2
+--         let ps2 = ps1 :/\: p2
+--         let is2 = i2 : is1
+--         if| not (satisfiable ps2) -> empty
+--           | Just _ <- mv2         -> pure ( t2, reverse is2, simplify ps2 )
+--           | t1 /= t2              -> simulate t2 is2 ps2
+--           | otherwise             -> empty
 
 
 satisfiable :: Pred 'TyBool -> Bool
