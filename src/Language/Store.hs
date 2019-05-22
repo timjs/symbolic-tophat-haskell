@@ -7,8 +7,10 @@ module Language.Store
   ) where
 
 import Control.Monad.List
-import Control.Monad.Writer
+import Control.Monad.Writer.Lazy as Lazy
+import Control.Monad.Writer.Strict as Strict
 import Control.Monad.Supply
+import Control.Monad.Steps
 import Data.Some
 import Language.Name
 import Language.Type
@@ -73,6 +75,11 @@ instance ( Monoid w, MonadStore m ) => MonadStore (Lazy.WriterT w m) where
   write l = lift << write l
 
 instance ( Monoid w, MonadStore m ) => MonadStore (Strict.WriterT w m) where
+  new = lift << new
+  read = lift << read
+  write l = lift << write l
+
+instance ( Monoid w, MonadStore m ) => MonadStore (StepsT w m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
