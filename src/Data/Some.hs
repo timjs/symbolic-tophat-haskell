@@ -8,6 +8,11 @@ data Some f where
 instance ( forall a. Pretty (f a) ) => Pretty (Some f) where
   pretty (Some x) = sep [ "Some", pretty x ]
 
+instance ( forall a. Eq (f a) ) => Eq (Some f) where
+  Some x == Some y
+    | Just Refl <- typeOf x ~~ typeOf y = x == y
+    | otherwise = False
+
 
 pack :: forall f a. Typeable (f a) => f a -> Some f
 pack = Some
