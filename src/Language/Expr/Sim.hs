@@ -265,7 +265,7 @@ stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
     ( t1', p1 ) <- stride t1
-    -- s1 <- get
+    s1 <- inspect
     mv1 <- value t1'
     case mv1 of
       Nothing -> pure ( V.Task $ V.Then t1' e2, p1 )
@@ -273,7 +273,7 @@ stride (V.Task t) = case t of
         ( t2, p2 ) <- eval $ E.App e2 (asExpr v1)
         if failing t2
           then do
-            -- put s1
+            place s1
             pure ( V.Task $ V.Then t1' e2, p1 )
             -- empty
           else pure ( t2, p1 :/\: p2 )
