@@ -162,13 +162,19 @@ done   = Task $ View (S "done")
 stop   = Task $ Fail
 
 
+share_step :: Expr ('TyTask TyPrimString)
+share_step = Task $
+  Update (Ref (I 0)) :>>!
+  If (Bn Gt (Var 0) (I 0)) done stop
+
+
 share_par :: Expr ('TyTask (TyPrimInt ':>< TyPrimInt))
 share_par = Task $
   Update (Ref (I 0)) :&&: Update (Ref (I 0))
 
 
-share_step :: Expr ('TyTask TyPrimString)
-share_step = Task $
+share_par_step :: Expr ('TyTask TyPrimString)
+share_par_step = Task $
   Update (Ref (I 0)) :&&: Update (Ref (I 0)) :>>!
   If (Bn Gt (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0))) done stop
 
