@@ -14,6 +14,7 @@ import Control.Monad.Except
 import Control.Monad.List
 import Control.Monad.Writer.Lazy as Lazy
 import Control.Monad.Writer.Strict as Strict
+import Control.Monad.Steps
 
 import Data.Stream (Stream(..))
 import qualified Data.Stream as Stream
@@ -25,7 +26,7 @@ class Monad m => MonadSupply s m | m -> s where
 
 -- | Supply monad transformer.
 newtype SupplyT s m a = SupplyT (StateT (Stream s) m a)
-  deriving ( Functor, Applicative, Monad, MonadTrans, MonadIO, MonadFix )
+  deriving ( Functor, Applicative, Monad, MonadWriter w, MonadReader r, MonadTrans, MonadIO, MonadFix )
 
 -- | Supply monad.
 type Supply s = SupplyT s Identity
@@ -59,6 +60,10 @@ instance ( Monoid w, MonadSupply s m ) => MonadSupply s (Strict.WriterT w m) whe
   peek = lift peek
 
 instance MonadSupply s m => MonadSupply s (ListT m) where
+  supply = lift supply
+  peek = lift peek
+
+instance ( Monoid w, MonadSupply s m ) => MonadSupply s (StepsT w m) where
   supply = lift supply
   peek = lift peek
 
