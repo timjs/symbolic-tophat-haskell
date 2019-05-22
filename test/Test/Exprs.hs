@@ -1,12 +1,14 @@
 module Test.Exprs where
 
-import Data.Stream (Stream)
 import Data.Some (Some)
+import Data.Steps (Steps)
+import Data.Stream (Stream)
 import Language.Val (Val)
 
 import Control.Monad.List
 import Control.Monad.Supply
-import Control.Monad.Trace
+import Control.Monad.Steps
+import Control.Monad.Writer.Strict
 import Language.Expr
 import Language.Store
 
@@ -82,8 +84,8 @@ add_par = Task $
   View (Bn Add (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0)))
 
 
-guard :: Expr ('TyTask ('TyPrim 'TyInt))
-guard = Task $
+guard0 :: Expr ('TyTask ('TyPrim 'TyInt))
+guard0 = Task $
   Enter @'TyInt :>>\
   If (Bn Gt (Var 0) (I 0)) (Task $ View (Var 0)) (Task $ Fail)
 
@@ -92,12 +94,12 @@ preguard :: Expr ('TyTask ('TyPrim 'TyString))
 preguard = Task $
   Enter @'TyBool :>>\
   If (Un Not (Var 0)) (contguard (Var 0)) (Task $ Fail)
-
-contguard :: Expr ('TyPrim 'TyBool) -> Expr ('TyTask ('TyPrim 'TyString))
-contguard x = Task $
-  Task (Edit x) `Next` Lam (
-    If (Var @('TyPrim 'TyBool) 0) (Task $ View (S "done")) (Task $ Fail)
-  )
+  where
+    contguard :: Expr ('TyPrim 'TyBool) -> Expr ('TyTask ('TyPrim 'TyString))
+    contguard x = Task $
+      Task (Edit x) `Next` Lam (
+        If (Var @('TyPrim 'TyBool) 0) (Task $ View (S "done")) (Task $ Fail)
+      )
 
 
 machine :: Expr ('TyTask ('TyPrim 'TyString))
@@ -106,6 +108,21 @@ machine = Task $
   If (Bn Eq (Var 0) (I 1)) (Task $ View (S "Biscuit")) (
   If (Bn Eq (Var 0) (I 2)) (Task $ View (S "Chocolate")) (
   Task $ Fail))
+
+
+iftest :: Expr ('TyTask ('TyPrim 'TyString))
+iftest =
+  If (B True) (Task $ Edit $ S "Biscuit") (Task $ Edit $ S "Chocolate")
+
+
+fail :: Expr ('TyTask ('TyPrim 'TyInt)) -- Int because otherwise not Typeable
+fail = Task $
+  Enter @'TyInt :>>= Fail
+
+
+iffail :: Expr ('TyTask ('TyPrim 'TyString))
+iffail =
+  If (B True) (Task $ Edit $ S "Biscuit") (Task $ Fail)
 
 
 share :: Expr ('TyTask ('TyPrim 'TyInt))
@@ -125,13 +142,14 @@ shareStep =
 -- Main ------------------------------------------------------------------------
 
 
-type Runner = ListT (SupplyT Nat (TraceT Store))
-
 ids :: Stream Nat
 ids = Stream.iterate succ 0
 
+
+type Runner = ListT (SupplyT Nat (WriterT (List (Doc ())) Store))
+
 runRunner :: Runner a -> ( ( ( List a, Stream Nat ), List (Doc ()) ), List (Some Val) )
-runRunner r = runStore (runTraceT (runSupplyT (runListT r) ids))
+runRunner r = runStore (runWriterT (runSupplyT (runListT r) ids))
 
 traceRunner :: Runner a -> List (Doc ())
 traceRunner = snd << fst << runRunner
@@ -143,6 +161,18 @@ execRunner :: Runner a -> List (Some Val)
 execRunner = snd << runRunner
 
 
+type Stepper w = StepsT w (SupplyT Nat (Store))
+
+runStepper :: Stepper w a -> ( ( Steps w a, Stream Nat ), List (Some Val) )
+runStepper r = runStore (runSupplyT (runStepsT r) ids)
+
+evalStepper :: Stepper w a -> Steps w a
+evalStepper = fst << fst << runStepper
+
+execStepper :: Stepper w a -> List (Some Val)
+execStepper = snd << runStepper
+
+
 {-
 >>> print $ trace $ run echo
 [(, ⊠ ▶ λ.□(x0), (True ∧ True))
@@ -150,12 +180,13 @@ execRunner = snd << runRunner
 ,(, □(s0), (True ∧ (True ∧ ((True ∧ True) ∧ True))))
 ]
 
->>> print $ trace $ run add_seq
+>>> traceRunner $ run add_seq
 [,(  , ⊠ ▶ λ.⊠ ▶ λ.□((x0 + x1))    , (True ∧ True))
  ,(s0, □(s0) ▶ λ.⊠ ▶ λ.□((x0 + x1)), True)
  ,(  , ⊠ ▶ λ.□((x0 + s0))          , (True ∧ (True ∧ ((True ∧ True) ∧ True))))
  ,(s1, □(s1) ▶ λ.□((x0 + s0))      , True)
- ,(  , □((s1 + s0))                , (True ∧ (True ∧ ((True ∧ True) ∧ (True ∧ True)))))]
+ ,(  , □((s1 + s0))                , (True ∧ (True ∧ ((True ∧ True) ∧ (True ∧ True)))))
+]
 
 >>> print $ trace $ run add_par
 [,(    , ⊠ ⋈ ⊠ ▶ λ.□((fst x0 + snd x0))        , ((True ∧ True) ∧ (True ∧ True)))
@@ -194,12 +225,64 @@ execRunner = snd << runRunner
 [ ( □((s0 + s3)) , [S s3, F s0] , ((((True ∧ True) ∧ (True ∧ True)) ∧ (True ∧ ((True ∧ True) ∧ (True ∧ True)))) ∧ (True ∧ ((True ∧ True) ∧ ((True ∧ True) ∧ ((True ∧ (True ∧ True)) ∧ ((True ∧ True) ∧ (True ∧ True))))))) )
 , ( □((s4 + s1)) , [F s4, S s1] , ((((True ∧ True) ∧ (True ∧ True)) ∧ (True ∧ ((True ∧ True) ∧ (True ∧ True)))) ∧ (True ∧ ((True ∧ True) ∧ ((True ∧ True) ∧ ((True ∧ (True ∧ True)) ∧ ((True ∧ True) ∧ (True ∧ True))))))) )
 ]
+
+>>> pretty machine
+⊠ ▶ λ.if (x0 == 1) then □(Biscuit) else if (x0 == 2) then □(Chocolate) else ↯
+
+>>> pretty $ evalRunner $ run machine
+, ( □(Biscuit), [s0], s0 == 1 )
+, ( □(Biscuit), [s0], s0 == 1 )
+
+, ( □(Biscuit), [s0, s1], s1 == 1 )
+, ( □(Biscuit), [s0, s1], s1 == 1 )
+
+, ( □(Biscuit), [s0, s1, s2], s2 == 1 )
+, ( □(Biscuit), [s0, s1, s2], s2 == 1 )
+
+, ( □(Chocolate), [s0], s0 == 2 ∧ not (s0 == 1) )
+, ( □(Chocolate), [s0, s1], s1 == 2 ∧ not (s1 == 1) )
+, ( □(Chocolate), [s0, s1, s2], s2 == 2 ∧ not (s2 == 1) )
+
+>>> traceRunner $ run machine
+[,(    , ⊠ ▶ λ.if (x0 == 1) then □(Biscuit) else if (x0 == 2) then □(Chocolate) else ↯     , (True ∧ True) )
+
+ ,( s0 , □(s0) ▶ λ.if (x0 == 1) then □(Biscuit) else if (x0 == 2) then □(Chocolate) else ↯ , True )
+ ,(    , □(Biscuit)                                                                        , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s0 == 1))))) )
+ ,(    , □(Chocolate)                                                                      , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s0 == 2))) ∧ (not (s0 == 1)))))) )
+ ,(    , □(Biscuit)                                                                        , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s0 == 1))))) )
+ ,(    , □(s0) ▶ λ.if (x0 == 1) then □(Biscuit) else if (x0 == 2) then □(Chocolate) else ↯ , (True ∧ True) )
+
+ ,( s1 , □(s1) ▶ λ.if (x0 == 1) then □(Biscuit) else if (x0 == 2) then □(Chocolate) else ↯ , True )
+ ,(    , □(Biscuit)                                                                        , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s1 == 1))))) )
+ ,(    , □(Chocolate)                                                                      , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s1 == 2))) ∧ (not (s1 == 1)))))) )
+ ,(    , □(Biscuit)                                                                        , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s1 == 1))))) )
+ ,(    , □(s1) ▶ λ.if (x0 == 1) then □(Biscuit) else if (x0 == 2) then □(Chocolate) else ↯ , (True ∧ True) )
+
+ ,( s2 , □(s2) ▶ λ.if (x0 == 1) then □(Biscuit) else if (x0 == 2) then □(Chocolate) else ↯ , True )
+ ,(    , □(Biscuit)                                                                        , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s2 == 1))))) )
+ ,(    , □(Chocolate)                                                                      , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s2 == 2))) ∧ (not (s2 == 1)))))) )
+ ,(    , □(Biscuit)                                                                        , (True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s2 == 1))))) )
+ ,(    , □(s2) ▶ λ.if (x0 == 1) then □(Biscuit) else if (x0 == 2) then □(Chocolate) else ↯ , (True ∧ True) )
+
+]
+
+>>> traceRunner $ run machine
+[,(    , ⊠ ▶ λ.if (x0 == 1) then □("Biscuit") else if (x0 == 2) then □("Chocolate") else ↯     , (True ∧ True) )
+ ,( s0 , □(s0) ▶ λ.if (x0 == 1) then □("Biscuit") else if (x0 == 2) then □("Chocolate") else ↯ , True )
+ ,(    , □(Chocolate)                                                                          , ((True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s0 == 2))) ∧ (not (s0 == 1)))))) ∧ (True ∧ True)) )
+ ,(    , □(Biscuit)                                                                            , ((True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s0 == 1))))) ∧ (True ∧ True)) )
+ ,(    , □(Biscuit)                                                                            , ((True ∧ (True ∧ ((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (s0 == 1))))) ∧ (True ∧ True)) )
+]
+
+[(,           , □(Biscuit)   , (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (3 == 1))) ∧ True))
+  ,(s0        , □(s0)        , True)
+  ,(          , □(s0)        , (True ∧ True))
+  ,(          , □(Chocolate) , (((True ∧ True) ∧ (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (3 == 2))) ∧ (not (3 == 1)))) ∧ True) )
+  ,(s1        , □(s1)        , True)
+  ,(          , □(s1)        , (True ∧ True))
+  ,(          , □(Biscuit)   , (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (3 == 1))) ∧ True))
+  ,(s2        , □(s2)        , True)
+  ,(          , □(s2)        , (True ∧ True))
+  ,(          , ↯            , (((True ∧ True) ∧ (((True ∧ True) ∧ (((True ∧ True) ∧ True) ∧ (not (3 == 2)))) ∧ (not (3 == 1)))) ∧ True) )
+]
 -}
-
-
--- [,(  , ⊠ ▷… λ.□(x0)    , (True ∧ True))
---  ,(s0, □(s0) ▷… λ.□(x0), True)
---  ,(  , □(s0) ▷… λ.□(x0), (True ∧ True))
---  ,(s1, □(s1) ▷… λ.□(x0), True)
---  ,(  , □(s1) ▷… λ.□(x0), (True ∧ True))
--- ]

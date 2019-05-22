@@ -1,6 +1,5 @@
 module Language.Expr.Sim where
 
-import Control.Monad.Writer.Strict
 import Control.Monad.Supply
 import Language.Input
 import Language.Name
@@ -161,7 +160,7 @@ Note that the context of symbolic values `sxt` is the same for the expression
 and the resulting predicate.
 -}
 eval
-  :: MonadStore m => MonadPlus m
+  :: MonadStore m => MonadZero m
   => Expr t -> m ( Val t, Pred 'TyBool )
 eval = \case
   E.App e1 e2 -> do
@@ -181,12 +180,9 @@ eval = \case
     ( v1, p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
     pure ( V.Bn o v1 v2, p1 :/\: p2 )
-  E.If e1 e2 e3 -> do
-    ( v1, p1 ) <- eval e1
-    ( v2, p2 ) <- eval e2
-    ( v3, p3 ) <- eval e3
-    pure ( v2, p1 :/\: p2 :/\: asPred v1 ) <|> pure ( v3, p1 :/\: p3 :/\: P.Not (asPred v1) )
-
+  E.If e1 e2 e3 ->
+    [ ( v2, p1 :/\: p2 :/\: asPred v1 )         | ( v1, p1 ) <- eval e1, ( v2, p2 ) <- eval e2 ] <|>
+    [ ( v3, p1 :/\: p3 :/\: P.Not (asPred v1) ) | ( v1, p1 ) <- eval e1, ( v3, p3 ) <- eval e3 ]
   E.Pair e1 e2 -> do
     ( v1, p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
@@ -234,7 +230,7 @@ eval = \case
 
 
 eval'
-  :: MonadStore m => MonadPlus m
+  :: MonadStore m => MonadZero m
   => Pretask t -> m ( Task t, Pred 'TyBool )
 eval' = \case
   E.Edit e1 -> do
@@ -267,7 +263,7 @@ eval' = \case
 
 
 stride
-  :: MonadStore m => MonadPlus m
+  :: MonadStore m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 stride (V.Task t) = case t of
   -- Step:
@@ -275,12 +271,11 @@ stride (V.Task t) = case t of
     ( t1', p1 ) <- stride t1
     mv1 <- value t1'
     case mv1 of
-      Nothing ->
-        pure ( V.Task $ V.Then t1' e2, p1 )
+      Nothing -> pure ( V.Task $ V.Then t1' e2, p1 )
       Just v1 -> do
         ( t2, p2 ) <- eval $ E.App e2 (asExpr v1)
         if failing t2
-          then pure ( V.Task $ V.Then t1' e2, p1 )
+          then empty --pure ( V.Task $ V.Then t1' e2, p1 )
           else pure ( t2, p1 :/\: p2 )
   -- Choose:
   V.Or t1 t2 -> do
@@ -308,7 +303,7 @@ stride (V.Task t) = case t of
 
 
 normalise
-  :: MonadStore m => MonadPlus m
+  :: MonadStore m => MonadZero m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
@@ -322,13 +317,13 @@ normalise e0 = do
 
 
 initialise
-  :: MonadStore m => MonadPlus m
+  :: MonadStore m => MonadZero m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 initialise = normalise
 
 
 handle
-  :: MonadSupply Nat m => MonadStore m => MonadPlus m
+  :: MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 handle (V.Task t) = case t of
   V.Edit _ -> do
@@ -341,43 +336,25 @@ handle (V.Task t) = case t of
     s <- fresh
     write l (V.Sym s)
     pure ( V.Task $ V.Update l, Change s, Yes )
-  V.And t1 t2 -> do
-    ( t1', i1, p1 ) <- handle t1
-    ( t2', i2, p2 ) <- handle t2
-    pure ( V.Task $ V.And t1' t2, ToFirst i1, p1 ) <|> pure ( V.Task $ V.And t1 t2', ToSecond i2, p2 )
-  V.Or t1 t2 -> do
-    ( t1', i1, p1 ) <- handle t1
-    ( t2', i2, p2 ) <- handle t2
-    pure ( V.Task $ V.Or t1' t2, ToFirst i1, p1 ) <|> pure ( V.Task $ V.Or t1 t2', ToSecond i2, p2 )
-  V.Xor e1 e2 -> do
-    ( t1, p1 ) <- normalise e1
-    ( t2, p2 ) <- normalise e2
-    s <- fresh  -- NOTE: This is a symbol of type Bool
-    let ls = pure ( t1, Change s, p1 :/\: P.Sym s )
-    let rs = pure ( t2, Change s, p2 :/\: P.Not (P.Sym s) )
-    case ( failing t1, failing t2 ) of
-      ( False, False ) -> ls <|> rs
-      ( False, True  ) -> ls
-      ( True,  False ) -> rs
-      ( True,  True  ) -> empty
+  V.And t1 t2 ->
+    [ ( V.Task $ V.And t1' t2, ToFirst  i1, p1 ) | ( t1', i1, p1 ) <- handle t1 ] <|>
+    [ ( V.Task $ V.And t1 t2', ToSecond i2, p2 ) | ( t2', i2, p2 ) <- handle t2 ]
+  V.Or t1 t2 ->
+    [ ( V.Task $ V.Or t1' t2, ToFirst  i1, p1 ) | ( t1', i1, p1 ) <- handle t1 ] <|>
+    [ ( V.Task $ V.Or t1 t2', ToSecond i2, p2 ) | ( t2', i2, p2 ) <- handle t2 ]
+  V.Xor e1 e2 ->
+    [ ( t1, Change s, p1 :/\: P.Sym s )         | ( t1, p1 ) <- normalise e1, s <- fresh, not (failing t1) ] <|>
+    [ ( t2, Change s, p2 :/\: P.Not (P.Sym s) ) | ( t2, p2 ) <- normalise e2, s <- fresh, not (failing t2) ]
   V.Fail -> empty
     -- NOTE: Alternative: users can input anything, but nothing will ever come out of `fail`
     -- s <- fresh
-    -- pure ( V.Task $ V.Fail, Change s, Nop )
+    -- pure ( V.Task $ V.Fail, Change s, P.Nop )
   V.Then t1 e2 -> do
     ( t1', i1, p1 ) <- handle t1
     pure ( V.Task $ V.Then t1' e2, i1, p1 )
-  V.Next t1 e2 -> do
-    ( t', i', p' ) <- handle t1
-    let ls = pure ( V.Task $ V.Next t' e2, i', p' )
-    mv1 <- value t1
-    case mv1 of
-      Just v1 -> do
-        ( t2, p2 ) <- normalise (E.App e2 (asExpr v1))
-        if failing t2
-          then ls
-          else ls <|> pure ( t2, Continue, p2 )
-      Nothing -> ls
+  V.Next t1 e2 ->
+    [ ( V.Task $ V.Next t1' e2, i1, p1 ) | ( t1', i1, p1 ) <- handle t1 ] <|>
+    [ ( t2, Continue, p2 )               | Just v1 <- value t1, ( t2, p2 ) <- normalise (E.App e2 (asExpr v1)), not (failing t2) ]
 
 
 type Execution t = ( Maybe Input, Val ('TyTask t), Pred 'TyBool )
@@ -387,7 +364,7 @@ none = Nothing
 
 
 drive
-  :: MonadWriter (List (Execution t)) m => MonadSupply Nat m => MonadStore m => MonadPlus m
+  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
@@ -400,7 +377,7 @@ drive t0 = do
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate
-  :: MonadWriter (List (Execution t)) m => MonadSupply Nat m => MonadStore m => MonadPlus m
+  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate = go $ go $ end
   where
@@ -421,7 +398,7 @@ satisfiable _ = True  -- FIXME: use SBV here
 
 
 run
-  :: MonadWriter (List (Execution t)) m => MonadSupply Nat m => MonadStore m => MonadPlus m
+  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 run t0 = do
   ( t1, p1 ) <- initialise t0
