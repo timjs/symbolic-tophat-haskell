@@ -359,27 +359,19 @@ handle (V.Task t) = case t of
     [ ( t2, Continue, p2 )               | Just v1 <- value t1, ( t2, p2 ) <- normalise (E.App e2 (asExpr v1)), not (failing t2) ]
 
 
-type Execution t = ( Maybe Input, Val ('TyTask t), Pred 'TyBool )
-
-none :: Maybe Input
-none = Nothing
-
-
 drive
-  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
-  trace ( Just i1, t1, p1 )
   ( t2, p2 ) <- normalise (asExpr t1)
-  trace ( none, t2, p2 )
   pure ( t2, i1, p1 :/\: p2 )
 
 
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate
-  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate t is p = go (go end) t is p
   where
@@ -394,36 +386,14 @@ simulate t is p = go (go end) t is p
         | otherwise             -> cont t1 is1 ps1
     end _ _ _ = empty
 
--- simulate
---   :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
---   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
--- simulate t0 is0 ps0 =  do
---   ( t1, i1, p1 ) <- drive t0
---   mv1 <- value t1
---   let ps1 = ps0 :/\: p1
---   let is1 = i1 : is0
---   if| not (satisfiable ps1) -> empty
---     | Just _ <- mv1         -> pure ( t1, reverse is1, simplify ps1 )
---     | t0 /= t1              -> simulate t1 is1 ps1
---     | otherwise             -> do
---         ( t2, i2, p2 ) <- drive t1
---         mv2 <- value t2
---         let ps2 = ps1 :/\: p2
---         let is2 = i2 : is1
---         if| not (satisfiable ps2) -> empty
---           | Just _ <- mv2         -> pure ( t2, reverse is2, simplify ps2 )
---           | t1 /= t2              -> simulate t2 is2 ps2
---           | otherwise             -> empty
-
 
 satisfiable :: Pred 'TyBool -> Bool
 satisfiable _ = True  -- FIXME: use SBV here
 
 
 run
-  :: MonadTrace (Execution t) m => MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadSupply Nat m => MonadStore m => MonadZero m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 run t0 = do
   ( t1, p1 ) <- initialise t0
-  trace ( none, t1, p1 )
   simulate t1 empty p1
