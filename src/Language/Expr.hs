@@ -60,7 +60,7 @@ instance Pretty (Expr t) where
 
     Con BoolIsPrim x -> pretty x
     Con IntIsPrim x -> pretty x
-    Con StringIsPrim x -> pretty x
+    Con StringIsPrim x -> cat [ "\"", pretty x, "\"" ]
 
     Un o a -> parens (sep [ pretty o, pretty a ])
     Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])
@@ -165,7 +165,7 @@ instance Pretty (Pretask t) where
     Xor x y -> sep [ pretty x, "◇", pretty y ]
     Fail -> "↯"
     Then x c -> sep [ pretty x, "▶", pretty c ]
-    Next x c -> sep [ pretty x, "▷…", pretty c ]
+    Next x c -> sep [ pretty x, "▷", pretty c ]
 
 
 
