@@ -22,6 +22,8 @@ class Monad m => MonadStore m where
   read  :: Typeable p => Val ('TyRef p) -> m (Val ('TyPrim p))
   write :: Typeable p => Val ('TyRef p) -> Val ('TyPrim p) -> m ()
 
+  inspect :: m (List (Some Val))
+
 -- | Store monad transformer.
 newtype StoreT m p = StoreT (StateT ( Nat, List (Some Val) ) m p)
   deriving ( Functor, Applicative, Monad, MonadTrans, MonadIO )
@@ -48,47 +50,58 @@ instance Monad m => MonadStore (StoreT m) where
     put $ ( n, updateBack i (pack x) xs )
     pure ()
 
+  inspect = StoreT do
+    ( _, xs ) <- get
+    pure xs
+
 
 instance MonadStore m => MonadStore (SupplyT s m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
+  inspect = lift inspect
 
 instance MonadStore m => MonadStore (ExceptT e m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
+  inspect = lift inspect
 
 instance MonadStore m => MonadStore (StateT s m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
+  inspect = lift inspect
 
 instance MonadStore m => MonadStore (ReaderT r m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
+  inspect = lift inspect
 
 instance ( Monoid w, MonadStore m ) => MonadStore (Lazy.WriterT w m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
+  inspect = lift inspect
 
 instance ( Monoid w, MonadStore m ) => MonadStore (Strict.WriterT w m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
+  inspect = lift inspect
 
 instance ( Monoid w, MonadStore m ) => MonadStore (StepsT w m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
+  inspect = lift inspect
 
 instance MonadStore m => MonadStore (ListT m) where
   new = lift << new
   read = lift << read
   write l = lift << write l
-
+  inspect = lift inspect
 
 runStoreT :: Monad m => StoreT m a -> m ( a, List (Some Val) )
 runStoreT (StoreT s) = map (\(a, (_, ss)) -> (a, ss)) $ runStateT s ( 0, [] )
