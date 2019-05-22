@@ -10,8 +10,10 @@ module Prelude
   , Monoidal((<&>), skip, (<&), (&>)), applyDefault, pureDefault
   , Selective(branch, select, biselect), check, when
   , lift1, lift2, lift3
+  , MonadZero
   , ok, throw, catch
-  , clear, trace, evalWriterT
+  , clear, evalWriterT
+  , MonadTrace, trace
   , (~=), (~~), proxyOf, typeOf, someTypeOf, typeRep, TypeRep, someTypeRep, SomeTypeRep
   ) where
 
@@ -19,6 +21,7 @@ module Prelude
 import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3, Nat)
 
 import Control.Monad.Except (MonadError(..))
+import Control.Monad.List (ListT)
 import Control.Monad.Writer.Strict (MonadWriter(..), WriterT, runWriterT)
 
 import Data.Text (unpack)
@@ -209,6 +212,23 @@ when p t = check p t (pure ())
 
 -- Monads ----------------------------------------------------------------------
 
+-- Zero --
+
+-- | A safe alternative for MonadFail.
+-- |
+-- | Be sure only types that have a sensible, non-throwing,
+-- | `Alternative` instance are instances of `MonadZero`!
+-- |
+-- | Laws:
+-- |   * fail == empty
+class ( Monad m, MonadFail m, Alternative m ) => MonadZero m
+
+instance MonadZero Maybe
+instance MonadZero List
+instance Monad m => MonadZero (ListT m)
+
+
+
 -- Error --
 
 
@@ -234,13 +254,22 @@ clear :: MonadWriter w m => m ()
 clear = pass $ lift0 ((), const neutral)
 
 
-trace :: Applicative f => MonadWriter (f a) m => a -> m ()
-trace = tell << pure
-
-
 evalWriterT :: Monad m => WriterT w m a -> m a
 evalWriterT m = lift1 fst (runWriterT m)
 
+
+instance MonadWriter w m => MonadWriter w (ListT m) where
+  tell = lift << tell
+  listen = error "Prelude.listen for ListT m: not yet implemented"
+  pass = error "Prelude.pass for ListT m: not yet implemented"
+
+
+-- Trace --
+
+type MonadTrace i m = (Pretty i, MonadWriter (List (Doc ())) m)
+
+trace :: MonadTrace i m => i -> m ()
+trace = tell << pure << pretty
 
 
 -- Type equality ---------------------------------------------------------------
