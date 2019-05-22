@@ -1,7 +1,7 @@
 module Language.Val
   ( module Language.Type
   , Val(..), Un(..), Bn(..)
-  , pattern B, pattern I, pattern S
+  , pattern U, pattern B, pattern I, pattern S
   , Task(..)
   , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>\), pattern (:>>?)
   , asPred, asExpr, asPretask
@@ -37,12 +37,12 @@ data Val (t :: Ty) where
   Un :: ( Typeable p, Typeable q ) => Un p q -> Val ('TyPrim p) -> Val ('TyPrim q)
   Bn :: ( Typeable p, Typeable q, Typeable r ) => Bn p q r -> Val ('TyPrim p) -> Val ('TyPrim q) -> Val ('TyPrim r)
 
-  Unit :: Val 'TyUnit
   Pair :: Val a -> Val b -> Val (a ':>< b)
 
   Task :: Task ('TyTask a) -> Val ('TyTask a)
 
 
+pattern U   = Con UnitIsPrim ()
 pattern B x = Con BoolIsPrim x
 pattern I x = Con IntIsPrim x
 pattern S x = Con StringIsPrim x
@@ -54,6 +54,7 @@ instance Pretty (Val t) where
     Sym i -> cat [ "s", pretty i ]
     Loc i -> cat [ "l", pretty i ]
 
+    Con UnitIsPrim x -> pretty x
     Con BoolIsPrim x -> pretty x
     Con IntIsPrim x -> pretty x
     Con StringIsPrim x -> cat [ "\"", pretty x, "\"" ]
@@ -61,7 +62,6 @@ instance Pretty (Val t) where
     Un o a -> parens $ sep [ pretty o, pretty a ]
     Bn o a b -> parens $ sep [ pretty a, pretty o, pretty b ]
 
-    Unit -> angles neutral
     Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
 
     Task p -> pretty p
@@ -84,7 +84,6 @@ instance Eq (Val t) where
     | Just Refl <- o1 ~= o2                      = o1 == o2 && a1 == a2 && b1 == b2
     | otherwise                                  = False
 
-  Unit                  == Unit                  = True
   Pair a1 b1            == Pair a2 b2            = a1 == a2 && b1 == b2
 
   Task p1               == Task p2               = p1 == p2
@@ -192,7 +191,6 @@ asExpr = \case
   Un o a -> E.Un o (asExpr a)
   Bn o a b -> E.Bn o (asExpr a) (asExpr b)
 
-  Unit -> E.Unit
   Pair a b -> E.Pair (asExpr a) (asExpr b)
 
   Task p -> E.Task (asPretask p)

@@ -51,7 +51,6 @@ subst j s = \case
   E.Loc i -> E.Loc i
   E.Sym i -> E.Sym i
   E.Con p x -> E.Con p x
-  E.Unit -> E.Unit
 
 
 subst' :: Typeable s => Name s -> Expr s -> Pretask t -> Pretask t
@@ -90,7 +89,6 @@ shift c = \case
   E.Loc i -> E.Loc i
   E.Sym i -> E.Sym i
   E.Con p x -> E.Con p x
-  E.Unit -> E.Unit
 
 
 shift' :: Typeable s => Name s -> Pretask t -> Pretask t
@@ -208,7 +206,7 @@ eval = \case
     ( l1, p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
     S.write l1 v2
-    pure ( V.Unit, p1 :/\: p2 )
+    pure ( V.U, p1 :/\: p2 )
 
   E.Lam e ->
     pure ( V.Lam e, Yes )
@@ -218,8 +216,6 @@ eval = \case
     pure ( V.Sym i, Yes )
   E.Con p x ->
     pure ( V.Con p x, Yes )
-  E.Unit ->
-    pure ( V.Unit, Yes )
 
   E.Task e1 -> do
     ( t1, p1 ) <- eval' e1

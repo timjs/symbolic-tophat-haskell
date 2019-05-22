@@ -11,7 +11,6 @@ import Data.Universe
 data {- kind -} Ty
   = Ty :-> Ty
   | Ty :>< Ty
-  | TyUnit
   | TyTask Ty
   | TyRef PrimTy
   | TyPrim PrimTy
@@ -19,22 +18,24 @@ data {- kind -} Ty
 instance Universe Ty where
   type TypeOf (a ':-> b) = TypeOf a -> TypeOf b
   type TypeOf (a ':>< b) = ( TypeOf a, TypeOf b )
-  type TypeOf 'TyUnit = ()
   -- type TypeOf ('TyTask a) = Task (TypeOf a)
   -- type TypeOf ('TyRef p) = Ref (TypeOf a)
   type TypeOf ('TyPrim p) = TypeOf p
 
 
 data PrimTy
-  = TyBool
+  = TyUnit
+  | TyBool
   | TyInt
   | TyString
 
 instance Universe PrimTy where
+  type TypeOf 'TyUnit = ()
   type TypeOf 'TyBool = Bool
   type TypeOf 'TyInt = Integer
   type TypeOf 'TyString = String
 
+type TyPrimUnit = 'TyPrim 'TyUnit
 type TyPrimBool = 'TyPrim 'TyBool
 type TyPrimInt = 'TyPrim 'TyInt
 type TyPrimString = 'TyPrim 'TyString
@@ -45,6 +46,7 @@ type TyPrimString = 'TyPrim 'TyString
 -- | Apparently we can't use the dictionary trick as with `IsBasic`
 -- | due to some strange interaction with type families...
 data IsPrim (a :: PrimTy) where
+  UnitIsPrim :: IsPrim 'TyUnit
   BoolIsPrim :: IsPrim 'TyBool
   IntIsPrim :: IsPrim 'TyInt
   StringIsPrim :: IsPrim 'TyString

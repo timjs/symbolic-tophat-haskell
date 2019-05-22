@@ -20,6 +20,7 @@ data Pred (t :: PrimTy) where
   Un :: O.Un a b -> Pred a -> Pred b
   Bn :: O.Bn a b c -> Pred a -> Pred b -> Pred c
 
+
 pattern Yes = Con BoolIsPrim True
 pattern Nop = Con BoolIsPrim False
 
@@ -35,6 +36,7 @@ pattern S x = Con StringIsPrim x
 
 instance Pretty (Pred t) where
   pretty = \case
+    Con UnitIsPrim x -> pretty x
     Con BoolIsPrim x -> pretty x
     Con IntIsPrim x -> pretty x
     Con StringIsPrim x -> pretty x

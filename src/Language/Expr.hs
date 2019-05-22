@@ -2,7 +2,7 @@ module Language.Expr
   ( module Language.Type
   , module Language.Name
   , Expr(..), Un(..), Bn(..)
-  , pattern B, pattern I, pattern S, pattern Let
+  , pattern U, pattern B, pattern I, pattern S, pattern Let
   , Pretask(..)
   , pattern View, pattern Watch, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>!), pattern (:>>?)
   ) where
@@ -31,18 +31,18 @@ data Expr (t :: Ty) where
   Bn :: ( Typeable p, Typeable q, Typeable r ) => Bn p q r -> Expr ('TyPrim p) -> Expr ('TyPrim q) -> Expr ('TyPrim r)
   If :: Expr ('TyPrim 'TyBool) -> Expr a -> Expr a -> Expr a
 
-  Unit :: Expr 'TyUnit
   Pair :: Expr a -> Expr b -> Expr (a ':>< b)
   Fst :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr a
   Snd :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr b
 
   Ref :: Typeable p => Expr ('TyPrim p) -> Expr ('TyRef p)
   Deref :: Typeable p => Expr ('TyRef p) -> Expr ('TyPrim p)
-  Assign :: Typeable p => Expr ('TyRef p) -> Expr ('TyPrim p) -> Expr ('TyUnit)
+  Assign :: Typeable p => Expr ('TyRef p) -> Expr ('TyPrim p) -> Expr ('TyPrim 'TyUnit)
 
   Task :: Pretask ('TyTask a) -> Expr ('TyTask a)
 
 
+pattern U   = Con UnitIsPrim ()
 pattern B x = Con BoolIsPrim x
 pattern I x = Con IntIsPrim x
 pattern S x = Con StringIsPrim x
@@ -53,11 +53,13 @@ pattern Let x b = App (Lam b) x
 instance Pretty (Expr t) where
   pretty = \case
     Lam f -> cat [ "λ.", pretty f ]
+    Let x b -> split [ sep [ "let", pretty x, "in" ], pretty b ]
     App f a -> sep [ parens (pretty f), parens (pretty a) ]
     Var i -> cat [ "x", pretty i ]
     Sym i -> cat [ "s", pretty i ]
     Loc i -> cat [ "l", pretty i ]
 
+    Con UnitIsPrim x -> pretty x
     Con BoolIsPrim x -> pretty x
     Con IntIsPrim x -> pretty x
     Con StringIsPrim x -> cat [ "\"", pretty x, "\"" ]
@@ -66,7 +68,6 @@ instance Pretty (Expr t) where
     Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])
     If p a b -> sep [ "if", pretty p, "then", pretty a, "else", pretty b ]
 
-    Unit -> angles neutral
     Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
     Fst a -> sep [ "fst", pretty a ]
     Snd a -> sep [ "snd", pretty a ]
@@ -99,7 +100,6 @@ instance Eq (Expr t) where
     | otherwise                                  = False
   If p1 a1 b1           == If p2 a2 b2           = p1 == p2 && a1 == a2 && b1 == b2
 
-  Unit                  == Unit                  = True
   Pair a1 b1            == Pair a2 b2            = a1 == a2 && b1 == b2
   Fst a1                == Fst a2
     | Just Refl <- a1 ~= a2                      = a1 == a2
