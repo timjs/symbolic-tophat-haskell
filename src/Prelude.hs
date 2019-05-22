@@ -3,7 +3,7 @@ module Prelude
   , module Data.Text.Prettyprint.Doc
   , module Data.Type.Equality
   , List, Unit, Nat
-  , scan, split
+  , scan, tracePretty, split
   , neutral
   , (<<), (>>), (#), map
   , (<-<), (>->)
@@ -53,6 +53,10 @@ newtype Nat = Nat Word
 
 scan :: Read a => Text -> Maybe a
 scan = Relude.readMaybe << unpack
+
+
+tracePretty :: Pretty a => a -> a
+tracePretty x = traceShow (pretty x) x
 
 
 split :: List (Doc ann) -> Doc ann
