@@ -176,7 +176,7 @@ instance Eq (Pretask t) where
   Edit (Sym _) == Edit (Sym _) = True
   Edit x1      == Edit x2      = x1 == x2
   Enter        == Enter        = True
-  -- Store     == -- Store     = _
+  Update x1    == Update x2    = x1 == x2
 
   And x1 y1    == And x2 y2    = x1 == x2 && y1 == y2
   Or x1 y1     == Or x2 y2     = x1 == x2 && y1 == y2

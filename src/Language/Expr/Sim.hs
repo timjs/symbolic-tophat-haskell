@@ -307,13 +307,15 @@ normalise
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
+  s1 <- inspect
   ( t1, p1 ) <- stride t0
-  -- if t0 == t1
-  --   then pure ( t1, p0 :/\: p1 )
-  --   else do
-  --     ( t2, p2 ) <- normalise $ asExpr t1
-  --     pure ( t2, p0 :/\: p1 :/\: p2 )
-  pure ( t1, p0 :/\: p1 )
+  s2 <- inspect
+  if t0 == t1 && s1 == s2
+    then pure ( t1, p0 :/\: p1 )
+    else do
+      ( t2, p2 ) <- normalise $ asExpr t1
+      pure ( t2, p0 :/\: p1 :/\: p2 )
+  -- pure ( t1, p0 :/\: p1 )
 
 
 initialise
