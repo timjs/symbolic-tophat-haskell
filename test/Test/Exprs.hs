@@ -59,7 +59,7 @@ echo = Task $
 echo' :: Expr ('TyTask ('TyPrim 'TyInt))
 echo' = Task $
   Enter @'TyInt :>>?
-  View (Var 0)
+  Task (View (Var 0))
 
 
 add_seq :: Expr ('TyTask ('TyPrim 'TyInt))
@@ -86,13 +86,13 @@ add_par = Task $
 
 guard0 :: Expr ('TyTask ('TyPrim 'TyInt))
 guard0 = Task $
-  Enter @'TyInt :>>\
+  Enter @'TyInt :>>!
   If (Bn Gt (Var 0) (I 0)) (Task $ View (Var 0)) (Task $ Fail)
 
 
 preguard :: Expr ('TyTask ('TyPrim 'TyString))
 preguard = Task $
-  Enter @'TyBool :>>\
+  Enter @'TyBool :>>!
   If (Un Not (Var 0)) (contguard (Var 0)) (Task $ Fail)
   where
     contguard :: Expr ('TyPrim 'TyBool) -> Expr ('TyTask ('TyPrim 'TyString))
@@ -104,7 +104,7 @@ preguard = Task $
 
 machine :: Expr ('TyTask ('TyPrim 'TyString))
 machine = Task $
-  Enter @'TyInt :>>\
+  Enter @'TyInt :>>!
   If (Bn Eq (Var 0) (I 1)) (Task $ View (S "Biscuit")) (
   If (Bn Eq (Var 0) (I 2)) (Task $ View (S "Chocolate")) (
   Task $ Fail))
@@ -131,10 +131,22 @@ share =
   Update @'TyInt (Var 0)
 
 
+share' :: Expr ('TyTask ('TyPrim 'TyInt))
+share' = Task $
+  Update @'TyInt (Ref (I 0))
+
+
 shareStep :: Expr ('TyTask ('TyPrim 'TyString))
 shareStep =
   Let (Ref (I 0)) $ Task $
-  Update @'TyInt (Var 0) :>>\
+  Update @'TyInt (Var 0) :>>!
+  If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail)
+
+
+shareStepCont :: Expr ('TyTask ('TyPrim 'TyString))
+shareStepCont =
+  Let (Ref (I 0)) $ Task $
+  Update @'TyInt (Var 0) :>>?
   If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail)
 
 

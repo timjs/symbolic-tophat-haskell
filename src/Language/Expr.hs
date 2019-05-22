@@ -4,7 +4,7 @@ module Language.Expr
   , Expr(..), Un(..), Bn(..)
   , pattern B, pattern I, pattern S, pattern Let
   , Pretask(..)
-  , pattern View, pattern Watch, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>\), pattern (:>>?)
+  , pattern View, pattern Watch, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>!), pattern (:>>?)
   ) where
 
 
@@ -142,7 +142,7 @@ infixr 2 :||:, :??:
 -- | NOTE:
 -- | Fixity of bind is left associative in a normal setting because of the scoping of lambdas.
 -- | Because we can't use lambdas in our DSL, bind should be right associative.
-infixr 1 :>>=, :>>?, :>>\
+infixr 1 :>>=, :>>!, :>>?
 
 
 pattern View x = Edit x
@@ -151,8 +151,8 @@ pattern (:&&:) x y = And (Task x) (Task y)
 pattern (:||:) x y = Or (Task x) (Task y)
 pattern (:??:) x y = Xor (Task x) (Task y)
 pattern (:>>=) t c = Then (Task t) (Lam (Task c))
-pattern (:>>\) t c = Then (Task t) (Lam c)
-pattern (:>>?) t c = Next (Task t) (Lam (Task c))
+pattern (:>>!) t c = Then (Task t) (Lam c)
+pattern (:>>?) t c = Next (Task t) (Lam c)
 
 
 instance Pretty (Pretask t) where
