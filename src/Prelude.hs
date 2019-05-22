@@ -1,9 +1,10 @@
+{-# LANGUAGE MagicHash #-}
 module Prelude
   ( module Relude
   , module Data.Text.Prettyprint.Doc
   , module Data.Type.Equality
-  , List, Unit, Nat
-  , scan, tracePretty, split
+  , List, Unit, Nat, nat
+  , sep, cat, scan, tracePretty, split
   , neutral
   , (<<), (>>), (#), map
   , (<-<), (>->)
@@ -20,12 +21,13 @@ module Prelude
 
 import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3, Nat)
 
+import GHC.Exts (int2Word#, Int(I#), Word(W#))
 import Control.Monad.Except (MonadError(..))
 import Control.Monad.List (ListT)
 import Control.Monad.Writer.Strict (MonadWriter(..), WriterT, runWriterT)
 
 import Data.Text (unpack)
-import Data.Text.Prettyprint.Doc (Pretty(..), Doc, cat, sep, indent, parens, angles)
+import Data.Text.Prettyprint.Doc (Pretty(..), Doc, hcat, hsep, indent, parens, angles)
 import Data.Type.Equality
 
 import Type.Reflection (typeOf, typeRep, someTypeRep, TypeRep, SomeTypeRep)
@@ -47,9 +49,18 @@ newtype Nat = Nat Word
   deriving ( Eq, Ord, Num, Show, Read, Enum, Pretty ) via Word
 
 
+nat :: Int -> Nat
+nat i@(I# n)
+  | i >= 0    = Nat (W# (int2Word# n))
+  | otherwise = error "Prelude.nat: argument is negative"
+
+
 
 -- Scanning & Printing ---------------------------------------------------------
 
+
+sep = hsep
+cat = hcat
 
 scan :: Read a => Text -> Maybe a
 scan = Relude.readMaybe << unpack
