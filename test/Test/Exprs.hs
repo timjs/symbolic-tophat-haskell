@@ -84,6 +84,12 @@ add_par = Task $
   View (Bn Add (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0)))
 
 
+par_step :: Expr ('TyTask TyPrimString)
+par_step = Task $
+  Edit (I 0) :&&: Edit (I 0) :>>!
+  If (Bn Gt (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0))) done stop
+
+
 guard0 :: Expr ('TyTask ('TyPrim 'TyInt))
 guard0 = Task $
   Enter @'TyInt :>>!
@@ -115,8 +121,8 @@ iftest =
   If (B True) (Task $ Edit $ S "Biscuit") (Task $ Edit $ S "Chocolate")
 
 
-fail :: Expr ('TyTask ('TyPrim 'TyInt)) -- Int because otherwise not Typeable
-fail = Task $
+step_fail :: Expr ('TyTask ('TyPrim 'TyInt)) -- Int because otherwise not Typeable
+step_fail = Task $
   Enter @'TyInt :>>= Fail
 
 
@@ -148,6 +154,38 @@ shareStepCont =
   Let (Ref (I 0)) $ Task $
   Update @'TyInt (Var 0) :>>?
   If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail)
+
+
+-- Shares --
+
+done   = Task $ View (S "done")
+stop   = Task $ Fail
+
+
+share_par :: Expr ('TyTask (TyPrimInt ':>< TyPrimInt))
+share_par = Task $
+  Update (Ref (I 0)) :&&: Update (Ref (I 0))
+
+
+share_step :: Expr ('TyTask TyPrimString)
+share_step = Task $
+  Update (Ref (I 0)) :&&: Update (Ref (I 0)) :>>!
+  If (Bn Gt (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0))) done stop
+
+
+
+type TyLock = 'TyPrim 'TyString ':>< ('TyPrim 'TyUnit ':>< 'TyPrim 'TyUnit)
+
+lock :: Expr ('TyTask TyLock)
+lock =
+  Let (Ref (I 0)) $  -- k
+  Let (Ref (I 0)) $  -- c
+  Task $
+  door :&&: (lock 1 :&&: lock 2)
+  where
+    door   = Update @'TyInt (Var 1)  :>>! If (Bn Eq (Deref (Var 1)) (I 2)) done stop
+    lock n = Edit U :>>! If (Bn Eq (Deref (Var 2)) (I n)) (inc (Var 1)) stop
+    inc  c = Task $ View $ Assign c (Bn Add (Deref c) (I 1))
 
 
 
