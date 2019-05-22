@@ -1,7 +1,7 @@
 module Language.Type
   ( module Data.Universe
   , Ty(..), PrimTy(..)
-  , TyPrimBool, TyPrimInt, TyPrimString
+  , TyPrimUnit, TyPrimBool, TyPrimInt, TyPrimString
   , IsPrim(..)
   ) where
 

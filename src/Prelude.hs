@@ -59,19 +59,24 @@ nat i@(I# n)
 -- Scanning & Printing ---------------------------------------------------------
 
 
-sep = hsep
-cat = hcat
-
 scan :: Read a => Text -> Maybe a
 scan = Relude.readMaybe << unpack
 
 
-tracePretty :: Pretty a => a -> a
-tracePretty x = traceShow (pretty x) x
+sep :: List (Doc n) -> Doc n
+sep = hsep
+
+
+cat :: List (Doc n) -> Doc n
+cat = hcat
 
 
 split :: List (Doc ann) -> Doc ann
 split = Pretty.vsep
+
+
+tracePretty :: Pretty a => a -> a
+tracePretty x = traceShow (pretty x) x
 
 
 

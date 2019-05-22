@@ -158,7 +158,11 @@ shareStepCont =
 
 -- Shares --
 
+done :: Expr ('TyTask ('TyPrim 'TyString))
 done   = Task $ View (S "done")
+
+
+stop :: Expr ('TyTask a)
 stop   = Task $ Fail
 
 
@@ -187,11 +191,11 @@ lock =
   Let (Ref (I 0)) $  -- k
   Let (Ref (I 0)) $  -- c
   Task $
-  door :&&: (lock 1 :&&: lock 2)
+  door :&&: (unlock 1 :&&: unlock 2)
   where
-    door   = Update @'TyInt (Var 1)  :>>! If (Bn Eq (Deref (Var 1)) (I 2)) done stop
-    lock n = Edit U :>>! If (Bn Eq (Deref (Var 2)) (I n)) (inc (Var 1)) stop
-    inc  c = Task $ View $ Assign c (Bn Add (Deref c) (I 1))
+    door     = Update @'TyInt (Var 1)  :>>! If (Bn Eq (Deref (Var 1)) (I 2)) done stop
+    unlock n = Edit U :>>! If (Bn Eq (Deref (Var 2)) (I n)) (inc (Var 1)) stop
+    inc c    = Task $ View $ Assign c (Bn Add (Deref c) (I 1))
 
 
 
