@@ -15,12 +15,26 @@ record h = \case
   Mid g ls rs -> Mid (g <> h) ls rs
 
 
+listen :: Steps w a -> Steps w ( a, w )
+listen = \case
+  None w -> None w
+  End w x -> End w ( x, w )
+  Mid w ls rs -> Mid w (listen ls) (listen rs)
+
+
+pass :: Steps w ( a, w -> w ) -> Steps w a
+pass = \case
+  None w -> None w
+  End w ( x, f ) -> End (f w) x
+  Mid w ls rs -> Mid w (pass ls) (pass rs)
+
+
 instance ( Pretty h, Pretty a ) => Pretty (Steps h a) where
   pretty = \case
-    None h -> sep [ "[x]", pretty h ]
-    End h x -> sep [ "[-]", pretty h, pretty x ]
+    None h -> sep [ "x", pretty h ]
+    End h x -> sep [ "-", pretty h, pretty x ]
     Mid h ls rs -> split
-      [ sep [ "[+]", pretty h ]
+      [ sep [ "+", pretty h ]
       , indent 2 $ pretty ls
       , indent 2 $ pretty rs
       ]

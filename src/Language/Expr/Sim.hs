@@ -359,8 +359,11 @@ handle (V.Task t) = case t of
     [ ( t2, Continue, p2 )               | Just v1 <- value t1, ( t2, p2 ) <- normalise (E.App e2 (asExpr v1)), not (failing t2) ]
 
 
+newtype Info t = Info ( Val ('TyTask t), Input, Pred 'TyBool )
+
+
 drive
-  :: MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadTrace m => MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
@@ -371,7 +374,7 @@ drive t0 = do
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate
-  :: MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadTrace m => MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate t is p = go (go end) t is p
   where
@@ -392,7 +395,7 @@ satisfiable _ = True  -- FIXME: use SBV here
 
 
 run
-  :: MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadTrace m => MonadSupply Nat m => MonadStore m => MonadZero m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 run t0 = do
   ( t1, p1 ) <- initialise t0

@@ -1,6 +1,9 @@
 module Control.Monad.Steps where
 
+import Control.Monad.Writer.Class (MonadWriter(..))
 import Data.Steps (Steps)
+
+import Data.Steps as Steps
 
 
 newtype StepsT h m a = StepsT (m (Steps h a))
@@ -41,3 +44,15 @@ instance Monoid h => MonadTrans (StepsT h) where
   lift ma = StepsT do
     a <- ma
     pure $ pure a
+
+
+instance ( Monoid w, Monad m ) => MonadWriter w (StepsT w m) where
+  tell = StepsT << pure << None
+
+  listen m = StepsT do
+    xs <- runStepsT m
+    pure $ Steps.listen xs
+
+  pass m = StepsT do
+    xs <- runStepsT m
+    pure $ Steps.pass xs
