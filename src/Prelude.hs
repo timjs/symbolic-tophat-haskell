@@ -1,4 +1,5 @@
 {-# LANGUAGE MagicHash #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Prelude
   ( module Relude
   , module Data.Text.Prettyprint.Doc
@@ -27,7 +28,7 @@ import Control.Monad.List (ListT)
 import Control.Monad.Writer.Strict (MonadWriter(..), WriterT, runWriterT)
 
 import Data.Text (unpack)
-import Data.Text.Prettyprint.Doc (Pretty(..), Doc, hcat, hsep, indent, parens, angles)
+import Data.Text.Prettyprint.Doc (Pretty(..), Doc, indent, parens, angles)
 import Data.Type.Equality
 
 import Type.Reflection (typeOf, typeRep, someTypeRep, TypeRep, SomeTypeRep)
@@ -64,11 +65,11 @@ scan = Relude.readMaybe << unpack
 
 
 sep :: List (Doc n) -> Doc n
-sep = hsep
+sep = Pretty.hsep
 
 
 cat :: List (Doc n) -> Doc n
-cat = hcat
+cat = Pretty.hcat
 
 
 split :: List (Doc ann) -> Doc ann
@@ -77,6 +78,14 @@ split = Pretty.vsep
 
 tracePretty :: Pretty a => a -> a
 tracePretty x = traceShow (pretty x) x
+
+
+instance ( Pretty a, Pretty b, Pretty c, Pretty d ) => Pretty ( a, b, c, d ) where
+   pretty ( x1, x2, x3, x4 ) = Pretty.tupled [ pretty x1, pretty x2, pretty x3, pretty x4 ]
+
+
+instance ( Pretty a, Pretty b, Pretty c, Pretty d, Pretty e ) => Pretty ( a, b, c, d, e ) where
+   pretty ( x1, x2, x3, x4, x5 ) = Pretty.tupled [ pretty x1, pretty x2, pretty x3, pretty x4, pretty x5 ]
 
 
 
