@@ -1,47 +1,38 @@
 module Data.Steps where
 
-
-data Steps h a
-  = None h
-  | End h a
-  | Mid h (Steps h a) (Steps h a)
-  deriving ( Eq, Ord, Show, Read, Functor, Foldable, Traversable )
+import Data.Something
 
 
-record :: Monoid h => h -> Steps h a -> Steps h a
+data Steps a
+  = None (Something Pretty)
+  | End (Something Pretty) a
+  | Mid (Something Pretty) (Steps a) (Steps a)
+  deriving ( Functor, Foldable, Traversable )
+
+
+record :: Something Pretty -> Steps a -> Steps a
 record h = \case
-  None g -> None (g <> h)
-  End g a -> End (g <> h) a
-  Mid g ls rs -> Mid (g <> h) ls rs
+  None _ -> None h
+  End _ a -> End h a
+  Mid _ ls rs -> Mid h ls rs
 
 
-listen :: Steps w a -> Steps w ( a, w )
-listen = \case
-  None w -> None w
-  End w x -> End w ( x, w )
-  Mid w ls rs -> Mid w (listen ls) (listen rs)
-
-
-pass :: Steps w ( a, w -> w ) -> Steps w a
-pass = \case
-  None w -> None w
-  End w ( x, f ) -> End (f w) x
-  Mid w ls rs -> Mid w (pass ls) (pass rs)
-
-
-instance ( Show h, Pretty a ) => Pretty (Steps h a) where
+instance ( Pretty a ) => Pretty (Steps a) where
   pretty = \case
-    None h -> sep [ "x", show h ]
-    End h x -> sep [ "-", show h, pretty x ]
-    Mid h ls rs -> split
-      [ sep [ "+", show h ]
+    None (Some h) -> sep [ "x", pretty h ]
+    End (Some h) x -> sep [ "-", pretty h, pretty x ]
+    Mid (Some h) ls rs -> split
+      [ sep [ "+", pretty h ]
       , indent 2 $ pretty ls
       , indent 2 $ pretty rs
       ]
 
 
-instance Monoid h => Applicative (Steps h) where
-  pure = End neutral
+--
+
+
+instance Applicative Steps where
+  pure = End (Some ())
 
   f <*> x = do
     f' <- f
@@ -49,13 +40,13 @@ instance Monoid h => Applicative (Steps h) where
     pure (f' x')
 
 
-instance Monoid h => Alternative (Steps h) where
-  empty = None neutral
+instance Alternative Steps where
+  empty = None (Some ())
 
-  ls <|> rs = Mid neutral ls rs  --XXX or combine?
+  ls <|> rs = Mid (Some ()) ls rs  --XXX or combine?
 
 
-instance Monoid h => Monad (Steps h) where
+instance Monad Steps where
   None h      >>= _ = None h
-  End h x     >>= k = record h $ k x
+  End _ x     >>= k = k x --record (Some x) $ k x
   Mid h ls rs >>= k = Mid h (ls >>= k) (rs >>= k)

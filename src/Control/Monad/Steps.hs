@@ -1,51 +1,49 @@
 module Control.Monad.Steps where
 
-import Control.Monad.Writer.Class (MonadWriter(..))
-import Data.Steps (Steps)
-
-import Data.Steps as Steps
+import Data.Steps
 
 
-newtype StepsT h m a = StepsT (m (Steps h a))
+newtype StepsT m a = StepsT (m (Steps a))
   deriving ( Functor, Foldable, Traversable )
 
 
-runStepsT :: StepsT h m a -> m (Steps h a)
+runStepsT :: StepsT m a -> m (Steps a)
 runStepsT (StepsT s) = s
 
 
-instance ( Monoid h, Applicative m ) => Applicative (StepsT h m) where
+instance Applicative m => Applicative (StepsT m) where
   pure x = StepsT $ pure (pure x)
 
   f <*> x = StepsT $ pure (<*>) <*> runStepsT f <*> runStepsT x
 
 
-instance ( Monoid h, Applicative m ) => Alternative (StepsT h m) where
+instance Applicative m => Alternative (StepsT m) where
   empty = StepsT $ pure empty
 
   ls <|> rs = StepsT $ pure (<|>) <*> runStepsT ls <*> runStepsT rs
 
 
-instance ( Monoid h, Monad m ) => Monad (StepsT h m) where
+instance Monad m => Monad (StepsT m) where
   m >>= k = StepsT do
     x <- runStepsT m
     y <- traverse (runStepsT << k) x
     pure $ join y
 
 
-instance ( Monoid h, Monad m ) => MonadFail (StepsT h m) where
+instance Monad m => MonadFail (StepsT m) where
   fail _ = StepsT $ pure empty
 
-instance ( Monoid h, Monad m ) => MonadZero (StepsT h m)
-instance ( Monoid h, Monad m ) => MonadPlus (StepsT h m)
+instance Monad m => MonadZero (StepsT m)
+instance Monad m => MonadPlus (StepsT m)
 
 
-instance Monoid h => MonadTrans (StepsT h) where
+instance MonadTrans StepsT where
   lift ma = StepsT do
     a <- ma
     pure $ pure a
 
 
+{-
 instance ( Monoid w, Monad m ) => MonadWriter w (StepsT w m) where
   tell = StepsT << pure << None
 
@@ -56,3 +54,18 @@ instance ( Monoid w, Monad m ) => MonadWriter w (StepsT w m) where
   pass m = StepsT do
     xs <- runStepsT m
     pure $ Steps.pass xs
+
+
+listen :: Steps w a -> Steps w ( a, w )
+listen = \case
+  None w -> None w
+  End w x -> End w ( x, w )
+  Mid w ls rs -> Mid w (listen ls) (listen rs)
+
+
+pass :: Steps w ( a, w -> w ) -> Steps w a
+pass = \case
+  None w -> None w
+  End w ( x, f ) -> End (f w) x
+  Mid w ls rs -> Mid w (pass ls) (pass rs)
+-}
