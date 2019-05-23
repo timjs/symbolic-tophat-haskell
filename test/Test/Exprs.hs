@@ -221,12 +221,12 @@ execRunner :: Runner a -> List (Some Val)
 execRunner = snd << runRunner
 
 
-type Stepper = StepsT () (SupplyT Nat (Store))
+type Stepper = StepsT (Doc ()) (SupplyT Nat (Store))
 
-runStepper :: Stepper a -> ( ( Steps () a, Stream Nat ), List (Some Val) )
+runStepper :: Stepper a -> ( ( Steps (Doc ()) a, Stream Nat ), List (Some Val) )
 runStepper r = runStore (runSupplyT (runStepsT r) ids)
 
-evalStepper :: Stepper a -> Steps () a
+evalStepper :: Stepper a -> Steps (Doc ()) a
 evalStepper = fst << fst << runStepper
 
 execStepper :: Stepper a -> List (Some Val)

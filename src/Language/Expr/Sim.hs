@@ -367,7 +367,9 @@ drive
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
+  trace ( i1, i1, t1, p1 )
   ( t2, p2 ) <- normalise (asExpr t1)
+  trace ( t2, p1 )
   pure ( t2, i1, p1 :/\: p2 )
 
 

@@ -29,12 +29,12 @@ pass = \case
   Mid w ls rs -> Mid w (pass ls) (pass rs)
 
 
-instance ( Pretty h, Pretty a ) => Pretty (Steps h a) where
+instance ( Show h, Pretty a ) => Pretty (Steps h a) where
   pretty = \case
-    None h -> sep [ "x", pretty h ]
-    End h x -> sep [ "-", pretty h, pretty x ]
+    None h -> sep [ "x", show h ]
+    End h x -> sep [ "-", show h, pretty x ]
     Mid h ls rs -> split
-      [ sep [ "+", pretty h ]
+      [ sep [ "+", show h ]
       , indent 2 $ pretty ls
       , indent 2 $ pretty rs
       ]
