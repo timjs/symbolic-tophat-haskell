@@ -7,12 +7,11 @@ import Language.Type
 
 import Language.Expr (Expr, Pretask)
 import Language.Pred (Pred, simplify, pattern Yes, pattern (:/\:))
-import Language.Store (MonadStore(..))
 import Language.Val (Val, Task, asPred, asExpr)
+import Language.Heap (Heap, new, read, write)
 
 import qualified Language.Expr as E
 import qualified Language.Pred as P
-import qualified Language.Store as S
 import qualified Language.Val as V
 
 
@@ -108,7 +107,7 @@ shift' c = \case
 -- Observations ----------------------------------------------------------------
 
 
-value :: MonadStore m => Val ('TyTask t) -> m (Maybe (Val t))
+value :: MonadState Heap m => Val ('TyTask t) -> m (Maybe (Val t))
 value (V.Task t) = case t of
   V.Edit v1                -> pure $ Just v1
   V.Enter                  -> pure $ Nothing
@@ -158,7 +157,7 @@ Note that the context of symbolic values `sxt` is the same for the expression
 and the resulting predicate.
 -}
 eval
-  :: MonadStore m => MonadZero m
+  :: MonadState Heap m => MonadZero m
   => Expr t -> m ( Val t, Pred 'TyBool )
 eval = \case
   E.App e1 e2 -> do
@@ -196,16 +195,16 @@ eval = \case
 
   E.Ref e1 -> do
     ( v1, p1 ) <- eval e1
-    l1 <- S.new v1
+    l1 <- new v1
     pure ( l1, p1 )
   E.Deref e1 -> do
     ( l1, p1 ) <- eval e1
-    v1 <- S.read l1
+    v1 <- read l1
     pure ( v1, p1 )
   E.Assign e1 e2 -> do
     ( l1, p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
-    S.write l1 v2
+    write l1 v2
     pure ( V.U, p1 :/\: p2 )
 
   E.Lam e ->
@@ -226,7 +225,7 @@ eval = \case
 
 
 eval'
-  :: MonadStore m => MonadZero m
+  :: MonadState Heap m => MonadZero m
   => Pretask t -> m ( Task t, Pred 'TyBool )
 eval' = \case
   E.Edit e1 -> do
@@ -259,13 +258,13 @@ eval' = \case
 
 
 stride
-  :: MonadStore m => MonadZero m
+  :: MonadState Heap m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
     ( t1', p1 ) <- stride t1
-    s1 <- inspect
+    s1 <- get
     mv1 <- value t1'
     case mv1 of
       Nothing -> pure ( V.Task $ V.Then t1' e2, p1 )
@@ -273,7 +272,7 @@ stride (V.Task t) = case t of
         ( t2, p2 ) <- eval $ E.App e2 (asExpr v1)
         if failing t2
           then do
-            place s1
+            put s1
             pure ( V.Task $ V.Then t1' e2, p1 )
             -- empty
           else pure ( t2, p1 :/\: p2 )
@@ -303,29 +302,28 @@ stride (V.Task t) = case t of
 
 
 normalise
-  :: MonadStore m => MonadZero m
+  :: MonadState Heap m => MonadZero m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
-  s1 <- inspect
+  s1 <- get
   ( t1, p1 ) <- stride t0
-  s2 <- inspect
+  s2 <- get
   if t0 == t1 && s1 == s2
     then pure ( t1, p0 :/\: p1 )
     else do
       ( t2, p2 ) <- normalise $ asExpr t1
       pure ( t2, p0 :/\: p1 :/\: p2 )
-  -- pure ( t1, p0 :/\: p1 )
 
 
 initialise
-  :: MonadStore m => MonadZero m
+  :: MonadState Heap m => MonadZero m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 initialise = normalise
 
 
 handle
-  :: MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadSupply Nat m => MonadState Heap m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 handle (V.Task t) = case t of
   V.Edit _ -> do
@@ -360,7 +358,7 @@ handle (V.Task t) = case t of
 
 
 drive
-  :: MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadSupply Nat m => MonadState Heap m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
@@ -371,7 +369,7 @@ drive t0 = do
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate
-  :: MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadSupply Nat m => MonadState Heap m => MonadZero m
   => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate t is p = go (go end) t is p
   where
@@ -392,7 +390,7 @@ satisfiable _ = True  -- FIXME: use SBV here
 
 
 run
-  :: MonadSupply Nat m => MonadStore m => MonadZero m
+  :: MonadSupply Nat m => MonadState Heap m => MonadZero m
   => Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 run t0 = do
   ( t1, p1 ) <- initialise t0

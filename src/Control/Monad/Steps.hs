@@ -2,8 +2,6 @@ module Control.Monad.Steps where
 
 import Data.Steps (Steps)
 
-import Data.Steps as Steps
-
 
 newtype StepsT t m a = StepsT (m (Steps t a))
   deriving ( Functor, Foldable, Traversable )

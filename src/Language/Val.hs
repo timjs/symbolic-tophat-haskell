@@ -1,5 +1,6 @@
 module Language.Val
   ( module Language.Type
+  , module Language.Name
   , Val(..), Un(..), Bn(..)
   , pattern U, pattern B, pattern I, pattern S
   , Task(..)

@@ -19,6 +19,7 @@ dependencies:
   - relude
   - mtl
   - text
+  - vector
   - prettyprinter
   - Stream
   # - unordered-containers

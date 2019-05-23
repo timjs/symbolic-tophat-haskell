@@ -1,11 +1,11 @@
-{-# LANGUAGE MagicHash #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Prelude
   ( module Relude
-  , module Data.Text.Prettyprint.Doc
   , module Data.Type.Equality
   , List, Unit, Nat, nat
-  , sep, cat, scan, tracePretty, split
+  , Vector, only, index, update
+  , Pretty(..), Doc, sep, cat, split, indent, parens, angles
+  , scan, tracePretty
   , neutral
   , (<<), (>>), (#), map
   , (<-<), (>->)
@@ -21,20 +21,21 @@ module Prelude
 
 
 import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3, Nat)
+import Data.Type.Equality
 
-import GHC.Exts (int2Word#, Int(I#), Word(W#))
 import Control.Monad.Except (MonadError(..))
 import Control.Monad.List (ListT)
 import Control.Monad.Writer.Strict (MonadWriter(..), WriterT, runWriterT)
 
 import Data.Text (unpack)
 import Data.Text.Prettyprint.Doc (Pretty(..), Doc, indent, parens, angles)
-import Data.Type.Equality
+import Data.Vector (Vector)
 
 import Type.Reflection (typeOf, typeRep, someTypeRep, TypeRep, SomeTypeRep)
 
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import qualified Relude
+import qualified Data.Vector as Vector
 
 
 -- Synonyms --------------------------------------------------------------------
@@ -46,14 +47,34 @@ type List = []
 type Unit = ()
 
 
-newtype Nat = Nat Word
-  deriving ( Eq, Ord, Num, Show, Read, Enum, Pretty ) via Word
+
+-- Data types ------------------------------------------------------------------
+
+
+newtype Nat = Nat Int
+  deriving ( Eq, Ord, Num, Show, Read, Enum, Pretty ) via Int
 
 
 nat :: Int -> Nat
-nat i@(I# n)
-  | i >= 0    = Nat (W# (int2Word# n))
+nat i
+  | i >= 0    = Nat i
   | otherwise = error "Prelude.nat: argument is negative"
+
+
+only :: a -> Vector a
+only = Vector.singleton
+
+
+index :: Nat -> Vector a -> Maybe a
+index (Nat i) xs = (Vector.!?) xs i
+
+
+update :: Nat -> a -> Vector a -> Vector a
+update (Nat i) x xs = (Vector.//) xs [ ( i, x ) ]
+
+
+instance ( Pretty a ) => Pretty (Vector a) where
+  pretty = Pretty.angles << fold << intersperse ", " << map pretty << Vector.toList
 
 
 
@@ -72,7 +93,7 @@ cat :: List (Doc n) -> Doc n
 cat = Pretty.hcat
 
 
-split :: List (Doc ann) -> Doc ann
+split :: List (Doc n) -> Doc n
 split = Pretty.vsep
 
 
@@ -255,6 +276,7 @@ class ( Monad m, MonadFail m, Alternative m ) => MonadZero m
 instance MonadZero Maybe
 instance MonadZero List
 instance Monad m => MonadZero (ListT m)
+instance ( MonadFail m, MonadPlus m ) => MonadZero (StateT s m)
 
 
 

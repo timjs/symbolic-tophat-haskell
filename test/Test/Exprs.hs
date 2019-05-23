@@ -1,17 +1,13 @@
 module Test.Exprs where
 
-import Data.Some (Some)
 import Data.Steps (Steps)
 import Data.Stream (Stream)
-import Language.Val (Val)
 
-import Control.Monad.List
 import Control.Monad.Supply
 import Control.Monad.Steps
-import Control.Monad.Writer.Strict
 import Language.Expr
 import Language.Input
-import Language.Store
+import Language.Heap
 
 import qualified Data.Stream as Stream
 
@@ -207,29 +203,14 @@ ids :: Stream Nat
 ids = Stream.iterate succ 0
 
 
-type Runner = ListT (SupplyT Nat (WriterT (List (Doc ())) Store))
-
-runRunner :: Runner a -> ( ( ( List a, Stream Nat ), List (Doc ()) ), List (Some Val) )
-runRunner r = runStore (runWriterT (runSupplyT (runListT r) ids))
-
-traceRunner :: Runner a -> List (Doc ())
-traceRunner = snd << fst << runRunner
-
-evalRunner :: Runner a -> List a
-evalRunner = fst << fst << fst << runRunner
-
-execRunner :: Runner a -> List (Some Val)
-execRunner = snd << runRunner
-
-
 -- type Stepper = StepsT (List Input) (SupplyT Nat (Store))
-type Stepper = StoreT (StepsT (List Input) (SupplyT Nat Identity))
+type Stepper = StateT Heap (StepsT (List Input) (SupplyT Nat Identity))
 
 -- runStepper :: Stepper a -> ( ( Steps (List Input) a, Stream Nat ), List (Some Val) )
 -- runStepper r = runStore (runSupplyT (runStepsT r) ids)
 -- runStepper :: Stepper a -> ( ( Steps (List Input) a, List (Some Val) ), Stream Nat )
 runStepper :: Stepper a -> ( Steps (List Input) ( a, Heap ), Stream Nat )
-runStepper r = runIdentity (runSupplyT (runStepsT (runStoreT r)) ids)
+runStepper r = runIdentity (runSupplyT (runStepsT (runStateT r empty)) ids)
 
 evalStepper :: Stepper a -> Steps (List Input) ( a, Heap )
 evalStepper = fst << runStepper
