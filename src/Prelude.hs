@@ -284,12 +284,16 @@ instance MonadWriter w m => MonadWriter w (ListT m) where
   pass = error "Prelude.pass for ListT m: not yet implemented"
 
 
+
 -- Trace --
 
-type MonadTrace i m = (Pretty i, MonadWriter (List (Doc ())) m)
 
-trace :: MonadTrace i m => i -> m ()
-trace = tell << pure << pretty
+type MonadTrace m = MonadWriter (Doc ()) m
+
+
+trace :: Pretty i => MonadTrace m => i -> m ()
+trace = tell << pretty
+
 
 
 -- Type equality ---------------------------------------------------------------
