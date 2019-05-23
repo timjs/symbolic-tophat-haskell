@@ -359,9 +359,6 @@ handle (V.Task t) = case t of
     [ ( t2, Continue, p2 )               | Just v1 <- value t1, ( t2, p2 ) <- normalise (E.App e2 (asExpr v1)), not (failing t2) ]
 
 
-newtype Info t = Info ( Val ('TyTask t), Input, Pred 'TyBool )
-
-
 drive
   :: MonadSupply Nat m => MonadStore m => MonadZero m
   => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
