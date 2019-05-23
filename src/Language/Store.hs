@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Language.Store
   ( MonadStore(..)
-  , StoreT(..), Store
+  , StoreT(..), Store, Heap
   , runStoreT, evalStoreT
   , runStore, evalStore
   ) where
@@ -17,17 +17,20 @@ import Language.Type
 import Language.Val
 
 
+type Heap = List (Some Val)
+
+
 class Monad m => MonadStore m where
   new   :: Typeable p => Val ('TyPrim p) -> m (Val ('TyRef p))
   read  :: Typeable p => Val ('TyRef p) -> m (Val ('TyPrim p))
   write :: Typeable p => Val ('TyRef p) -> Val ('TyPrim p) -> m ()
 
-  inspect :: m (List (Some Val))
-  place :: List (Some Val) -> m ()
+  inspect :: m Heap
+  place :: Heap -> m ()
 
 -- | Store monad transformer.
-newtype StoreT m p = StoreT (StateT ( Nat, List (Some Val) ) m p)
-  deriving ( Functor, Applicative, Monad, MonadTrans, MonadIO )
+newtype StoreT m p = StoreT (StateT ( Nat, Heap ) m p)
+  deriving ( Functor, Applicative, Alternative, Monad, MonadFail, MonadZero, MonadTrans, MonadIO )
 
 -- | Store monad.
 type Store = StoreT Identity
@@ -58,6 +61,10 @@ instance Monad m => MonadStore (StoreT m) where
   place xs = StoreT do
     put ( nat $ length xs, xs )
 
+
+instance MonadSupply s m => MonadSupply s (StoreT m) where
+  supply = lift supply
+  peek = lift peek
 
 instance MonadStore m => MonadStore (SupplyT s m) where
   new = lift << new
@@ -115,13 +122,13 @@ instance MonadStore m => MonadStore (ListT m) where
   inspect = lift inspect
   place = lift << place
 
-runStoreT :: Monad m => StoreT m a -> m ( a, List (Some Val) )
+runStoreT :: Monad m => StoreT m a -> m ( a, Heap )
 runStoreT (StoreT s) = map (\(a, (_, ss)) -> (a, ss)) $ runStateT s ( 0, [] )
 
 evalStoreT :: Monad m => StoreT m a -> m a
 evalStoreT (StoreT s) = evalStateT s ( 0, [] )
 
-runStore :: Store a -> ( a, List (Some Val) )
+runStore :: Store a -> ( a, Heap )
 runStore = runIdentity << runStoreT
 
 evalStore :: Store a -> a
