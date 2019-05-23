@@ -1,47 +1,59 @@
 module Control.Monad.Steps where
 
-import Data.Steps
+import Data.Steps (Steps)
+
+import Data.Steps as Steps
 
 
-newtype StepsT m a = StepsT (m (Steps a))
+newtype StepsT t m a = StepsT (m (Steps t a))
   deriving ( Functor, Foldable, Traversable )
 
 
-runStepsT :: StepsT m a -> m (Steps a)
-runStepsT (StepsT s) = s
+runStepsT :: StepsT t m a -> m (Steps t a)
+runStepsT (StepsT xs) = xs
 
 
-instance Applicative m => Applicative (StepsT m) where
+instance ( Monoid t, Applicative m ) => Applicative (StepsT t m) where
   pure x = StepsT $ pure (pure x)
 
   f <*> x = StepsT $ pure (<*>) <*> runStepsT f <*> runStepsT x
 
 
-instance Applicative m => Alternative (StepsT m) where
+instance ( Monoid t, Applicative m ) => Alternative (StepsT t m) where
   empty = StepsT $ pure empty
 
   ls <|> rs = StepsT $ pure (<|>) <*> runStepsT ls <*> runStepsT rs
 
 
-instance Monad m => Monad (StepsT m) where
+instance ( Monoid t, Monad m ) => Monad (StepsT t m) where
   m >>= k = StepsT do
     x <- runStepsT m
     y <- traverse (runStepsT << k) x
     pure $ join y
 
 
-instance Monad m => MonadFail (StepsT m) where
+instance ( Monoid t, Monad m ) => MonadFail (StepsT t m) where
   fail _ = StepsT $ pure empty
 
-instance Monad m => MonadZero (StepsT m)
-instance Monad m => MonadPlus (StepsT m)
+instance ( Monoid t, Monad m ) => MonadZero (StepsT t m)
+instance ( Monoid t, Monad m ) => MonadPlus (StepsT t m)
 
 
-instance MonadTrans StepsT where
+instance ( Monoid t ) => MonadTrans (StepsT t) where
   lift ma = StepsT do
     a <- ma
     pure $ pure a
 
+
+{-
+class ( Monoid t, Monad m ) => MonadTrack t m | m -> t where
+  track :: t -> m a -> m a
+
+instance ( Monoid t, Monad m ) => MonadTrack t (StepsT t m) where
+  track t m = StepsT do
+    xs <- runStepsT m
+    pure $ Steps.save t xs
+-}
 
 {-
 instance ( Monoid w, Monad m ) => MonadWriter w (StepsT w m) where

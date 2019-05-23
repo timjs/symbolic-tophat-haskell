@@ -1,35 +1,33 @@
 module Data.Steps where
 
-import Data.Something
+
+data Steps t a
+  = Non t
+  | End t a
+  | Mid t (Steps t a) (Steps t a)
+  deriving ( Eq, Ord, Show, Read, Functor, Foldable, Traversable )
 
 
-data Steps a
-  = Non (Something Pretty)
-  | End (Something Pretty) a
-  | Mid (Something Pretty) (Steps a) (Steps a)
-  deriving ( Functor, Foldable, Traversable )
-
-
-instance ( Pretty a ) => Pretty (Steps a) where
+instance ( Pretty t, Pretty a ) => Pretty (Steps t a) where
   pretty = \case
-    Non (Some p) -> sep [ "x", pretty p ]
-    End (Some p) x -> sep [ "-", pretty p, pretty x ]
-    Mid (Some p) ls rs -> split
-      [ sep [ "+", pretty p ]
+    Non t -> sep [ "x", pretty t ]
+    End t x -> sep [ "-", pretty t, pretty x ]
+    Mid t ls rs -> split
+      [ sep [ "+", pretty t ]
       , indent 2 $ pretty ls
       , indent 2 $ pretty rs
       ]
 
 
-record :: Something Pretty -> Steps a -> Steps a
-record s = \case
-  Non _ -> Non s
-  End _ x -> End s x
-  Mid _ ls rs -> Mid s ls rs
+save :: Monoid t => t -> Steps t a -> Steps t a
+save t = \case
+  Non s -> Non (s <> t)
+  End s x -> End (s <> t) x
+  Mid s ls rs -> Mid (s <> t) ls rs
 
 
-instance Applicative Steps where
-  pure = End (Some ())
+instance ( Monoid t ) => Applicative (Steps t) where
+  pure = End neutral --(traceShow "Data.Steps.pure: created neutral" neutral)
 
   f <*> x = do
     f' <- f
@@ -37,13 +35,24 @@ instance Applicative Steps where
     pure (f' x')
 
 
-instance Alternative Steps where
-  empty = Non (Some ())
+instance ( Monoid t ) => Alternative (Steps t) where
+  empty = Non neutral --(traceShow "Data.Steps.empty: created neutral" neutral)
 
-  ls <|> rs = Mid (Some ()) ls rs  --XXX or combine?
+  -- ls <|> rs = Mid neutral ls rs
+
+  -- Non _ <|> rs    = rs
+  -- ls    <|> Non _ = ls
+  -- ls    <|> rs    = Mid neutral ls rs
+
+  Non t1       <|> Non t2       = Non (t1 <> t2)
+  Non t1       <|> End t2 x2    = End (t1 <> t2) x2
+  Non t1       <|> Mid t2 l2 r2 = Mid (t1 <> t2) l2 r2
+  End t1 x1    <|> Non t2       = End (t1 <> t2) x1
+  Mid t1 l1 r2 <|> Non t2       = Mid (t1 <> t2) l1 r2
+  ls           <|> rs           = Mid neutral ls rs --(traceShow "Data.Steps.<|>: created neutral" neutral) ls rs
 
 
-instance Monad Steps where
-  Non s      >>= _ = Non s
-  End _ x     >>= k = k x --record (Some x) $ k x
-  Mid s ls rs >>= k = Mid s (ls >>= k) (rs >>= k)
+instance ( Monoid t ) => Monad (Steps t) where
+  Non t       >>= _ = Non t
+  End t x     >>= k = save t $ k x
+  Mid t ls rs >>= k = Mid t (ls >>= k) (rs >>= k)

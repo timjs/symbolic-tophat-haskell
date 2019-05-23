@@ -101,7 +101,7 @@ instance ( Monoid w, MonadStore m ) => MonadStore (Strict.WriterT w m) where
   inspect = lift inspect
   place = lift << place
 
-instance MonadStore m => MonadStore (StepsT m) where
+instance ( Monoid t, MonadStore m ) => MonadStore (StepsT t m) where
   new = lift << new
   read = lift << read
   write l = lift << write l

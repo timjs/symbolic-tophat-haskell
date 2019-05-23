@@ -63,7 +63,7 @@ instance MonadSupply s m => MonadSupply s (ListT m) where
   supply = lift supply
   peek = lift peek
 
-instance MonadSupply s m => MonadSupply s (StepsT m) where
+instance ( Monoid t, MonadSupply s m ) => MonadSupply s (StepsT t m) where
   supply = lift supply
   peek = lift peek
 
