@@ -38,18 +38,18 @@ instance ( Monoid t ) => Applicative (Steps t) where
 instance ( Monoid t ) => Alternative (Steps t) where
   empty = Non neutral --(traceShow "Data.Steps.empty: created neutral" neutral)
 
-  -- ls <|> rs = Mid neutral ls rs
+  ls <|> rs = Mid neutral ls rs  --(traceShow "Data.Steps.<|>: created neutral" neutral) ls rs
 
   -- Non _ <|> rs    = rs
   -- ls    <|> Non _ = ls
   -- ls    <|> rs    = Mid neutral ls rs
 
-  Non t1       <|> Non t2       = Non (t1 <> t2)
-  Non t1       <|> End t2 x2    = End (t1 <> t2) x2
-  Non t1       <|> Mid t2 l2 r2 = Mid (t1 <> t2) l2 r2
-  End t1 x1    <|> Non t2       = End (t1 <> t2) x1
-  Mid t1 l1 r2 <|> Non t2       = Mid (t1 <> t2) l1 r2
-  ls           <|> rs           = Mid neutral ls rs --(traceShow "Data.Steps.<|>: created neutral" neutral) ls rs
+  -- Non t1       <|> Non t2       = Non (t1 <> t2)
+  -- Non t1       <|> End t2 x2    = End (t1 <> t2) x2
+  -- Non t1       <|> Mid t2 l2 r2 = Mid (t1 <> t2) l2 r2
+  -- End t1 x1    <|> Non t2       = End (t1 <> t2) x1
+  -- Mid t1 l1 r2 <|> Non t2       = Mid (t1 <> t2) l1 r2
+  -- ls           <|> rs           = Mid neutral ls rs
 
 
 instance ( Monoid t ) => Monad (Steps t) where
