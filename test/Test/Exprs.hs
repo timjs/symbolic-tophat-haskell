@@ -10,6 +10,7 @@ import Control.Monad.Supply
 import Control.Monad.Steps
 import Control.Monad.Writer.Strict
 import Language.Expr
+import Language.Input
 import Language.Store
 
 import qualified Data.Stream as Stream
@@ -221,16 +222,17 @@ execRunner :: Runner a -> List (Some Val)
 execRunner = snd << runRunner
 
 
-type Stepper = StepsT (SupplyT Nat (Store))
+-- type Stepper = StepsT (List Input) (SupplyT Nat (Store))
+type Stepper = StoreT (StepsT (List Input) (SupplyT Nat Identity))
 
-runStepper :: Stepper a -> ( ( Steps a, Stream Nat ), List (Some Val) )
-runStepper r = runStore (runSupplyT (runStepsT r) ids)
+-- runStepper :: Stepper a -> ( ( Steps (List Input) a, Stream Nat ), List (Some Val) )
+-- runStepper r = runStore (runSupplyT (runStepsT r) ids)
+-- runStepper :: Stepper a -> ( ( Steps (List Input) a, List (Some Val) ), Stream Nat )
+runStepper :: Stepper a -> ( Steps (List Input) ( a, Heap ), Stream Nat )
+runStepper r = runIdentity (runSupplyT (runStepsT (runStoreT r)) ids)
 
-evalStepper :: Stepper a -> Steps a
-evalStepper = fst << fst << runStepper
-
-execStepper :: Stepper a -> List (Some Val)
-execStepper = snd << runStepper
+evalStepper :: Stepper a -> Steps (List Input) ( a, Heap )
+evalStepper = fst << runStepper
 
 
 {-
