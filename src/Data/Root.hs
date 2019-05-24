@@ -33,9 +33,9 @@ instance ( Pretty v, Pretty a ) => Pretty (Root v a) where
 -- | Save information 'v' in the current node.
 save :: Monoid v => v -> Root v a -> Root v a
 save v = \case
-  Bin w ls rs -> Bin (w <> v) ls rs
-  Tip w x -> Tip (w <> v) x
-  Nil w -> Nil (w <> v)
+  Bin w ls rs -> Bin (v <> w) ls rs
+  Tip w x -> Tip (v <> w) x
+  Nil w -> Nil (v <> w)
 
 
 instance ( Monoid v ) => Applicative (Root v) where

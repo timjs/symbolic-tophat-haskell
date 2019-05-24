@@ -46,16 +46,6 @@ instance ( Monoid v ) => MonadTrans (RootT v) where
 
 
 {-
-class ( Monoid v, Monad m ) => MonadTrack v m | m -> v where
-  track :: v -> m a -> m a
-
-instance ( Monoid v, Monad m ) => MonadTrack v (RootT v m) where
-  track v m = RootT do
-    xs <- runRootT m
-    pure $ Root.save v xs
--}
-
-{-
 instance ( Monoid w, Monad m ) => MonadWriter w (RootT w m) where
   tell = RootT << pure << None
 
