@@ -14,7 +14,7 @@ import Control.Monad.Except
 import Control.Monad.List
 import Control.Monad.Writer.Lazy as Lazy
 import Control.Monad.Writer.Strict as Strict
-import Control.Monad.Steps
+import Control.Monad.Root
 
 import Data.Stream (Stream(..))
 import qualified Data.Stream as Stream
@@ -72,7 +72,7 @@ instance MonadSupply s m => MonadSupply s (ListT m) where
   supply = lift supply
   peek = lift peek
 
-instance ( Monoid t, MonadSupply s m ) => MonadSupply s (StepsT t m) where
+instance ( Monoid v, MonadSupply s m ) => MonadSupply s (RootT v m) where
   supply = lift supply
   peek = lift peek
 
