@@ -15,14 +15,19 @@ data Root v a
 
 
 instance ( Pretty v, Pretty a ) => Pretty (Root v a) where
-  pretty = \case
-    Bin v ls rs -> split
-      [ sep [ "+", pretty v ]
-      , indent 2 $ pretty ls
-      , indent 2 $ pretty rs
-      ]
-    Tip v x -> sep [ "-", pretty v, pretty x ]
-    Nil v -> sep [ "x", pretty v ]
+  pretty = split << helper
+    where
+      helper :: Root v a -> List (Doc n)
+      helper = \case
+        Bin v ls rs -> pretty v : sub ls rs
+        Tip v x -> [ pretty v <> ": " <> pretty x ]
+        Nil v -> [ pretty v <> ": ╳" ]
+
+      sub :: Root v a -> Root v a -> List (Doc n)
+      sub ls rs = pad "├ " "│ " (helper rs) <> pad "└ " "  " (helper ls)
+
+      pad :: Doc n -> Doc n -> List (Doc n) -> List (Doc n)
+      pad x y = zipWith (<>) (x : repeat y)
 
 
 -- | Save information 'v' in the current node.
@@ -45,7 +50,7 @@ instance ( Monoid v ) => Applicative (Root v) where
 instance ( Monoid v ) => Alternative (Root v) where
   empty = Nil neutral --(traceShow "Data.Root.empty: created neutral" neutral)
 
-  ls <|> rs = Bin neutral ls rs  --(traceShow "Data.Root.<|>: created neutral" neutral) ls rs
+  ls <|> rs = Bin neutral ls rs
 
   -- Nil _ <|> rs    = rs
   -- ls    <|> Nil _ = ls
@@ -56,7 +61,7 @@ instance ( Monoid v ) => Alternative (Root v) where
   -- Nil v1       <|> Bin v2 l2 r2 = Bin (v1 <> v2) l2 r2
   -- Tip v1 x1    <|> Nil v2       = Tip (v1 <> v2) x1
   -- Bin v1 l1 r2 <|> Nil v2       = Bin (v1 <> v2) l1 r2
-  -- ls           <|> rs           = Bin neutral ls rs
+  -- ls           <|> rs           = Bin neutral ls rs --(traceShow "Data.Root.<|>: created neutral" neutral) ls rs
 
 
 instance ( Monoid v ) => Monad (Root v) where
