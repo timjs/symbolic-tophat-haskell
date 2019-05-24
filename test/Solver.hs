@@ -1,4 +1,4 @@
-module Test.Solver where
+module Solver where
 
 
 import Data.SBV

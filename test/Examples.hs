@@ -1,4 +1,4 @@
-module Test.Exprs where
+module Examples where
 
 import Data.Steps (Steps)
 import Data.Stream (Stream)
