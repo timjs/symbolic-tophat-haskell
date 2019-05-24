@@ -1,4 +1,7 @@
-module Data.Some where
+module Data.Some
+  ( Some(..)
+  , pack, unpack, unsafeUnpack
+  ) where
 
 
 data Some f where

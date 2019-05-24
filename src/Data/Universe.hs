@@ -1,4 +1,8 @@
-module Data.Universe where
+module Data.Universe
+  ( Universe(..)
+  , HasType(..), idx
+  , Env(..), lookup
+  ) where
 
 
 -- Universes -------------------------------------------------------------------

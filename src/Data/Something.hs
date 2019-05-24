@@ -1,4 +1,7 @@
-module Data.Something where
+module Data.Something
+  ( Something(..)
+  , pack
+  ) where
 
 
 -- | Dynamic data abstracting over a constraint of kind `Type -> Constraint`
