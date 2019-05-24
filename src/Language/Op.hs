@@ -1,7 +1,7 @@
-module Language.Ops where
+module Language.Op where
 
 
-import Language.Types
+import Language.Type
 
 
 
@@ -11,14 +11,22 @@ import Language.Types
 
 
 data Un (a :: PrimTy) (b :: PrimTy) where
-  Not :: Un 'TyBool 'TyBool
-  Neg :: Un 'TyInt  'TyInt
+  Not :: Un 'TyBool   'TyBool
+  Neg :: Un 'TyInt    'TyInt
+  Len :: Un 'TyString 'TyInt
 
 
 instance Pretty (Un a b) where
   pretty = \case
     Not -> "not"
     Neg -> "neg"
+    Len -> "len"
+
+
+instance Eq (Un a b) where
+  Not == Not = True
+  Neg == Neg = True
+  Len == Len = True
 
 
 
@@ -41,6 +49,8 @@ data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Mul :: Bn 'TyInt 'TyInt 'TyInt
   Div :: Bn 'TyInt 'TyInt 'TyInt
 
+  Cat :: Bn 'TyString 'TyString 'TyString
+
 
 instance Pretty (Bn a b c) where
   pretty = \case
@@ -48,13 +58,36 @@ instance Pretty (Bn a b c) where
     Disj -> "∨"
 
     Lt -> "<"
-    Le -> "≤"
-    Eq -> "≡"
-    Nq -> "≢"
-    Ge -> "≥"
+    Le -> "<="
+    Eq -> "=="
+    Nq -> "/="
+    Ge -> ">="
     Gt -> ">"
 
     Add -> "+"
     Sub -> "-"
-    Mul -> "×"
-    Div -> "÷"
+    Mul -> "*"
+    Div -> "/"
+
+    Cat -> "++"
+
+
+instance Eq (Bn a b c) where
+    Conj == Conj = True
+    Disj == Disj = True
+
+    Lt   == Lt = True
+    Le   == Le = True
+    Eq   == Eq = True
+    Nq   == Nq = True
+    Ge   == Ge = True
+    Gt   == Gt = True
+
+    Add  == Add = True
+    Sub  == Sub = True
+    Mul  == Mul = True
+    Div  == Div = True
+
+    Cat  == Cat = True
+
+    _    == _   = False

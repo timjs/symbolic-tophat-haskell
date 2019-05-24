@@ -18,9 +18,10 @@ dependencies:
   - base-noprelude
   - relude
   - mtl
-  # - ref-tf
   - text
+  - vector
   - prettyprinter
+  - Stream
   # - unordered-containers
   - sbv
 
@@ -46,8 +47,9 @@ default-extensions:
   - DeriveFunctor
   - DeriveFoldable
   - DeriveTraversable
-  - GeneralizedNewtypeDeriving
-  - StandaloneDeriving
+  # - GeneralizedNewtypeDeriving
+  - DerivingVia
+  # - StandaloneDeriving
 
   # Syntactic adjustments:
   - BangPatterns
@@ -61,7 +63,7 @@ default-extensions:
 
   # Type annotations:
   - ScopedTypeVariables
-  # - TypeApplications
+  - TypeApplications
   - PartialTypeSignatures
   - NamedWildCards
 
@@ -81,7 +83,8 @@ default-extensions:
   # - ApplicativeDo
 
   # Intermediate type extensions:
-  # - FunctionalDependencies
+  - FunctionalDependencies
+  - UndecidableInstances
   - GADTs
   - ExistentialQuantification
 
@@ -90,18 +93,28 @@ default-extensions:
   - PolyKinds
   - TypeFamilies
   # - TypeFamilyDependencies
-  # - QuantifiedConstraints
+  - QuantifiedConstraints
 
 
 ghc-options:
-  - -Weverything
 
-  - -Wno-safe
-  - -Wno-unsafe
-  - -Wno-implicit-prelude
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wpartial-fields
+  - -Wredundant-constraints
+
   - -Wno-missing-pattern-synonym-signatures
-  - -Wno-missing-import-lists
-  - -Wno-missing-export-lists
+  - -Wno-deprecations
+
+  # - -Weverything
+  # - -Wno-safe
+  # - -Wno-unsafe
+  # - -Wno-implicit-prelude
+  # - -Wno-missing-import-lists
+  # - -Wno-missing-export-lists
 
 
 library:
@@ -111,7 +124,7 @@ library:
 tests:
   translation-test:
     main:                Main.hs
-    source-dirs:         tst
+    source-dirs:         test
     ghc-options:
       - -threaded
       - -rtsopts

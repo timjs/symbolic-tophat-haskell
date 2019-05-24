@@ -1,15 +1,24 @@
 module Language.Val
-  ( module Language.Types
+  ( module Language.Type
+  , module Language.Name
   , Val(..), Un(..), Bn(..)
-  , pattern B, pattern I, pattern S
+  , pattern U, pattern B, pattern I, pattern S
   , Task(..)
-  , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
+  , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>\), pattern (:>>?)
   , asPred, asExpr, asPretask
   ) where
 
+-- | NOTE:
+-- | If we were programming in a dependently typed language,
+-- | We could make a predicate `IsVal` over `Expr`.
+-- | Alas, here we use a separate data type to keep values and expressions
+-- | distinct.
 
-import Language.Types
-import Language.Ops
+import Language.Type
+import Language.Name
+import Language.Op
+
+import Language.Expr (Expr)
 
 import qualified Language.Expr as E
 import qualified Language.Pred as P
@@ -19,61 +28,88 @@ import qualified Language.Pred as P
 -- Expressions -----------------------------------------------------------------
 
 
-data Val (cxt :: List Ty) (sxt :: List PrimTy) (t :: Ty) where
-  Lam :: E.Expr (a ': cxt) sxt b -> Val cxt sxt (a ':-> b)
+data Val (t :: Ty) where
+  Lam :: Typeable a => Expr b -> Val (a ':-> b)
 
-  Sym :: HasType (t ': ts) a -> Val cxt (t ': ts) ('TyPrim a)
-  Con :: IsPrim a -> ConcOf a -> Val cxt sxt ('TyPrim a)
+  Loc :: Name ('TyPrim p) -> Val ('TyRef p)
+  Sym :: Name ('TyPrim p) -> Val ('TyPrim p)
+  Con :: IsPrim p -> TypeOf p -> Val ('TyPrim p)
 
-  Un :: Un a b -> Val cxt sxt ('TyPrim a) -> Val cxt sxt ('TyPrim b)
-  Bn :: Bn a b c -> Val cxt sxt ('TyPrim a) -> Val cxt sxt ('TyPrim b) -> Val cxt sxt ('TyPrim c)
+  Un :: ( Typeable p, Typeable q ) => Un p q -> Val ('TyPrim p) -> Val ('TyPrim q)
+  Bn :: ( Typeable p, Typeable q, Typeable r ) => Bn p q r -> Val ('TyPrim p) -> Val ('TyPrim q) -> Val ('TyPrim r)
 
-  Unit :: Val cxt sxt 'TyUnit
-  Pair :: Val cxt sxt a -> Val cxt sxt b -> Val cxt sxt (a ':>< b)
+  Pair :: Val a -> Val b -> Val (a ':>< b)
 
-  Task :: Task cxt sxt ('TyTask a) -> Val cxt sxt ('TyTask a)
+  Task :: Task ('TyTask a) -> Val ('TyTask a)
 
 
+pattern U   = Con UnitIsPrim ()
 pattern B x = Con BoolIsPrim x
 pattern I x = Con IntIsPrim x
 pattern S x = Con StringIsPrim x
 
 
-instance Pretty (Val cxt sxt t) where
+instance Pretty (Val t) where
   pretty = \case
-    Lam f -> "λ." <> pretty f
-    Sym i -> "s" <> pretty i
+    Lam f -> cat [ "λ.", pretty f ]
+    Sym i -> cat [ "s", pretty i ]
+    Loc i -> cat [ "l", pretty i ]
 
+    Con UnitIsPrim x -> pretty x
     Con BoolIsPrim x -> pretty x
     Con IntIsPrim x -> pretty x
-    Con StringIsPrim x -> pretty x
+    Con StringIsPrim x -> cat [ "\"", pretty x, "\"" ]
 
-    Un o a -> parens (sep [ pretty o, pretty a ])
-    Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])
+    Un o a -> parens $ sep [ pretty o, pretty a ]
+    Bn o a b -> parens $ sep [ pretty a, pretty o, pretty b ]
 
-    Unit -> angles neutral
-    Pair a b -> angles $ pretty a <> comma <> pretty b
+    Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
 
     Task p -> pretty p
+
+
+-- | Syntactic equality for Values.
+instance Eq (Val t) where
+  Lam f1                == Lam f2                = f1 == f2  -- FIXME: is this ok?
+  Sym i1                == Sym i2                = i1 == i2
+  Loc i1                == Loc i2                = i1 == i2
+
+  Con BoolIsPrim x1     == Con BoolIsPrim x2     = x1 == x2
+  Con IntIsPrim x1      == Con IntIsPrim x2      = x1 == x2
+  Con StringIsPrim x1   == Con StringIsPrim x2   = x1 == x2
+
+  Un o1 a1              == Un o2 a2
+    | Just Refl <- o1 ~= o2                      = o1 == o2 && a1 == a2
+    | otherwise                                  = False
+  Bn o1 a1 b1           == Bn o2 a2 b2
+    | Just Refl <- o1 ~= o2                      = o1 == o2 && a1 == a2 && b1 == b2
+    | otherwise                                  = False
+
+  Pair a1 b1            == Pair a2 b2            = a1 == a2 && b1 == b2
+
+  Task p1               == Task p2               = p1 == p2
+
+  _                     == _                     = False
+
 
 
 
 -- Tasks -----------------------------------------------------------------------
 
 
-data Task (cxt :: List Ty)  (sxt :: List PrimTy) (t :: Ty) where
-  Edit :: IsBasic a => Val cxt sxt a -> Task cxt sxt ('TyTask a)
-  Enter :: IsBasic a => Task cxt sxt ('TyTask a)
-  -- Store :: Loc a -> Task cxt sxt ('TyTask a)
+data Task (t :: Ty) where
+  Edit :: Val ('TyPrim p) -> Task ('TyTask ('TyPrim p))
+  Enter :: Task ('TyTask ('TyPrim p))
+  Update :: Typeable p => Val ('TyRef p) -> Task ('TyTask ('TyPrim p))
 
-  Fail :: Task cxt sxt ('TyTask a)
+  And :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
+  Or  :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
+  Xor :: Expr ('TyTask a) -> Expr ('TyTask a) -> Task ('TyTask a)
+  Fail :: Task ('TyTask a)
 
-  And :: Val cxt sxt ('TyTask a) -> Val cxt sxt ('TyTask b) -> Task cxt sxt ('TyTask (a ':>< b))
-  Or  :: Val cxt sxt ('TyTask a) -> Val cxt sxt ('TyTask a) -> Task cxt sxt ('TyTask a)
-  Xor :: E.Expr cxt sxt ('TyTask a) -> E.Expr cxt sxt ('TyTask a) -> Task cxt sxt ('TyTask a)
-
-  Then :: Val cxt sxt ('TyTask a) -> E.Expr cxt sxt (a ':-> 'TyTask b) -> Task cxt sxt ('TyTask b)
-  Next :: Val cxt sxt ('TyTask a) -> E.Expr cxt sxt (a ':-> 'TyTask b) -> Task cxt sxt ('TyTask b)
+  -- | `a` and `b` should be typable for testing syntactic equality of terms.
+  Then :: ( Typeable a, Typeable b ) => Val ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
+  Next :: ( Typeable a, Typeable b ) => Val ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Task ('TyTask b)
 
 
 infixl 3 :&&:
@@ -81,7 +117,7 @@ infixr 2 :||:, :??:
 -- | NOTE:
 -- | Fixity of bind is left associative in a normal setting because of the scoping of lambdas.
 -- | Because we can't use lambdas in our DSL, bind should be right associative.
-infixr 1 :>>=, :>>?
+infixr 1 :>>=, :>>?, :>>\
 
 
 pattern View x = Edit x
@@ -89,56 +125,83 @@ pattern (:&&:) x y = And (Task x) (Task y)
 pattern (:||:) x y = Or (Task x) (Task y)
 pattern (:??:) x y = Xor (E.Task x) (E.Task y)
 pattern (:>>=) t c = Then (Task t) (E.Lam (E.Task c))
+pattern (:>>\) t c = Then (Task t) (E.Lam c)
 pattern (:>>?) t c = Next (Task t) (E.Lam (E.Task c))
 
 
-instance Pretty (Task cxt sxt t) where
+instance Pretty (Task t) where
   pretty = \case
     Edit x -> cat [ "□(", pretty x, ")" ]
-    Enter -> "□(_)"
-    -- Store -> "■(_)"
+    Enter -> "⊠"
+    Update x -> cat [ "■(", pretty x, ")" ]
     And x y -> sep [ pretty x, "⋈", pretty y ]
     Or x y -> sep [ pretty x, "◆", pretty y ]
     Xor x y -> sep [ pretty x, "◇", pretty y ]
     Fail -> "↯"
     Then x c -> sep [ pretty x, "▶", pretty c ]
-    Next x c -> sep [ pretty x, "▷…", pretty c ]
+    Next x c -> sep [ pretty x, "▷", pretty c ]
+
+
+-- | Syntactic equality for Tasks.
+instance Eq (Task t) where
+  -- | This is where the magic happens!
+  -- | Every editor with some symbol in it are regarded equal,
+  -- | regardless of the concrete symbol they contain.
+  Edit (Sym _) == Edit (Sym _) = True
+  Edit x1      == Edit x2      = x1 == x2
+  Enter        == Enter        = True
+  Update x1    == Update x2    = x1 == x2
+
+  And x1 y1    == And x2 y2    = x1 == x2 && y1 == y2
+  Or x1 y1     == Or x2 y2     = x1 == x2 && y1 == y2
+  Xor x1 y1    == Xor x2 y2    = x1 == x2 && y1 == y2
+  Fail         == Fail         = True
+
+  Then x1 c1   == Then x2 c2
+    | Just Refl <- x1 ~= x2
+    , Just Refl <- c1 ~= c2    = x1 == x2 && c1 == c2
+    | otherwise                = False
+  Next x1 c1   == Next x2 c2
+    | Just Refl <- x1 ~= x2
+    , Just Refl <- c1 ~= c2    = x1 == x2 && c1 == c2
+    | otherwise                = False
+
+  _            == _            = False
 
 
 
 -- Translation -----------------------------------------------------------------
 
 
---FIXME: what about `cxt` and `sxt`??
-asPred :: Val cxt sxt ('TyPrim a) -> P.Pred sxt a
+asPred :: Val ('TyPrim a) -> P.Pred a
 asPred = \case
   Sym i -> P.Sym i
   Con p x -> P.Con p x
+
   Un o v1 -> P.Un o (asPred v1)
   Bn o v1 v2 -> P.Bn o (asPred v1) (asPred v2)
 
 
-asExpr :: Val cxt sxt a -> E.Expr cxt sxt a
+asExpr :: Val a -> Expr a
 asExpr = \case
   Lam f -> E.Lam f
   Sym i -> E.Sym i
-
+  Loc i -> E.Loc i
   Con p x -> E.Con p x
 
   Un o a -> E.Un o (asExpr a)
   Bn o a b -> E.Bn o (asExpr a) (asExpr b)
 
-  Unit -> E.Unit
   Pair a b -> E.Pair (asExpr a) (asExpr b)
 
   Task p -> E.Task (asPretask p)
 
 
-asPretask :: Task cxt sxt a -> E.Pretask cxt sxt a
+asPretask :: Task a -> E.Pretask a
 asPretask = \case
   Edit x -> E.Edit (asExpr x)
   Enter -> E.Enter
-  -- Store ->
+  Update x -> E.Update (asExpr x)
   And x y -> E.And (asExpr x) (asExpr y)
   Or x y -> E.Or (asExpr x) (asExpr y)
   Xor x y -> E.Xor x y

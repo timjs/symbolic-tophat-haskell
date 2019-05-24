@@ -1,6 +1,6 @@
 module Test.Tasks where
 
-
+{-
 import Data.SBV
 import Data.Task
 import Data.Task.Simulate
@@ -73,3 +73,4 @@ addParS s0 s1 =
 --     (ite (s0 .== 2)
 --       (view "Chocolate")
 --       fail)
+-}
