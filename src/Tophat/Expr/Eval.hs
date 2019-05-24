@@ -6,6 +6,7 @@ module Tophat.Expr.Eval
   , eval, eval', stride, normalise, handle, drive, simulate, initialise
   ) where
 
+import Control.Monad.Track.Class
 import Control.Monad.Supply
 import Tophat.Input
 import Tophat.Type
@@ -266,18 +267,20 @@ handle (V.Task t) = case t of
 
 
 drive ::
-  MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
   Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
-  ( t2, p2 ) <- normalise (asExpr t1)
-  pure ( t2, i1, p1 :/\: p2 )
+  track (show (pretty i1) <> " => ") do
+    ( t2, p2 ) <- normalise (asExpr t1)
+    track (show $ pretty t2) do
+      pure ( t2, i1, p1 :/\: p2 )
 
 
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
 simulate ::
-  MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
   Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate t is p = go (go end) t is p
   where
@@ -298,8 +301,9 @@ satisfiable _ = True  -- FIXME: use SBV here
 
 
 initialise ::
-  MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
   Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 initialise t0 = do
   ( t1, p1 ) <- normalise t0
-  simulate t1 empty p1
+  track (show $ pretty t1) do
+    simulate t1 empty p1

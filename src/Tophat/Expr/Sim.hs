@@ -6,6 +6,8 @@ import Control.Monad.Root
 import Control.Monad.Supply
 import Tophat.Heap
 import Tophat.Input
+import Tophat.Pred
+import Tophat.Val
 
 import Data.Root (Root)
 import Data.Stream (Stream)
@@ -17,10 +19,10 @@ ids :: Stream Nat
 ids = Stream.iterate succ 0
 
 
-type Simulation = StateT Heap (RootT (List Input) (SupplyT Nat Identity))
+type Simulation t = StateT Heap (RootT Text (SupplyT Nat Identity)) ( Val ('TyTask t), List Input, Pred 'TyBool )
 
-runSimulation :: Simulation a -> ( Root (List Input) ( a, Heap ), Stream Nat )
+runSimulation :: Simulation t -> ( Root Text ( ( Val ('TyTask t), List Input, Pred 'TyBool ), Heap ), Stream Nat )
 runSimulation r = runIdentity (runSupplyT (runRootT (runStateT r empty)) ids)
 
-evalSimulation :: Simulation a -> Root (List Input) ( a, Heap )
+evalSimulation :: Simulation t -> Root Text ( ( Val ('TyTask t), List Input, Pred 'TyBool ), Heap )
 evalSimulation = fst << runSimulation
