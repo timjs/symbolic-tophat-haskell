@@ -1,6 +1,5 @@
 module Tophat.Heap
-  ( Heap
-  , Some
+  ( Heap, Some
   , new, read, write
   ) where
 

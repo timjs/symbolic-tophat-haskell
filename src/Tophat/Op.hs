@@ -1,4 +1,7 @@
-module Tophat.Op where
+module Tophat.Op
+  ( module Tophat.Type
+  , Un(..), Bn(..)
+  ) where
 
 
 import Tophat.Type

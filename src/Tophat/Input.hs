@@ -1,5 +1,6 @@
 module Tophat.Input
-  ( Input(..)
+  ( module Tophat.Name
+  , Input(..)
   ) where
 
 import Tophat.Name

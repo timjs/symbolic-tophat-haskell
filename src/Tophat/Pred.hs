@@ -1,5 +1,6 @@
 module Tophat.Pred
-  ( module Tophat.Type
+  ( module Tophat.Name
+  , module Tophat.Type
   , Pred(..)
   , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:), pattern B, pattern I, pattern S
   , simplify

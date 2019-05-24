@@ -1,6 +1,6 @@
 module Tophat.Expr
-  ( module Tophat.Type
-  , module Tophat.Name
+  ( module Tophat.Name
+  , module Tophat.Type
   , Expr(..), Un(..), Bn(..)
   , pattern U, pattern B, pattern I, pattern S, pattern Let
   , Pretask(..)

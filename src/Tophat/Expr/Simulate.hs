@@ -2,7 +2,6 @@ module Tophat.Expr.Simulate where
 
 import Control.Monad.Supply
 import Tophat.Input
-import Tophat.Name
 import Tophat.Type
 
 import Tophat.Expr (Expr, Pretask)

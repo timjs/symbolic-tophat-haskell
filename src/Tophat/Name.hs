@@ -4,7 +4,6 @@ module Tophat.Name
   ) where
 
 import Control.Monad.Supply(MonadSupply(..))
--- import Data.Stream (Stream(..))
 import Tophat.Type (Ty)
 
 
@@ -13,9 +12,6 @@ import Tophat.Type (Ty)
 newtype Name (a :: Ty)
   = Name Nat
   deriving ( Pretty, Eq, Ord, Num ) via Nat
-
--- fresh :: Stream Nat -> ( Name t, Stream Nat )
--- fresh (Cons i is) = ( Name i, is )
 
 fresh :: MonadSupply Nat m => m (Name t)
 fresh = do
