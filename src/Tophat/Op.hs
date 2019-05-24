@@ -3,15 +3,12 @@ module Tophat.Op
   , Un(..), Bn(..)
   ) where
 
-
 import Tophat.Type
-
 
 
 -- Operations ------------------------------------------------------------------
 
 -- Unary -
-
 
 data Un (a :: PrimTy) (b :: PrimTy) where
   Not :: Un 'TyBool   'TyBool
@@ -32,9 +29,7 @@ instance Eq (Un a b) where
   Len == Len = True
 
 
-
 -- Binary --
-
 
 data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Conj :: Bn 'TyBool 'TyBool 'TyBool

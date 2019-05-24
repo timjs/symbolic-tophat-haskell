@@ -8,7 +8,10 @@ module Tophat.Type
 import Data.Universe
 
 
-data {- kind -} Ty
+-- Types -----------------------------------------------------------------------
+
+-- | *Kind* to index the meta types of values and expressions.
+data Ty
   = Ty :-> Ty
   | Ty :>< Ty
   | TyTask Ty
@@ -22,6 +25,8 @@ instance Universe Ty where
   -- type TypeOf ('TyRef p) = Ref (TypeOf a)
   type TypeOf ('TyPrim p) = TypeOf p
 
+
+-- Primitive types -------------------------------------------------------------
 
 data PrimTy
   = TyUnit

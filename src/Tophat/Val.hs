@@ -24,9 +24,7 @@ import qualified Tophat.Expr as E
 import qualified Tophat.Pred as P
 
 
-
 -- Expressions -----------------------------------------------------------------
-
 
 data Val (t :: Ty) where
   Lam :: Typeable a => Expr b -> Val (a ':-> b)
@@ -92,10 +90,7 @@ instance Eq (Val t) where
   _                     == _                     = False
 
 
-
-
 -- Tasks -----------------------------------------------------------------------
-
 
 data Task (t :: Ty) where
   Edit :: Val ('TyPrim p) -> Task ('TyTask ('TyPrim p))
@@ -169,9 +164,7 @@ instance Eq (Task t) where
   _            == _            = False
 
 
-
 -- Translation -----------------------------------------------------------------
-
 
 asPred :: Val ('TyPrim a) -> P.Pred a
 asPred = \case

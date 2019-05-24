@@ -4,7 +4,7 @@ import Control.Monad.Supply
 import Tophat.Input
 import Tophat.Type
 
-import Tophat.Expr (Expr, Pretask)
+import Tophat.Expr (Expr, Pretask, subst)
 import Tophat.Pred (Pred, simplify, pattern Yes, pattern (:/\:))
 import Tophat.Val (Val, Task, asPred, asExpr)
 import Tophat.Heap (Heap, new, read, write)
@@ -14,97 +14,7 @@ import qualified Tophat.Pred as P
 import qualified Tophat.Val as V
 
 
---------------------------------------------------------------------------------
-
--- Substitution --
-
-
-subst
-  :: Typeable s
-  => Name s  -- ^ Substitute a name of type `s`
-  -> Expr s  -- ^ with expression of type `s`
-  -> Expr t  -- ^ in an expression of type `t` containing a variable of type `a`
-  -> Expr t  -- ^ giving the modified expression of type `t`.
-subst j s = \case
-  E.Lam e -> go e
-    where
-      go :: forall a b. Typeable a => Expr b -> Expr (a ':-> b)
-      go = E.Lam << subst (j + 1) (shift (0 :: Name a) s)  -- We need to tell Haskell that `0` is of type `Name a` here
-  E.App f a -> E.App (subst j s f) (subst j s a)
-  E.Var i
-    | Just Refl <- i ~= j, i == j -> s
-    | otherwise -> E.Var i
-
-  E.Un o a -> E.Un o (subst j s a)
-  E.Bn o a b -> E.Bn o (subst j s a) (subst j s b)
-  E.If p a b -> E.If (subst j s p) (subst j s a) (subst j s b)
-  E.Pair a b -> E.Pair (subst j s a) (subst j s b)
-  E.Fst a -> E.Fst (subst j s a)
-  E.Snd a -> E.Snd (subst j s a)
-  E.Ref a -> E.Ref (subst j s a)
-  E.Deref a -> E.Deref (subst j s a)
-  E.Assign a b -> E.Assign (subst j s a) (subst j s b)
-  E.Task p -> E.Task (subst' j s p)
-
-  E.Loc i -> E.Loc i
-  E.Sym i -> E.Sym i
-  E.Con p x -> E.Con p x
-
-
-subst' :: Typeable s => Name s -> Expr s -> Pretask t -> Pretask t
-subst' j s = \case
-  E.Edit a -> E.Edit (subst j s a)
-  E.Enter -> E.Enter
-  E.Update a -> E.Update (subst j s a)
-  E.And a b -> E.And (subst j s a) (subst j s b)
-  E.Or a b -> E.Or (subst j s a) (subst j s b)
-  E.Xor a b -> E.Xor (subst j s a) (subst j s b)
-  E.Fail -> E.Fail
-  E.Then a b -> E.Then (subst j s a) (subst j s b)
-  E.Next a b -> E.Next (subst j s a) (subst j s b)
-
-
--- | The one-place shift of an expression `e` after cutof `c`.
-shift :: Typeable s => Name s -> Expr t -> Expr t
-shift c = \case
-  E.Lam e -> E.Lam $ shift (c + 1) e
-  E.App f a -> E.App (shift c f) (shift c a)
-  E.Var i
-    | Just Refl <- i ~= c, i >= c -> E.Var (i + 1)
-    | otherwise -> E.Var i
-
-  E.Un o a -> E.Un o (shift c a)
-  E.Bn o a b -> E.Bn o (shift c a) (shift c b)
-  E.If p a b -> E.If (shift c p) (shift c a) (shift c b)
-  E.Pair a b -> E.Pair (shift c a) (shift c b)
-  E.Fst a -> E.Fst (shift c a)
-  E.Snd a -> E.Snd (shift c a)
-  E.Ref a -> E.Ref (shift c a)
-  E.Deref a -> E.Deref (shift c a)
-  E.Assign a b -> E.Assign (shift c a) (shift c b)
-  E.Task p -> E.Task (shift' c p)
-
-  E.Loc i -> E.Loc i
-  E.Sym i -> E.Sym i
-  E.Con p x -> E.Con p x
-
-
-shift' :: Typeable s => Name s -> Pretask t -> Pretask t
-shift' c = \case
-  E.Edit a -> E.Edit (shift c a)
-  E.Enter -> E.Enter
-  E.Update a -> E.Update (shift c a)
-  E.And a b -> E.And (shift c a) (shift c b)
-  E.Or a b -> E.Or (shift c a) (shift c b)
-  E.Xor a b -> E.Xor (shift c a) (shift c b)
-  E.Fail -> E.Fail
-  E.Then a b -> E.Then (shift c a) (shift c b)
-  E.Next a b -> E.Next (shift c a) (shift c b)
-
-
-
 -- Observations ----------------------------------------------------------------
-
 
 value :: MonadState Heap m => Val ('TyTask t) -> m (Maybe (Val t))
 value (V.Task t) = case t of
@@ -148,16 +58,15 @@ failing (V.Task t) = case t of
 
 -- Semantics -------------------------------------------------------------------
 
-{- | Evaluate an expression symbolicaly.
-
-Returns a list of all possible values after evaluation
-combined with the predicate which has to hold to get that value.
-Note that the context of symbolic values `sxt` is the same for the expression
-and the resulting predicate.
--}
-eval
-  :: MonadState Heap m => MonadZero m
-  => Expr t -> m ( Val t, Pred 'TyBool )
+-- | Evaluate an expression symbolicaly.
+-- |
+-- |Returns a list of all possible values after evaluation
+-- |combined with the predicate which has to hold to get that value.
+-- |Note that the context of symbolic values `sxt` is the same for the expression
+-- |and the resulting predicate.
+eval ::
+  MonadState Heap m => MonadZero m =>
+  Expr t -> m ( Val t, Pred 'TyBool )
 eval = \case
   E.App e1 e2 -> do
     -- | Apparently GHC can't do GADT pattern matching inside do-notation,
@@ -223,9 +132,9 @@ eval = \case
     error $ "Free variable in expression: " <> show (pretty i)
 
 
-eval'
-  :: MonadState Heap m => MonadZero m
-  => Pretask t -> m ( Task t, Pred 'TyBool )
+eval' ::
+  MonadState Heap m => MonadZero m =>
+  Pretask t -> m ( Task t, Pred 'TyBool )
 eval' = \case
   E.Edit e1 -> do
     ( v1, p1 ) <- eval e1
@@ -256,9 +165,9 @@ eval' = \case
     pure ( V.Next t1 e2, p1 )
 
 
-stride
-  :: MonadState Heap m => MonadZero m
-  => Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+stride ::
+  MonadState Heap m => MonadZero m =>
+  Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
@@ -300,9 +209,9 @@ stride (V.Task t) = case t of
     pure ( V.Task t1, Yes )
 
 
-normalise
-  :: MonadState Heap m => MonadZero m
-  => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+normalise ::
+  MonadState Heap m => MonadZero m =>
+  Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
   s1 <- get
@@ -315,15 +224,15 @@ normalise e0 = do
       pure ( t2, p0 :/\: p1 :/\: p2 )
 
 
-initialise
-  :: MonadState Heap m => MonadZero m
-  => Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+initialise ::
+  MonadState Heap m => MonadZero m =>
+  Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
 initialise = normalise
 
 
-handle
-  :: MonadSupply Nat m => MonadState Heap m => MonadZero m
-  => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
+handle ::
+  MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 handle (V.Task t) = case t of
   V.Edit _ -> do
     s <- fresh
@@ -356,9 +265,9 @@ handle (V.Task t) = case t of
     [ ( t2, Continue, p2 )               | Just v1 <- value t1, ( t2, p2 ) <- normalise (E.App e2 (asExpr v1)), not (failing t2) ]
 
 
-drive
-  :: MonadSupply Nat m => MonadState Heap m => MonadZero m
-  => Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
+drive ::
+  MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
   ( t2, p2 ) <- normalise (asExpr t1)
@@ -367,9 +276,9 @@ drive t0 = do
 
 -- | Call `drive` till the moment we have an observable value.
 -- | Collects all inputs and predicates created in the mean time.
-simulate
-  :: MonadSupply Nat m => MonadState Heap m => MonadZero m
-  => Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
+simulate ::
+  MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 simulate t is p = go (go end) t is p
   where
     go cont t0 is0 ps0 = do
@@ -388,9 +297,9 @@ satisfiable :: Pred 'TyBool -> Bool
 satisfiable _ = True  -- FIXME: use SBV here
 
 
-run
-  :: MonadSupply Nat m => MonadState Heap m => MonadZero m
-  => Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
+run ::
+  MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
 run t0 = do
   ( t1, p1 ) <- initialise t0
   simulate t1 empty p1

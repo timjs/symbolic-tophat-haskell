@@ -5,17 +5,15 @@ module Tophat.Expr
   , pattern U, pattern B, pattern I, pattern S, pattern Let
   , Pretask(..)
   , pattern View, pattern Watch, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>!), pattern (:>>?)
+  , subst, subst', shift, shift'
   ) where
-
 
 import Tophat.Name
 import Tophat.Type
 import Tophat.Op
 
 
-
 -- Expressions -----------------------------------------------------------------
-
 
 data Expr (t :: Ty) where
   -- | FIXME: Explain why Typeable.
@@ -119,9 +117,7 @@ instance Eq (Expr t) where
   _                     == _                     = False
 
 
-
 -- Pretasks --------------------------------------------------------------------
-
 
 data Pretask (t :: Ty) where
   Edit :: Expr ('TyPrim p) -> Pretask ('TyTask ('TyPrim p))
@@ -168,7 +164,6 @@ instance Pretty (Pretask t) where
     Next x c -> sep [ pretty x, "▷", pretty c ]
 
 
-
 instance Eq (Pretask t) where
   -- | This is where the magic happens!
   -- | Every editor with some symbol in it are regarded equal,
@@ -193,3 +188,91 @@ instance Eq (Pretask t) where
     | otherwise                = False
 
   _            == _            = False
+
+
+-- Substitution ----------------------------------------------------------------
+
+-- | Substitution of a variable `x` with expression `v` in an expression `e`
+subst
+  :: Typeable s
+  => Name s  -- ^ Substitute a name of type `s`
+  -> Expr s  -- ^ with expression of type `s`
+  -> Expr t  -- ^ in an expression of type `t` containing a variable of type `s`
+  -> Expr t  -- ^ giving the modified expression of type `t`.
+subst j s = \case
+  Lam e -> go e
+    where
+      go :: forall a b. Typeable a => Expr b -> Expr (a ':-> b)
+      go = Lam << subst (j + 1) (shift (0 :: Name a) s)  -- We need to tell Haskell that `0` is of type `Name a` here
+  App f a -> App (subst j s f) (subst j s a)
+  Var i
+    | Just Refl <- i ~= j, i == j -> s
+    | otherwise -> Var i
+
+  Un o a -> Un o (subst j s a)
+  Bn o a b -> Bn o (subst j s a) (subst j s b)
+  If p a b -> If (subst j s p) (subst j s a) (subst j s b)
+  Pair a b -> Pair (subst j s a) (subst j s b)
+  Fst a -> Fst (subst j s a)
+  Snd a -> Snd (subst j s a)
+  Ref a -> Ref (subst j s a)
+  Deref a -> Deref (subst j s a)
+  Assign a b -> Assign (subst j s a) (subst j s b)
+  Task p -> Task (subst' j s p)
+
+  Loc i -> Loc i
+  Sym i -> Sym i
+  Con p x -> Con p x
+
+
+-- | Same for pretasks `p`.
+subst' :: Typeable s => Name s -> Expr s -> Pretask t -> Pretask t
+subst' j s = \case
+  Edit a -> Edit (subst j s a)
+  Enter -> Enter
+  Update a -> Update (subst j s a)
+  And a b -> And (subst j s a) (subst j s b)
+  Or a b -> Or (subst j s a) (subst j s b)
+  Xor a b -> Xor (subst j s a) (subst j s b)
+  Fail -> Fail
+  Then a b -> Then (subst j s a) (subst j s b)
+  Next a b -> Next (subst j s a) (subst j s b)
+
+
+-- | The one-place shift of an expression `e` after cutof `c`.
+shift :: Typeable s => Name s -> Expr t -> Expr t
+shift c = \case
+  Lam e -> Lam $ shift (c + 1) e
+  App f a -> App (shift c f) (shift c a)
+  Var i
+    | Just Refl <- i ~= c, i >= c -> Var (i + 1)
+    | otherwise -> Var i
+
+  Un o a -> Un o (shift c a)
+  Bn o a b -> Bn o (shift c a) (shift c b)
+  If p a b -> If (shift c p) (shift c a) (shift c b)
+  Pair a b -> Pair (shift c a) (shift c b)
+  Fst a -> Fst (shift c a)
+  Snd a -> Snd (shift c a)
+  Ref a -> Ref (shift c a)
+  Deref a -> Deref (shift c a)
+  Assign a b -> Assign (shift c a) (shift c b)
+  Task p -> Task (shift' c p)
+
+  Loc i -> Loc i
+  Sym i -> Sym i
+  Con p x -> Con p x
+
+
+-- | Same for pretasks `p`.
+shift' :: Typeable s => Name s -> Pretask t -> Pretask t
+shift' c = \case
+  Edit a -> Edit (shift c a)
+  Enter -> Enter
+  Update a -> Update (shift c a)
+  And a b -> And (shift c a) (shift c b)
+  Or a b -> Or (shift c a) (shift c b)
+  Xor a b -> Xor (shift c a) (shift c b)
+  Fail -> Fail
+  Then a b -> Then (shift c a) (shift c b)
+  Next a b -> Next (shift c a) (shift c b)
