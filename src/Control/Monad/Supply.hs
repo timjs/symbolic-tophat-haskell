@@ -1,5 +1,5 @@
 -- | Support for computations which consume values from an _infinite_ supply.
--- | See <http://www.haskell.org/haskellwiki/New_monads/MonadSupply> for details.
+-- | See <http://www.haskell.org/haskellwiki/New_monads/MonadSupply> for more details.
 -- FIXME: Make use of DerivingVia
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Control.Monad.Supply
@@ -19,7 +19,8 @@ import Control.Monad.Steps
 import Data.Stream (Stream(..))
 import qualified Data.Stream as Stream
 
-
+-- | MonadSupply class to support getting the next item from a stream
+-- | and peaking into the next item.
 class Monad m => MonadSupply s m | m -> s where
   supply :: m s
   peek :: m s
@@ -38,7 +39,15 @@ instance Monad m => MonadSupply s (SupplyT s m) where
     pure x
   peek = SupplyT $ gets Stream.head
 
--- Monad transformer instances
+instance Semigroup a => Semigroup (Supply s a) where
+  m1 <> m2 = pure (<>) <*> m1 <*> m2
+
+instance (Semigroup a, Monoid a) => Monoid (Supply s a) where
+  mempty = pure mempty
+
+
+-- Monad transformer instances --
+
 instance MonadSupply s m => MonadSupply s (ExceptT e m) where
   supply = lift supply
   peek = lift peek
@@ -67,11 +76,8 @@ instance ( Monoid t, MonadSupply s m ) => MonadSupply s (StepsT t m) where
   supply = lift supply
   peek = lift peek
 
-instance Semigroup a => Semigroup (Supply s a) where
-  m1 <> m2 = pure (<>) <*> m1 <*> m2
 
-instance (Semigroup a, Monoid a) => Monoid (Supply s a) where
-  mempty = pure mempty
+-- Running and evaluating --
 
 -- -- | Get n supplies.
 -- supplies :: MonadSupply s m => Int -> m (Stream s)
