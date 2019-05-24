@@ -1,7 +1,7 @@
-module Language.Op where
+module Tophat.Op where
 
 
-import Language.Type
+import Tophat.Type
 
 
 

@@ -1,6 +1,6 @@
-module Language.Val
-  ( module Language.Type
-  , module Language.Name
+module Tophat.Val
+  ( module Tophat.Type
+  , module Tophat.Name
   , Val(..), Un(..), Bn(..)
   , pattern U, pattern B, pattern I, pattern S
   , Task(..)
@@ -14,14 +14,14 @@ module Language.Val
 -- | Alas, here we use a separate data type to keep values and expressions
 -- | distinct.
 
-import Language.Type
-import Language.Name
-import Language.Op
+import Tophat.Type
+import Tophat.Name
+import Tophat.Op
 
-import Language.Expr (Expr)
+import Tophat.Expr (Expr)
 
-import qualified Language.Expr as E
-import qualified Language.Pred as P
+import qualified Tophat.Expr as E
+import qualified Tophat.Pred as P
 
 
 

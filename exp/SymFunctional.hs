@@ -1,7 +1,7 @@
-module Language.Expr.SymFunctional where
+module Tophat.Expr.SymFunctional where
 
 
-import Language.Expr
+import Tophat.Expr
 
 import Data.SBV
 

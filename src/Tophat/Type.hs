@@ -1,4 +1,4 @@
-module Language.Type
+module Tophat.Type
   ( module Data.Universe
   , Ty(..), PrimTy(..)
   , TyPrimUnit, TyPrimBool, TyPrimInt, TyPrimString

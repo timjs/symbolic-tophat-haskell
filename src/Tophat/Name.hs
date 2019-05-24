@@ -1,11 +1,11 @@
-module Language.Name
+module Tophat.Name
   ( Name(..)
   , fresh
   ) where
 
 import Control.Monad.Supply(MonadSupply(..))
 -- import Data.Stream (Stream(..))
-import Language.Type (Ty)
+import Tophat.Type (Ty)
 
 
 -- Names -----------------------------------------------------------------------

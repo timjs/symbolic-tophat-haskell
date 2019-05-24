@@ -1,14 +1,14 @@
-module Language.Pred
-  ( module Language.Type
+module Tophat.Pred
+  ( module Tophat.Type
   , Pred(..)
   , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:), pattern B, pattern I, pattern S
   , simplify
   ) where
 
-import Language.Type
-import Language.Name
+import Tophat.Type
+import Tophat.Name
 
-import qualified Language.Op as O
+import qualified Tophat.Op as O
 
 
 -- Predicates ------------------------------------------------------------------

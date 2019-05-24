@@ -1,10 +1,10 @@
-module Language.Heap
+module Tophat.Heap
   ( Heap
   , Some
   , new, read, write
   ) where
 
-import Language.Val
+import Tophat.Val
 
 import Data.Some (Some, pack, unpack)
 
@@ -21,9 +21,9 @@ read  :: MonadState Heap m => Typeable p => Val ('TyRef p) -> m (Val ('TyPrim p)
 read (Loc (Name n)) = do
   xs <- get
   case index n xs of
-    Nothing -> error $ "Language.Store.read: could not find location " <> show n <> " in store " <> show (pretty xs)
+    Nothing -> error $ "Tophat.Store.read: could not find location " <> show n <> " in store " <> show (pretty xs)
     Just p -> case unpack p of
-      Nothing -> error $ "Language.Store.read: could not unpack location " <> show n <> " from store " <> show (pretty xs)
+      Nothing -> error $ "Tophat.Store.read: could not unpack location " <> show n <> " from store " <> show (pretty xs)
       Just x -> pure x
 
 write :: MonadState Heap m => Typeable p => Val ('TyRef p) -> Val ('TyPrim p) -> m ()

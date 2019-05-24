@@ -5,9 +5,9 @@ import Data.Stream (Stream)
 
 import Control.Monad.Supply
 import Control.Monad.Steps
-import Language.Expr
-import Language.Input
-import Language.Heap
+import Tophat.Expr
+import Tophat.Input
+import Tophat.Heap
 
 import qualified Data.Stream as Stream
 

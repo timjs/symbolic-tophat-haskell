@@ -1,6 +1,6 @@
-module Language.Expr.SymMonadic where
+module Tophat.Expr.SymMonadic where
 
-import Language.Expr
+import Tophat.Expr
 
 import Data.SBV
 

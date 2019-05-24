@@ -1,7 +1,7 @@
-module Language.Expr.SymDynamic where
+module Tophat.Expr.SymDynamic where
 
 
-import Language.Expr
+import Tophat.Expr
 
 import Data.SBV.Dynamic
 

@@ -1,18 +1,18 @@
-module Language.Expr.Sim where
+module Tophat.Expr.Simulate where
 
 import Control.Monad.Supply
-import Language.Input
-import Language.Name
-import Language.Type
+import Tophat.Input
+import Tophat.Name
+import Tophat.Type
 
-import Language.Expr (Expr, Pretask)
-import Language.Pred (Pred, simplify, pattern Yes, pattern (:/\:))
-import Language.Val (Val, Task, asPred, asExpr)
-import Language.Heap (Heap, new, read, write)
+import Tophat.Expr (Expr, Pretask)
+import Tophat.Pred (Pred, simplify, pattern Yes, pattern (:/\:))
+import Tophat.Val (Val, Task, asPred, asExpr)
+import Tophat.Heap (Heap, new, read, write)
 
-import qualified Language.Expr as E
-import qualified Language.Pred as P
-import qualified Language.Val as V
+import qualified Tophat.Expr as E
+import qualified Tophat.Pred as P
+import qualified Tophat.Val as V
 
 
 --------------------------------------------------------------------------------

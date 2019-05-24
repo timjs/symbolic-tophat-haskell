@@ -1,8 +1,8 @@
-module Language.Input
+module Tophat.Input
   ( Input(..)
   ) where
 
-import Language.Name
+import Tophat.Name
 
 
 -- Names -----------------------------------------------------------------------

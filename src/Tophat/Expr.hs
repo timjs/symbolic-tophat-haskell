@@ -1,6 +1,6 @@
-module Language.Expr
-  ( module Language.Type
-  , module Language.Name
+module Tophat.Expr
+  ( module Tophat.Type
+  , module Tophat.Name
   , Expr(..), Un(..), Bn(..)
   , pattern U, pattern B, pattern I, pattern S, pattern Let
   , Pretask(..)
@@ -8,9 +8,9 @@ module Language.Expr
   ) where
 
 
-import Language.Name
-import Language.Type
-import Language.Op
+import Tophat.Name
+import Tophat.Type
+import Tophat.Op
 
 
 
