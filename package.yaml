@@ -100,15 +100,14 @@ ghc-options:
 
   - -Wall
   - -Wcompat
-  
+
   - -Widentities
   - -Wincomplete-record-updates
   - -Wincomplete-uni-patterns
   - -Wpartial-fields
   - -Wredundant-constraints
-  - -Wmissing-export-lists
-  - -Wmissing-import-lists
 
+  - -Wno-deprecations
   - -Wno-missing-pattern-synonym-signatures
 
   # - -Weverything

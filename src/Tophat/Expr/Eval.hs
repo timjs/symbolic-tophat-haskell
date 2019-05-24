@@ -1,4 +1,10 @@
-module Tophat.Expr.Simulate where
+module Tophat.Expr.Eval
+  ( module Tophat.Type
+  , module Tophat.Input
+  , module Tophat.Expr
+  , value, failing
+  , eval, eval', stride, normalise, handle, drive, simulate, initialise
+  ) where
 
 import Control.Monad.Supply
 import Tophat.Input
@@ -224,12 +230,6 @@ normalise e0 = do
       pure ( t2, p0 :/\: p1 :/\: p2 )
 
 
-initialise ::
-  MonadState Heap m => MonadZero m =>
-  Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
-initialise = normalise
-
-
 handle ::
   MonadSupply Nat m => MonadState Heap m => MonadZero m =>
   Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
@@ -297,9 +297,9 @@ satisfiable :: Pred 'TyBool -> Bool
 satisfiable _ = True  -- FIXME: use SBV here
 
 
-run ::
+initialise ::
   MonadSupply Nat m => MonadState Heap m => MonadZero m =>
   Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
-run t0 = do
-  ( t1, p1 ) <- initialise t0
+initialise t0 = do
+  ( t1, p1 ) <- normalise t0
   simulate t1 empty p1
