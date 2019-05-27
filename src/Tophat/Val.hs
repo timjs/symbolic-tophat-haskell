@@ -72,6 +72,7 @@ instance Eq (Val t) where
   Sym i1                == Sym i2                = i1 == i2
   Loc i1                == Loc i2                = i1 == i2
 
+  Con UnitIsPrim x1     == Con UnitIsPrim x2     = x1 == x2
   Con BoolIsPrim x1     == Con BoolIsPrim x2     = x1 == x2
   Con IntIsPrim x1      == Con IntIsPrim x2      = x1 == x2
   Con StringIsPrim x1   == Con StringIsPrim x2   = x1 == x2
