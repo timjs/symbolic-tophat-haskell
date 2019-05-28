@@ -53,3 +53,15 @@ simplify = \case
   Bn o x y -> Bn o (simplify x) (simplify y)
 
   p -> p
+
+
+-- Conversions -----------------------------------------------------------------
+
+
+toSat :: Pred t -> Symbolic (SBV (TypeOf t))
+toSat = \case
+  Con x -> pure $ literal x
+  Sym i -> symbolic $ show (pretty i)
+
+  Un o a -> O.toSatUn o <*> toSat a
+  Bn o a b -> O.toSatBn o <*> toSat a <*> toSat b

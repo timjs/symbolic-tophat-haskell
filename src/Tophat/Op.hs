@@ -1,8 +1,10 @@
 module Tophat.Op
   ( module Tophat.Type
   , Un(..), Bn(..)
+  , toSatUn, toSatBn
   ) where
 
+import Data.SBV
 import Tophat.Type
 
 
@@ -13,20 +15,20 @@ import Tophat.Type
 data Un (a :: PrimTy) (b :: PrimTy) where
   Not :: Un 'TyBool   'TyBool
   Neg :: Un 'TyInt    'TyInt
-  Len :: Un 'TyString 'TyInt
+  -- Len :: Un 'TyString 'TyInt
 
 
 instance Pretty (Un a b) where
   pretty = \case
     Not -> "not"
     Neg -> "neg"
-    Len -> "len"
+    -- Len -> "len"
 
 
 instance Eq (Un a b) where
   Not == Not = True
   Neg == Neg = True
-  Len == Len = True
+  -- Len == Len = True
 
 
 -- Binary --
@@ -47,7 +49,7 @@ data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Mul :: Bn 'TyInt 'TyInt 'TyInt
   Div :: Bn 'TyInt 'TyInt 'TyInt
 
-  Cat :: Bn 'TyString 'TyString 'TyString
+  -- Cat :: Bn 'TyString 'TyString 'TyString
 
 
 instance Pretty (Bn a b c) where
@@ -67,7 +69,7 @@ instance Pretty (Bn a b c) where
     Mul -> "*"
     Div -> "/"
 
-    Cat -> "++"
+    -- Cat -> "++"
 
 
 instance Eq (Bn a b c) where
@@ -86,6 +88,35 @@ instance Eq (Bn a b c) where
     Mul  == Mul = True
     Div  == Div = True
 
-    Cat  == Cat = True
+    -- Cat  == Cat = True
 
     _    == _   = False
+
+
+-- Conversion ------------------------------------------------------------------
+
+toSatUn :: Un a b -> Symbolic (SBV (TypeOf a) -> SBV (TypeOf b))
+toSatUn = \case
+    Not -> pure sNot
+    Neg -> pure negate
+    -- Len -> pure length
+
+
+toSatBn :: Bn a b c -> Symbolic (SBV (TypeOf a) -> SBV (TypeOf b) -> SBV (TypeOf c))
+toSatBn = \case
+    Conj -> pure (.&&)
+    Disj -> pure (.||)
+
+    Lt -> pure (.<)
+    Le -> pure (.<=)
+    Eq -> pure (.==)
+    Nq -> pure (./=)
+    Ge -> pure (.>=)
+    Gt -> pure (.>)
+
+    Add -> pure (+)
+    Sub -> pure (-)
+    Mul -> pure (*)
+    Div -> pure sDiv
+
+    -- Cat -> pure (++)
