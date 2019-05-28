@@ -1,5 +1,5 @@
 module Tophat.Name
-  ( Name(..)
+  ( Name(..), unname
   , fresh
   ) where
 
@@ -11,7 +11,10 @@ import Tophat.Type (Ty)
 
 newtype Name (a :: Ty)
   = Name Nat
-  deriving ( Pretty, Eq, Ord, Num ) via Nat
+  deriving ( Pretty, Eq, Ord, Num, Hashable ) via Nat
+
+unname :: Name a -> Nat
+unname (Name n) = n
 
 fresh :: MonadSupply Nat m => m (Name t)
 fresh = do
