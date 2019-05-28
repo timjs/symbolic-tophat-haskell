@@ -20,7 +20,7 @@ module Prelude
   ) where
 
 
-import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3, Nat)
+import Relude hiding ((.), (>>), (&), (<&>), (<$>), map, when, pass, trace, readMaybe, liftA2, liftA3, Nat, Any)
 import Data.Type.Equality
 
 import Control.Monad.Except (MonadError(..))
@@ -52,7 +52,7 @@ type Unit = ()
 
 
 newtype Nat = Nat Int
-  deriving ( Eq, Ord, Num, Show, Read, Enum, Pretty ) via Int
+  deriving ( Eq, Ord, Num, Show, Read, Enum, Pretty, Hashable ) via Int
 
 
 nat :: Int -> Nat
