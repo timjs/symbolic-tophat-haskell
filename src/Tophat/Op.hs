@@ -1,7 +1,7 @@
 module Tophat.Op
   ( module Tophat.Type
   , Un(..), Bn(..)
-  , toSatUn, toSatBn
+  , toSmtUn, toSmtBn
   ) where
 
 import Data.SBV
@@ -95,15 +95,15 @@ instance Eq (Bn a b c) where
 
 -- Conversion ------------------------------------------------------------------
 
-toSatUn :: Un a b -> Symbolic (SBV (TypeOf a) -> SBV (TypeOf b))
-toSatUn = \case
+toSmtUn :: Un a b -> Symbolic (SBV (TypeOf a) -> SBV (TypeOf b))
+toSmtUn = \case
     Not -> pure sNot
     Neg -> pure negate
     -- Len -> pure length
 
 
-toSatBn :: Bn a b c -> Symbolic (SBV (TypeOf a) -> SBV (TypeOf b) -> SBV (TypeOf c))
-toSatBn = \case
+toSmtBn :: Bn a b c -> Symbolic (SBV (TypeOf a) -> SBV (TypeOf b) -> SBV (TypeOf c))
+toSmtBn = \case
     Conj -> pure (.&&)
     Disj -> pure (.||)
 

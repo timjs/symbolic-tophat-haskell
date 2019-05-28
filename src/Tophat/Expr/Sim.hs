@@ -12,7 +12,7 @@ import Tophat.Input
 import Tophat.Type
 
 import Tophat.Expr (Expr, Pretask, subst)
-import Tophat.Pred (Pred, simplify, pattern Yes, pattern (:/\:))
+import Tophat.Pred (Pred, simplify, satisfiable, pattern Yes, pattern (:/\:))
 import Tophat.Val (Val, Task, asPred, asExpr)
 import Tophat.Heap (Heap, new, read, write)
 
@@ -294,10 +294,6 @@ simulate t is p = go (go end) t is p
         | t0 /= t1              -> simulate t1 is1 ps1
         | otherwise             -> cont t1 is1 ps1
     end _ _ _ = empty
-
-
-satisfiable :: Pred 'TyBool -> Bool
-satisfiable _ = True  -- FIXME: use SBV here
 
 
 initialise ::
