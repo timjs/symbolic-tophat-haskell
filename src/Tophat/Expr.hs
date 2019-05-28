@@ -2,7 +2,7 @@ module Tophat.Expr
   ( module Tophat.Name
   , module Tophat.Type
   , Expr(..), Un(..), Bn(..)
-  , pattern Let
+  , pattern U, pattern B, pattern I, pattern S, pattern Let
   , Pretask(..)
   , pattern View, pattern Watch, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>!), pattern (:>>?)
   , subst, subst', shift, shift'
@@ -41,6 +41,18 @@ data Expr (t :: Ty) where
 
 
 pattern Let x b = App (Lam b) x
+
+pattern U :: Expr TyPrimUnit
+pattern U = Con ()
+
+pattern B :: Bool -> Expr TyPrimBool
+pattern B x = Con x
+
+pattern I :: Integer -> Expr TyPrimInt
+pattern I x = Con x
+
+pattern S :: String -> Expr TyPrimString
+pattern S x = Con x
 
 
 instance Pretty (Expr t) where

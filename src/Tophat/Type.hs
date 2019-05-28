@@ -1,7 +1,7 @@
 module Tophat.Type
   ( module Data.Universe
   , Ty(..), PrimTy(..)
-  -- , TyPrimUnit, TyPrimBool, TyPrimInt, TyPrimString
+  , TyPrimUnit, TyPrimBool, TyPrimInt, TyPrimString
   , Editable
   ) where
 
@@ -41,10 +41,10 @@ instance Universe PrimTy where
   type TypeOf 'TyInt = Integer
   type TypeOf 'TyString = String
 
--- type TyPrimUnit = 'TyPrim 'TyUnit
--- type TyPrimBool = 'TyPrim 'TyBool
--- type TyPrimInt = 'TyPrim 'TyInt
--- type TyPrimString = 'TyPrim 'TyString
+type TyPrimUnit = 'TyPrim 'TyUnit
+type TyPrimBool = 'TyPrim 'TyBool
+type TyPrimInt = 'TyPrim 'TyInt
+type TyPrimString = 'TyPrim 'TyString
 
 
 -- Editable types --------------------------------------------------------------
