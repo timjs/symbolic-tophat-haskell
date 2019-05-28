@@ -22,7 +22,8 @@ dependencies:
   - vector
   - prettyprinter
   - Stream
-  # - unordered-containers
+  - containers
+  - unordered-containers
   - sbv
 
 
