@@ -2,7 +2,6 @@ module Tophat.Val
   ( module Tophat.Type
   , module Tophat.Name
   , Val(..), Un(..), Bn(..)
-  , pattern U, pattern B, pattern I, pattern S
   , Task(..)
   , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>\), pattern (:>>?)
   , asPred, asExpr, asPretask
@@ -27,11 +26,11 @@ import qualified Tophat.Pred as P
 -- Expressions -----------------------------------------------------------------
 
 data Val (t :: Ty) where
-  Lam :: Typeable a => Expr b -> Val (a ':-> b)
+  Lam :: ( Typeable a ) => Expr b -> Val (a ':-> b)
 
   Loc :: Name ('TyPrim p) -> Val ('TyRef p)
-  Sym :: Name ('TyPrim p) -> Val ('TyPrim p)
-  Con :: IsPrim p -> TypeOf p -> Val ('TyPrim p)
+  Sym :: ( Editable p ) => Name ('TyPrim p) -> Val ('TyPrim p)
+  Con :: ( Editable p ) => TypeOf p -> Val ('TyPrim p)
 
   Un :: ( Typeable p, Typeable q ) => Un p q -> Val ('TyPrim p) -> Val ('TyPrim q)
   Bn :: ( Typeable p, Typeable q, Typeable r ) => Bn p q r -> Val ('TyPrim p) -> Val ('TyPrim q) -> Val ('TyPrim r)
@@ -41,22 +40,13 @@ data Val (t :: Ty) where
   Task :: Task ('TyTask a) -> Val ('TyTask a)
 
 
-pattern U   = Con UnitIsPrim ()
-pattern B x = Con BoolIsPrim x
-pattern I x = Con IntIsPrim x
-pattern S x = Con StringIsPrim x
-
-
 instance Pretty (Val t) where
   pretty = \case
     Lam f -> cat [ "λ.", pretty f ]
     Sym i -> cat [ "s", pretty i ]
     Loc i -> cat [ "l", pretty i ]
 
-    Con UnitIsPrim x -> pretty x
-    Con BoolIsPrim x -> pretty x
-    Con IntIsPrim x -> pretty x
-    Con StringIsPrim x -> cat [ "\"", pretty x, "\"" ]
+    Con x -> pretty x
 
     Un o a -> parens $ sep [ pretty o, pretty a ]
     Bn o a b -> parens $ sep [ pretty a, pretty o, pretty b ]
@@ -72,10 +62,7 @@ instance Eq (Val t) where
   Sym i1                == Sym i2                = i1 == i2
   Loc i1                == Loc i2                = i1 == i2
 
-  Con UnitIsPrim x1     == Con UnitIsPrim x2     = x1 == x2
-  Con BoolIsPrim x1     == Con BoolIsPrim x2     = x1 == x2
-  Con IntIsPrim x1      == Con IntIsPrim x2      = x1 == x2
-  Con StringIsPrim x1   == Con StringIsPrim x2   = x1 == x2
+  Con x1                == Con x2                = x1 == x2
 
   Un o1 a1              == Un o2 a2
     | Just Refl <- o1 ~= o2                      = o1 == o2 && a1 == a2
@@ -94,13 +81,13 @@ instance Eq (Val t) where
 -- Tasks -----------------------------------------------------------------------
 
 data Task (t :: Ty) where
-  Edit :: Val ('TyPrim p) -> Task ('TyTask ('TyPrim p))
-  Enter :: Task ('TyTask ('TyPrim p))
-  Update :: Typeable p => Val ('TyRef p) -> Task ('TyTask ('TyPrim p))
+  Edit   :: ( Editable p ) => Val ('TyPrim p) -> Task ('TyTask ('TyPrim p))
+  Enter  :: ( Editable p ) => Task ('TyTask ('TyPrim p))
+  Update :: ( Typeable p, Editable p ) => Val ('TyRef p) -> Task ('TyTask ('TyPrim p))
 
-  And :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
-  Or  :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
-  Xor :: Expr ('TyTask a) -> Expr ('TyTask a) -> Task ('TyTask a)
+  And  :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
+  Or   :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
+  Xor  :: Expr ('TyTask a) -> Expr ('TyTask a) -> Task ('TyTask a)
   Fail :: Task ('TyTask a)
 
   -- | `a` and `b` should be typable for testing syntactic equality of terms.
@@ -170,7 +157,7 @@ instance Eq (Task t) where
 asPred :: Val ('TyPrim a) -> P.Pred a
 asPred = \case
   Sym i -> P.Sym i
-  Con p x -> P.Con p x
+  Con x -> P.Con x
 
   Un o v1 -> P.Un o (asPred v1)
   Bn o v1 v2 -> P.Bn o (asPred v1) (asPred v2)
@@ -181,7 +168,7 @@ asExpr = \case
   Lam f -> E.Lam f
   Sym i -> E.Sym i
   Loc i -> E.Loc i
-  Con p x -> E.Con p x
+  Con x -> E.Con x
 
   Un o a -> E.Un o (asExpr a)
   Bn o a b -> E.Bn o (asExpr a) (asExpr b)

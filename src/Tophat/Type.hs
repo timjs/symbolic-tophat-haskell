@@ -1,10 +1,11 @@
 module Tophat.Type
   ( module Data.Universe
   , Ty(..), PrimTy(..)
-  , TyPrimUnit, TyPrimBool, TyPrimInt, TyPrimString
-  , IsPrim(..)
+  -- , TyPrimUnit, TyPrimBool, TyPrimInt, TyPrimString
+  , Editable
   ) where
 
+import Data.SBV
 import Data.Universe
 
 
@@ -40,18 +41,17 @@ instance Universe PrimTy where
   type TypeOf 'TyInt = Integer
   type TypeOf 'TyString = String
 
-type TyPrimUnit = 'TyPrim 'TyUnit
-type TyPrimBool = 'TyPrim 'TyBool
-type TyPrimInt = 'TyPrim 'TyInt
-type TyPrimString = 'TyPrim 'TyString
+-- type TyPrimUnit = 'TyPrim 'TyUnit
+-- type TyPrimBool = 'TyPrim 'TyBool
+-- type TyPrimInt = 'TyPrim 'TyInt
+-- type TyPrimString = 'TyPrim 'TyString
 
--- | Proof that some `PrimTy` is primitive.
--- |
--- | We need this at runtime to check what kind of primitive we have.
--- | Apparently we can't use the dictionary trick as with `IsBasic`
--- | due to some strange interaction with type families...
-data IsPrim (a :: PrimTy) where
-  UnitIsPrim :: IsPrim 'TyUnit
-  BoolIsPrim :: IsPrim 'TyBool
-  IntIsPrim :: IsPrim 'TyInt
-  StringIsPrim :: IsPrim 'TyString
+
+-- Editable types --------------------------------------------------------------
+
+class ( Typeable (TypeOf a), Pretty (TypeOf a), Eq (TypeOf a), SymVal (TypeOf a) ) => Editable a
+
+instance Editable 'TyUnit
+instance Editable 'TyBool
+instance Editable 'TyInt
+instance Editable 'TyString

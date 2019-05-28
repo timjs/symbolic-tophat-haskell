@@ -120,7 +120,7 @@ eval = \case
     ( l1, p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
     write l1 v2
-    pure ( V.U, p1 :/\: p2 )
+    pure ( V.Con (), p1 :/\: p2 )
 
   E.Lam e ->
     pure ( V.Lam e, Yes )
@@ -128,8 +128,8 @@ eval = \case
     pure ( V.Loc i, Yes )
   E.Sym i ->
     pure ( V.Sym i, Yes )
-  E.Con p x ->
-    pure ( V.Con p x, Yes )
+  E.Con x ->
+    pure ( V.Con x, Yes )
 
   E.Task e1 -> do
     ( t1, p1 ) <- eval' e1

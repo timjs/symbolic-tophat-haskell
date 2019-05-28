@@ -2,45 +2,40 @@ module Tophat.Pred
   ( module Tophat.Name
   , module Tophat.Type
   , Pred(..)
-  , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:), pattern B, pattern I, pattern S
+  , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:)
   , simplify
+  , toSat
   ) where
 
 import Tophat.Type
 import Tophat.Name
+
+import Data.SBV
 
 import qualified Tophat.Op as O
 
 
 -- Predicates ------------------------------------------------------------------
 
-data Pred (t :: PrimTy) where
-  Con :: IsPrim a -> TypeOf a -> Pred a
-  Sym :: Name ('TyPrim a) -> Pred a
+data Pred (p :: PrimTy) where
+  Con :: ( Editable p ) => TypeOf p -> Pred p
+  Sym :: ( Editable p ) => Name ('TyPrim p) -> Pred p
 
-  Un :: O.Un a b -> Pred a -> Pred b
-  Bn :: O.Bn a b c -> Pred a -> Pred b -> Pred c
+  Un :: O.Un p q -> Pred p -> Pred q
+  Bn :: O.Bn p q r -> Pred p -> Pred q -> Pred r
 
 
-pattern Yes = Con BoolIsPrim True
-pattern Nop = Con BoolIsPrim False
+pattern Yes = Con True
+pattern Nop = Con False
 
 pattern Not x = Un O.Not x
 
 pattern (:/\:) x y = Bn O.Conj x y
 pattern (:\/:) x y = Bn O.Disj x y
 
-pattern B x = Con BoolIsPrim x
-pattern I x = Con IntIsPrim x
-pattern S x = Con StringIsPrim x
-
-
 instance Pretty (Pred t) where
   pretty = \case
-    Con UnitIsPrim x -> pretty x
-    Con BoolIsPrim x -> pretty x
-    Con IntIsPrim x -> pretty x
-    Con StringIsPrim x -> pretty x
+    Con x -> pretty x
     Sym i -> "s" <> pretty i
 
     Un o a -> parens (sep [ pretty o, pretty a ])
@@ -50,9 +45,9 @@ instance Pretty (Pred t) where
 simplify :: Pred t -> Pred t
 simplify = \case
   x :/\: y -> case ( simplify x, simplify y ) of
-    ( B True, p ) -> p
-    ( p, B True ) -> p
-    ( p, q )      -> p :/\: q
+    ( Con True, p ) -> p
+    ( p, Con True ) -> p
+    ( p, q )        -> p :/\: q
 
   Un o x -> Un o (simplify x)
   Bn o x y -> Bn o (simplify x) (simplify y)
