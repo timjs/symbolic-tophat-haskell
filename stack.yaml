@@ -38,7 +38,7 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-  - sbv-8.1
+  - sbv-8.2
   - Stream-0.4.7.2
   - lazysmallcheck-0.6
 
