@@ -25,9 +25,9 @@ import qualified Tophat.Val as V
 
 value :: MonadState Heap m => Val ('TyTask t) -> m (Maybe (Val t))
 value (V.Task t) = case t of
-  V.Edit v1                -> pure $ Just v1
   V.Enter                  -> pure $ Nothing
-  V.Update l1              -> map Just $ read l1
+  V.Update v1              -> pure $ Just v1
+  V.Change l1              -> map Just $ read l1
   V.And t1 t2              -> do
     mv1 <- value t1
     mv2 <- value t2
@@ -51,9 +51,9 @@ value (V.Task t) = case t of
 
 failing :: Val ('TyTask t) -> Bool
 failing (V.Task t) = case t of
-  V.Edit _    -> False
   V.Enter     -> False
   V.Update _  -> False
+  V.Change _  -> False
   V.And t1 t2 -> failing t1 && failing t2
   V.Or  t1 t2 -> failing t1 && failing t2
   V.Xor _ _   -> True --FIXME
@@ -143,14 +143,14 @@ eval' ::
   MonadState Heap m => MonadZero m =>
   Pretask t -> m ( Task t, Pred 'TyBool )
 eval' = \case
-  E.Edit e1 -> do
-    ( v1, p1 ) <- eval e1
-    pure ( V.Edit v1, p1 )
   E.Enter ->
     pure ( V.Enter, Yes )
   E.Update e1 -> do
     ( v1, p1 ) <- eval e1
     pure ( V.Update v1, p1 )
+  E.Change e1 -> do
+    ( v1, p1 ) <- eval e1
+    pure ( V.Change v1, p1 )
   E.And e1 e2 -> do
     ( t1, p1 ) <- eval e1
     ( t2, p2 ) <- eval e2
@@ -235,16 +235,16 @@ handle ::
   MonadSupply Nat m => MonadState Heap m => MonadZero m =>
   Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
 handle (V.Task t) = case t of
-  V.Edit _ -> do
-    s <- fresh
-    pure ( V.Task $ V.Edit (V.Sym s), Change s, Yes )
   V.Enter -> do
     s <- fresh
-    pure ( V.Task $ V.Edit (V.Sym s), Change s, Yes )
-  V.Update l -> do
+    pure ( V.Task $ V.Update (V.Sym s), Change s, Yes )
+  V.Update _ -> do
+    s <- fresh
+    pure ( V.Task $ V.Update (V.Sym s), Change s, Yes )
+  V.Change l -> do
     s <- fresh
     write l (V.Sym s)
-    pure ( V.Task $ V.Update l, Change s, Yes )
+    pure ( V.Task $ V.Change l, Change s, Yes )
   V.And t1 t2 ->
     [ ( V.Task $ V.And t1' t2, ToFirst  i1, p1 ) | ( t1', i1, p1 ) <- handle t1 ] <|>
     [ ( V.Task $ V.And t1 t2', ToSecond i2, p2 ) | ( t2', i2, p2 ) <- handle t2 ]

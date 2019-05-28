@@ -81,9 +81,9 @@ instance Eq (Val t) where
 -- Tasks -----------------------------------------------------------------------
 
 data Task (t :: Ty) where
-  Edit   :: ( Editable p ) => Val ('TyPrim p) -> Task ('TyTask ('TyPrim p))
   Enter  :: ( Editable p ) => Task ('TyTask ('TyPrim p))
-  Update :: ( Typeable p, Editable p ) => Val ('TyRef p) -> Task ('TyTask ('TyPrim p))
+  Update :: ( Editable p ) => Val ('TyPrim p) -> Task ('TyTask ('TyPrim p))
+  Change :: ( Typeable p, Editable p ) => Val ('TyRef p) -> Task ('TyTask ('TyPrim p))
 
   And  :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
   Or   :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
@@ -103,7 +103,7 @@ infixr 2 :||:, :??:
 infixr 1 :>>=, :>>?, :>>\
 
 
-pattern View x = Edit x
+pattern View x = Update x
 pattern (:&&:) x y = And (Task x) (Task y)
 pattern (:||:) x y = Or (Task x) (Task y)
 pattern (:??:) x y = Xor (E.Task x) (E.Task y)
@@ -114,9 +114,9 @@ pattern (:>>?) t c = Next (Task t) (E.Lam (E.Task c))
 
 instance Pretty (Task t) where
   pretty = \case
-    Edit x -> cat [ "□(", pretty x, ")" ]
     Enter -> "⊠"
-    Update x -> cat [ "■(", pretty x, ")" ]
+    Update x -> cat [ "□(", pretty x, ")" ]
+    Change x -> cat [ "■(", pretty x, ")" ]
     And x y -> sep [ pretty x, "⋈", pretty y ]
     Or x y -> sep [ pretty x, "◆", pretty y ]
     Xor x y -> sep [ pretty x, "◇", pretty y ]
@@ -130,26 +130,26 @@ instance Eq (Task t) where
   -- | This is where the magic happens!
   -- | Every editor with some symbol in it are regarded equal,
   -- | regardless of the concrete symbol they contain.
-  Edit (Sym _) == Edit (Sym _) = True
-  Edit x1      == Edit x2      = x1 == x2
-  Enter        == Enter        = True
-  Update x1    == Update x2    = x1 == x2
+  Enter          == Enter          = True
+  Update (Sym _) == Update (Sym _) = True
+  Update x1      == Update x2      = x1 == x2
+  Change x1      == Change x2      = x1 == x2
 
-  And x1 y1    == And x2 y2    = x1 == x2 && y1 == y2
-  Or x1 y1     == Or x2 y2     = x1 == x2 && y1 == y2
-  Xor x1 y1    == Xor x2 y2    = x1 == x2 && y1 == y2
-  Fail         == Fail         = True
+  And x1 y1      == And x2 y2      = x1 == x2 && y1 == y2
+  Or x1 y1       == Or x2 y2       = x1 == x2 && y1 == y2
+  Xor x1 y1      == Xor x2 y2      = x1 == x2 && y1 == y2
+  Fail           == Fail           = True
 
-  Then x1 c1   == Then x2 c2
+  Then x1 c1     == Then x2 c2
     | Just Refl <- x1 ~= x2
-    , Just Refl <- c1 ~= c2    = x1 == x2 && c1 == c2
-    | otherwise                = False
-  Next x1 c1   == Next x2 c2
+    , Just Refl <- c1 ~= c2        = x1 == x2 && c1 == c2
+    | otherwise                    = False
+  Next x1 c1     == Next x2 c2
     | Just Refl <- x1 ~= x2
-    , Just Refl <- c1 ~= c2    = x1 == x2 && c1 == c2
-    | otherwise                = False
+    , Just Refl <- c1 ~= c2        = x1 == x2 && c1 == c2
+    | otherwise                    = False
 
-  _            == _            = False
+  _              == _              = False
 
 
 -- Translation -----------------------------------------------------------------
@@ -180,9 +180,9 @@ asExpr = \case
 
 asPretask :: Task a -> E.Pretask a
 asPretask = \case
-  Edit x -> E.Edit (asExpr x)
   Enter -> E.Enter
   Update x -> E.Update (asExpr x)
+  Change x -> E.Change (asExpr x)
   And x y -> E.And (asExpr x) (asExpr y)
   Or x y -> E.Or (asExpr x) (asExpr y)
   Xor x y -> E.Xor x y
