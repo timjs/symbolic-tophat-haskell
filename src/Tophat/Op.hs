@@ -7,7 +7,7 @@ module Tophat.Op
 import Data.SBV.Dynamic
 import Tophat.Type
 
-import Data.SBV (SymVal, SBool, SList, ite, sFalse, (.||))
+import Data.SBV (SymVal, SBool, SList, ite, sTrue, (.&&))
 import Data.SBV.Internals (SBV(..))
 
 import qualified Data.SBV.List as Smt
@@ -18,12 +18,12 @@ import qualified Data.SBV.List as Smt
 -- Unary -
 
 data Un (a :: PrimTy) (b :: PrimTy) where
-  Not :: Un 'TyBool   'TyBool
-  Neg :: Un 'TyInt    'TyInt
+  Not :: Un 'TyBool 'TyBool
+  Neg :: Un 'TyInt  'TyInt
 
-  Nil :: ( Editable p ) => Un ('TyList p) 'TyBool
-  Len :: ( Editable p ) => Un ('TyList p) 'TyInt
-  Dup :: ( Editable p ) => Un ('TyList p) ('TyList p)
+  Len   :: ( Editable p ) => Un ('TyList p) 'TyInt
+  Empty :: ( Editable p ) => Un ('TyList p) 'TyBool
+  Uniq  :: ( Editable p ) => Un ('TyList p) 'TyBool
 
 
 instance Pretty (Un a b) where
@@ -31,18 +31,20 @@ instance Pretty (Un a b) where
     Not -> "not"
     Neg -> "neg"
 
-    Nil -> "nil"
-    Len -> "len"
-    Dup -> "dup"
+    Len   -> "len"
+    Empty -> "empty"
+    Uniq  -> "uniq"
 
 
 instance Eq (Un a b) where
   Not == Not = True
   Neg == Neg = True
 
-  Nil == Nil = True
-  Len == Len = True
-  Dup == Dup = True
+  Len   == Len   = True
+  Empty == Empty = True
+  Empty == _     = False
+  Uniq  == Uniq  = True
+  Uniq  == _     = False
 
 
 -- Binary --
@@ -63,7 +65,7 @@ data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Mul :: Bn 'TyInt 'TyInt 'TyInt
   Div :: Bn 'TyInt 'TyInt 'TyInt
 
-  Elem :: ( Editable p ) => Bn p ('TyList p) 'TyBool
+  Elem :: ( Editable p ) => Bn ('TyList p) ('TyList p) 'TyBool
   Cat  :: ( Editable p ) => Bn ('TyList p) ('TyList p) ('TyList p)
 
 
@@ -129,9 +131,9 @@ toSmtUn = \case
     Not -> svNot
     Neg -> svUNeg
 
-    Nil -> svNil (Proxy :: Proxy a)
-    Len -> svLength (Proxy :: Proxy a)
-    Dup -> svDup (Proxy :: Proxy a)
+    Len   -> svLen   (Proxy :: Proxy a)
+    Empty -> svEmpty (Proxy :: Proxy a)
+    Uniq  -> svUniq  (Proxy :: Proxy a)
 
 
 toSmtBn :: forall a b c. Bn a b c -> SVal -> SVal -> SVal
@@ -152,27 +154,27 @@ toSmtBn = \case
     Div -> svDivide
 
     Elem -> svElem (Proxy :: Proxy b)
-    Cat  -> svConcat (Proxy :: Proxy b)
+    Cat  -> svCat  (Proxy :: Proxy b)
 
 
 -- | Note: I don't know why the Proxy argument lifts some ambiguity.
 -- | Without it GHC complains...
-svNil :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
-svNil _ xs = unSBV $ Smt.null (SBV xs :: SList (TypeOf p))
+svEmpty :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
+svEmpty _ xs = unSBV $ Smt.null (SBV xs :: SList (TypeOf p))
 
-svLength :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
-svLength _ xs = unSBV $ Smt.length (SBV xs :: SList (TypeOf p))
+svLen :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
+svLen _ xs = unSBV $ Smt.length (SBV xs :: SList (TypeOf p))
 
-svDup :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
-svDup _ xs = unSBV $ dup (SBV xs :: SList (TypeOf p))
+svUniq :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
+svUniq _ xs = unSBV $ uniq (SBV xs :: SList (TypeOf p))
   where
-    dup :: Eq a => SymVal a => SList a -> SBool
-    dup l = ite (Smt.null l)
-      (sFalse)
-      (let ( hd, tl ) = Smt.uncons l in hd `Smt.elem` tl .|| dup tl)
+    uniq :: Eq a => SymVal a => SList a -> SBool
+    uniq l = ite (Smt.null l)
+      (sTrue)
+      (let ( hd, tl ) = Smt.uncons l in hd `Smt.notElem` tl .&& uniq tl)
 
 svElem :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal -> SVal
 svElem _ x xs = unSBV $ (SBV x :: SBV (TypeOf p)) `Smt.elem` (SBV xs :: SList (TypeOf p))
 
-svConcat :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal -> SVal
-svConcat _ xs ys = unSBV $ Smt.concat (SBV xs :: SList (TypeOf p)) (SBV ys :: SList (TypeOf p))
+svCat :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal -> SVal
+svCat _ xs ys = unSBV $ Smt.concat (SBV xs :: SList (TypeOf p)) (SBV ys :: SList (TypeOf p))
