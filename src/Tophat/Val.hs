@@ -56,7 +56,8 @@ instance Pretty (Val t) where
 
     Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
 
-    Nil -> cat [ "[]_", pretty (typeRep @t) ]
+    Nil -> "[]"
+    -- Nil -> cat [ "[]_", pretty (typeRep @t) ]
     Cons a as -> sep [ pretty a, "::", pretty as ]
 
     Task p -> pretty p

@@ -64,6 +64,17 @@ add_seq' = Task $
   View (Bn Add (Var 0) (Var 0))
 
 
+cons_list :: Expr ('TyTask ('TyPrim ('TyList 'TyInt)))
+cons_list =
+  Let (Cons (I 1) (Cons (I 2) Nil)) $ Task $
+  Enter @'TyInt :>>=
+  View (Cons (Var 0) (Var 1))
+{-
+⊠ ▶ λ.□(x0 :: 1 :: 2 :: [])
+s0 => ( ( □(s0 :: 1 :: 2 :: []) , [s0] , True ) , <> )
+-}
+
+
 type TyIntInt = 'TyPrim 'TyInt ':>< 'TyPrim 'TyInt
 
 add_par :: Expr ('TyTask ('TyPrim 'TyInt))

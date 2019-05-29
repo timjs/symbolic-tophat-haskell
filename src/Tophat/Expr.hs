@@ -80,7 +80,8 @@ instance Pretty (Expr t) where
     Fst a -> sep [ "fst", pretty a ]
     Snd a -> sep [ "snd", pretty a ]
 
-    Nil -> cat [ "[]_", pretty (typeRep @t) ]
+    Nil -> "[]"
+    -- Nil -> cat [ "[]_", pretty (typeRep @t) ]
     Cons a as -> sep [ pretty a, "::", pretty as ]
     Head as -> sep [ "head", pretty as ]
     Tail as -> sep [ "tail", pretty as ]
