@@ -349,5 +349,8 @@ someTypeOf = someTypeRep << proxyOf
 {-# INLINE someTypeOf #-}
 
 
+instance Pretty (TypeRep a) where
+  pretty = Pretty.viaShow
+
 instance Pretty SomeTypeRep where
   pretty = Pretty.viaShow

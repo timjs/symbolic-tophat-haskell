@@ -33,6 +33,11 @@ data Expr (t :: Ty) where
   Fst  :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr a
   Snd  :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr b
 
+  Nil  :: ( Typeable p ) => Expr ('TyPrim ('TyList p))
+  Cons :: Expr ('TyPrim p) -> Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim ('TyList p))
+  Head :: Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim p)
+  Tail :: Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim ('TyList p))
+
   Ref    :: ( Typeable p ) => Expr ('TyPrim p) -> Expr ('TyRef p)
   Deref  :: ( Typeable p ) => Expr ('TyRef p) -> Expr ('TyPrim p)
   Assign :: ( Typeable p ) => Expr ('TyRef p) -> Expr ('TyPrim p) -> Expr ('TyPrim 'TyUnit)
@@ -58,6 +63,7 @@ pattern S x = Con x
 instance Pretty (Expr t) where
   pretty = \case
     Lam f -> cat [ "λ.", pretty f ]
+    -- Lam f -> cat [ "λ_", pretty (typeRep @t), ".", pretty f ]
     Let x b -> split [ sep [ "let", pretty x, "in" ], pretty b ]
     App f a -> sep [ parens (pretty f), parens (pretty a) ]
     Var i -> cat [ "x", pretty i ]
@@ -74,6 +80,11 @@ instance Pretty (Expr t) where
     Fst a -> sep [ "fst", pretty a ]
     Snd a -> sep [ "snd", pretty a ]
 
+    Nil -> cat [ "[]_", pretty (typeRep @t) ]
+    Cons a as -> sep [ pretty a, "::", pretty as ]
+    Head as -> sep [ "head", pretty as ]
+    Tail as -> sep [ "tail", pretty as ]
+
     Ref a -> sep [ "ref", pretty a ]
     Deref a -> cat [ "!", pretty a ]
     Assign a b -> sep [ pretty a, ":=", pretty b ]
@@ -83,40 +94,63 @@ instance Pretty (Expr t) where
 
 instance Eq (Expr t) where
   Lam f1                == Lam f2                = f1 == f2  -- FIXME: is this ok?
+  Lam _                 == _                     = False
   App f1 a1             == App f2 a2
     | Just Refl <- f1 ~= f2                      = f1 == f2 && a1 == a2
     | otherwise                                  = False
+  App _ _               == _                     = False
   Var i1                == Var i2                = i1 == i2
+  Var _                 == _                     = False
   Sym i1                == Sym i2                = i1 == i2
+  Sym _                 == _                     = False
   Loc i1                == Loc i2                = i1 == i2
+  Loc _                 == _                     = False
 
   Con x1                == Con x2                = x1 == x2
+  Con _                 == _                     = False
 
   Un o1 a1              == Un o2 a2
     | Just Refl <- o1 ~= o2                      = o1 == o2 && a1 == a2
     | otherwise                                  = False
+  Un _ _                == _                     = False
   Bn o1 a1 b1           == Bn o2 a2 b2
     | Just Refl <- o1 ~= o2                      = o1 == o2 && a1 == a2 && b1 == b2
     | otherwise                                  = False
+  Bn _ _ _              == _                     = False
   If p1 a1 b1           == If p2 a2 b2           = p1 == p2 && a1 == a2 && b1 == b2
+  If _ _ _              == _                     = False
 
   Pair a1 b1            == Pair a2 b2            = a1 == a2 && b1 == b2
+  Pair _ _              == _                     = False
   Fst a1                == Fst a2
     | Just Refl <- a1 ~= a2                      = a1 == a2
     | otherwise                                  = False
+  Fst _                 == _                     = False
   Snd a1                == Snd a2
     | Just Refl <- a1 ~= a2                      = a1 == a2
     | otherwise                                  = False
+  Snd _                  == _                     = False
+
+  Nil                   == Nil                   = True
+  Nil                   == _                     = False
+  Cons a1 as1           == Cons a2 as2           = a1 == a2 && as1 == as2
+  Cons _ _              == _                     = False
+  Head as1              == Head as2              = as1 == as2
+  Head _                == _                     = False
+  Tail as1              == Tail as2              = as1 == as2
+  Tail _                == _                     = False
 
   Ref a1                == Ref a2                = a1 == a2
+  Ref _                 == _                     = False
   Deref a1              == Deref a2              = a1 == a2
+  Deref _               == _                     = False
   Assign a1 b1          == Assign a2 b2
     | Just Refl <- a1 ~= a2                      = a1 == a2 && b1 == b2
     | otherwise                                  = False
+  Assign _ _            == _                     = False
 
   Task p1               == Task p2               = p1 == p2
-
-  _                     == _                     = False
+  Task _                == _                     = False
 
 
 -- Pretasks --------------------------------------------------------------------
@@ -158,10 +192,12 @@ instance Pretty (Pretask t) where
     Enter -> "⊠"
     Update x -> cat [ "□(", pretty x, ")" ]
     Change x -> cat [ "■(", pretty x, ")" ]
+
     And x y -> sep [ pretty x, "⋈", pretty y ]
     Or x y -> sep [ pretty x, "◆", pretty y ]
     Xor x y -> sep [ pretty x, "◇", pretty y ]
     Fail -> "↯"
+    
     Then x c -> sep [ pretty x, "▶", pretty c ]
     Next x c -> sep [ pretty x, "▷", pretty c ]
 
@@ -171,25 +207,32 @@ instance Eq (Pretask t) where
   -- | Every editor with some symbol in it are regarded equal,
   -- | regardless of the concrete symbol they contain.
   Enter          == Enter          = True
+  Enter          == _              = False
   Update (Sym _) == Update (Sym _) = True
   Update x1      == Update x2      = x1 == x2
+  Update _       == _              = False
   Change x1      == Change x2      = x1 == x2
+  Change _       == _              = False
 
   And x1 y1      == And x2 y2      = x1 == x2 && y1 == y2
+  And _ _        == _              = False
   Or x1 y1       == Or x2 y2       = x1 == x2 && y1 == y2
+  Or _ _         == _              = False
   Xor x1 y1      == Xor x2 y2      = x1 == x2 && y1 == y2
+  Xor _ _        == _              = False
   Fail           == Fail           = True
+  Fail           == _              = False
 
   Then x1 c1     == Then x2 c2
     | Just Refl <- x1 ~= x2
     , Just Refl <- c1 ~= c2        = x1 == x2 && c1 == c2
     | otherwise                    = False
+  Then _ _       == _              = False
   Next x1 c1     == Next x2 c2
     | Just Refl <- x1 ~= x2
     , Just Refl <- c1 ~= c2        = x1 == x2 && c1 == c2
     | otherwise                    = False
-
-  _              == _              = False
+  Next _ _       == _              = False
 
 
 -- Substitution ----------------------------------------------------------------
@@ -217,6 +260,10 @@ subst j s = \case
   Pair a b -> Pair (subst j s a) (subst j s b)
   Fst a -> Fst (subst j s a)
   Snd a -> Snd (subst j s a)
+  Nil -> Nil
+  Cons a as -> Cons (subst j s a) (subst j s as)
+  Head as -> Head (subst j s as)
+  Tail as -> Tail (subst j s as)
   Ref a -> Ref (subst j s a)
   Deref a -> Deref (subst j s a)
   Assign a b -> Assign (subst j s a) (subst j s b)
@@ -233,10 +280,12 @@ subst' j s = \case
   Enter -> Enter
   Update a -> Update (subst j s a)
   Change a -> Change (subst j s a)
+
   And a b -> And (subst j s a) (subst j s b)
   Or a b -> Or (subst j s a) (subst j s b)
   Xor a b -> Xor (subst j s a) (subst j s b)
   Fail -> Fail
+
   Then a b -> Then (subst j s a) (subst j s b)
   Next a b -> Next (subst j s a) (subst j s b)
 
@@ -256,6 +305,10 @@ shift c = \case
   Pair a b -> Pair (shift c a) (shift c b)
   Fst a -> Fst (shift c a)
   Snd a -> Snd (shift c a)
+  Nil -> Nil
+  Cons a as -> Cons (shift c a) (shift c as)
+  Head as -> Head (shift c as)
+  Tail as -> Tail (shift c as)
   Ref a -> Ref (shift c a)
   Deref a -> Deref (shift c a)
   Assign a b -> Assign (shift c a) (shift c b)
@@ -272,9 +325,11 @@ shift' c = \case
   Enter -> Enter
   Update a -> Update (shift c a)
   Change a -> Change (shift c a)
+
   And a b -> And (shift c a) (shift c b)
   Or a b -> Or (shift c a) (shift c b)
   Xor a b -> Xor (shift c a) (shift c b)
   Fail -> Fail
+
   Then a b -> Then (shift c a) (shift c b)
   Next a b -> Next (shift c a) (shift c b)
