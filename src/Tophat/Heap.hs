@@ -1,14 +1,14 @@
 module Tophat.Heap
-  ( Heap, Some
+  ( Heap, Any
   , new, read, write
   ) where
 
 import Tophat.Val
 
-import Data.Some (Some, pack, unpack)
+import Data.Some (Any, pack, unpack)
 
 
-type Heap = Vector (Some Val)
+type Heap = Vector (Any Val)
 
 
 new ::
