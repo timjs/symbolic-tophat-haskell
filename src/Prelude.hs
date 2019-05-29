@@ -298,6 +298,7 @@ catch = catchError
 {-# INLINE catch #-}
 
 
+
 -- Writer --
 
 
@@ -307,12 +308,6 @@ clear = pass $ lift0 ((), const neutral)
 
 evalWriterT :: Monad m => WriterT w m a -> m a
 evalWriterT m = lift1 fst (runWriterT m)
-
-
-instance MonadWriter w m => MonadWriter w (ListT m) where
-  tell = lift << tell
-  listen = error "Prelude.listen for ListT m: not yet implemented"
-  pass = error "Prelude.pass for ListT m: not yet implemented"
 
 
 

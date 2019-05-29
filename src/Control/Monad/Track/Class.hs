@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 module Control.Monad.Track.Class
   ( MonadTrack(..)
   ) where

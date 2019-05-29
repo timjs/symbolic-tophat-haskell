@@ -85,7 +85,7 @@ default-extensions:
 
   # Intermediate type extensions:
   - FunctionalDependencies
-  - UndecidableInstances
+  # - UndecidableInstances
   - GADTs
   - ExistentialQuantification
 

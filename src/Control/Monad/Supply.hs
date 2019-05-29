@@ -2,6 +2,7 @@
 -- | See <http://www.haskell.org/haskellwiki/New_monads/MonadSupply> for more details.
 -- FIXME: Make use of DerivingVia
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Control.Monad.Supply
   ( MonadSupply (..)
   , SupplyT(..), Supply
