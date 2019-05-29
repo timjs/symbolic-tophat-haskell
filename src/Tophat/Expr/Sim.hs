@@ -108,6 +108,23 @@ eval = \case
     let  V.Pair _ v = e'
     pure ( v, p )
 
+  E.Nil -> do
+    pure ( V.Nil, Yes )
+  E.Cons e1 e2 -> do
+    ( v1, p1 ) <- eval e1
+    ( v2, p2 ) <- eval e2
+    pure ( V.Cons v1 v2, p1 :/\: p2 )
+  E.Head e -> do
+    ( e', p ) <- eval e
+    case e' of
+      V.Cons v1 _ -> pure ( v1, p )
+      _ -> error $ "Tophat.Expr.Sim.eval: trying to get head of " <> show (pretty e')
+  E.Tail e -> do
+    ( e', p ) <- eval e
+    case e' of
+      V.Cons _ v2 -> pure ( v2, p )
+      _ -> error $ "Tophat.Expr.Sim.eval: trying to get tail of " <> show (pretty e')
+
   E.Ref e1 -> do
     ( v1, p1 ) <- eval e1
     l1 <- new v1

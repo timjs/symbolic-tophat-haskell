@@ -33,8 +33,8 @@ data Expr (t :: Ty) where
   Fst  :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr a
   Snd  :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr b
 
-  Nil  :: ( Typeable p ) => Expr ('TyPrim ('TyList p))
-  Cons :: Expr ('TyPrim p) -> Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim ('TyList p))
+  Nil  :: ( Editable p, Typeable p ) => Expr ('TyPrim ('TyList p))
+  Cons :: ( Editable p ) => Expr ('TyPrim p) -> Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim ('TyList p))
   Head :: Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim p)
   Tail :: Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim ('TyList p))
 
@@ -197,7 +197,7 @@ instance Pretty (Pretask t) where
     Or x y -> sep [ pretty x, "◆", pretty y ]
     Xor x y -> sep [ pretty x, "◇", pretty y ]
     Fail -> "↯"
-    
+
     Then x c -> sep [ pretty x, "▶", pretty c ]
     Next x c -> sep [ pretty x, "▷", pretty c ]
 
