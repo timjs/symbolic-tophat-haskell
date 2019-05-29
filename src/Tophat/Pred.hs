@@ -2,7 +2,7 @@ module Tophat.Pred
   ( module Tophat.Name
   , module Tophat.Type
   , Pred(..)
-  , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:)
+  , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:), pattern (:==:)
   , simplify
   , toSmt, satisfiable
   ) where
@@ -41,6 +41,9 @@ pattern Not x = Un O.Not x
 
 pattern (:/\:) x y = Bn O.Conj x y
 pattern (:\/:) x y = Bn O.Disj x y
+
+pattern (:==:) x y = Bn O.Eq x y
+
 
 instance Pretty (Pred t) where
   pretty = \case
