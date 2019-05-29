@@ -298,7 +298,7 @@ drive t0 = do
 -- | Collects all inputs and predicates created in the mean time.
 simulate ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
+  Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val t, List Input, Pred 'TyBool )
 simulate t is p = go (go end) t is p
   where
     go cont t0 is0 ps0 = do
@@ -307,7 +307,7 @@ simulate t is p = go (go end) t is p
       let ps1 = ps0 :/\: p1
       let is1 = i1 : is0
       if| not (satisfiable ps1) -> empty
-        | Just _ <- mv1         -> pure ( t1, reverse is1, simplify ps1 )
+        | Just v1 <- mv1        -> pure ( v1, reverse is1, simplify ps1 )
         | t0 /= t1              -> simulate t1 is1 ps1
         | otherwise             -> cont t1 is1 ps1
     end _ _ _ = empty
@@ -315,7 +315,7 @@ simulate t is p = go (go end) t is p
 
 initialise ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Expr ('TyTask t) -> m ( Val ('TyTask t), List Input, Pred 'TyBool )
+  Expr ('TyTask t) -> m ( Val t, List Input, Pred 'TyBool )
 initialise t0 = do
   ( t1, p1 ) <- normalise t0
   -- track (show $ pretty t1) do
