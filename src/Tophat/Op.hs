@@ -4,7 +4,7 @@ module Tophat.Op
   , toSmtUn, toSmtBn
   ) where
 
-import Data.SBV
+import Data.SBV.Dynamic
 import Tophat.Type
 
 
@@ -95,28 +95,28 @@ instance Eq (Bn a b c) where
 
 -- Conversion ------------------------------------------------------------------
 
-toSmtUn :: Un a b -> Symbolic (SBV (TypeOf a) -> SBV (TypeOf b))
+toSmtUn :: Un a b -> SVal -> SVal
 toSmtUn = \case
-    Not -> pure sNot
-    Neg -> pure negate
-    -- Len -> pure length
+    Not -> svNot
+    Neg -> svUNeg
+    -- Len -> length
 
 
-toSmtBn :: Bn a b c -> Symbolic (SBV (TypeOf a) -> SBV (TypeOf b) -> SBV (TypeOf c))
+toSmtBn :: Bn a b c -> SVal -> SVal -> SVal
 toSmtBn = \case
-    Conj -> pure (.&&)
-    Disj -> pure (.||)
+    Conj -> svAnd
+    Disj -> svOr
 
-    Lt -> pure (.<)
-    Le -> pure (.<=)
-    Eq -> pure (.==)
-    Nq -> pure (./=)
-    Ge -> pure (.>=)
-    Gt -> pure (.>)
+    Lt -> svLessThan
+    Le -> svLessEq
+    Eq -> svEqual
+    Nq -> svNotEqual
+    Ge -> svGreaterThan
+    Gt -> svGreaterEq
 
-    Add -> pure (+)
-    Sub -> pure (-)
-    Mul -> pure (*)
-    Div -> pure sDiv
+    Add -> svPlus
+    Sub -> svMinus
+    Mul -> svTimes
+    Div -> svDivide
 
-    -- Cat -> pure (++)
+    -- Cat -> (++)
