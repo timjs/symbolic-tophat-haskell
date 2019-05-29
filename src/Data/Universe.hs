@@ -1,7 +1,7 @@
 module Data.Universe
   ( Universe(..)
   , HasType(..), idx
-  , Env(..), lookup
+  -- , Env(..), lookup
   ) where
 
 
@@ -39,7 +39,7 @@ idx = \case
   There xs -> 1 + idx xs
 
 
--- Environments ----------------------------------------------------------------
+{- Environments ----------------------------------------------------------------
 
 data Env (cxt :: List u) where
   Nil :: Env '[]
@@ -49,3 +49,5 @@ data Env (cxt :: List u) where
 lookup :: HasType cxt t -> Env cxt -> TypeOf t
 lookup Here      (Cons x _)  = x
 lookup (There i) (Cons _ xs) = lookup i xs
+
+-}
