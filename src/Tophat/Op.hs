@@ -21,9 +21,8 @@ data Un (a :: PrimTy) (b :: PrimTy) where
   Not :: Un 'TyPrimBool 'TyPrimBool
   Neg :: Un 'TyPrimInt  'TyPrimInt
 
-  Len   :: ( Editable p ) => Un ('TyPrimList p) 'TyPrimInt
-  Empty :: ( Editable p ) => Un ('TyPrimList p) 'TyPrimBool
-  Uniq  :: ( Editable p ) => Un ('TyPrimList p) 'TyPrimBool
+  Len  :: ( Editable p ) => Un ('TyPrimList p) 'TyPrimInt
+  Uniq :: ( Editable p ) => Un ('TyPrimList p) 'TyPrimBool
 
 
 instance Pretty (Un a b) where
@@ -31,20 +30,16 @@ instance Pretty (Un a b) where
     Not -> "not"
     Neg -> "neg"
 
-    Len   -> "len"
-    Empty -> "empty"
-    Uniq  -> "uniq"
+    Len  -> "len"
+    Uniq -> "uniq"
 
 
 instance Eq (Un a b) where
   Not == Not = True
   Neg == Neg = True
 
-  Len   == Len   = True
-  Empty == Empty = True
-  Empty == _     = False
-  Uniq  == Uniq  = True
-  Uniq  == _     = False
+  Len  == Len  = True
+  Uniq == Uniq = True
 
 
 -- Binary --
@@ -131,9 +126,8 @@ toSmtUn = \case
     Not -> svNot
     Neg -> svUNeg
 
-    Len   -> svLen   (Proxy :: Proxy a)
-    Empty -> svEmpty (Proxy :: Proxy a)
-    Uniq  -> svUniq  (Proxy :: Proxy a)
+    Len  -> svLen   (Proxy :: Proxy a)
+    Uniq -> svUniq  (Proxy :: Proxy a)
 
 
 toSmtBn :: forall a b c. Bn a b c -> SVal -> SVal -> SVal
@@ -157,11 +151,7 @@ toSmtBn = \case
     Cat  -> svCat  (Proxy :: Proxy b)
 
 
--- | Note: I don't know why the Proxy argument lifts some ambiguity.
--- | Without it GHC complains...
-svEmpty :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal
-svEmpty _ xs = unSBV $ Smt.null (SBV xs :: SList (TypeOf p))
-
+-- | Note: The Proxy argument is there to lift the ambiguity of type variable `p`.
 svLen :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal
 svLen _ xs = unSBV $ Smt.length (SBV xs :: SList (TypeOf p))
 
