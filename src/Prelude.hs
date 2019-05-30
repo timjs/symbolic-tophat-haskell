@@ -11,10 +11,10 @@ module Prelude
   , (<-<), (>->)
   , Monoidal((<&>), skip, (<&), (&>)), applyDefault, pureDefault
   , Selective(branch, select, biselect), check, when
-  , lift1, lift2, lift3
+  , lift0, lift1, lift2, lift3
   , MonadZero
   , ok, throw, catch
-  , clear, evalWriterT
+  , evalWriterT
   , MonadTrace, trace
   , (~=), (~~), proxyOf, typeOf, someTypeOf, typeRep, TypeRep, someTypeRep, SomeTypeRep
   ) where
@@ -302,8 +302,8 @@ catch = catchError
 -- Writer --
 
 
-clear :: MonadWriter w m => m ()
-clear = pass $ lift0 ((), const neutral)
+-- clear :: MonadWriter w m => m ()
+-- clear = pass $ lift0 ((), const neutral)
 
 
 evalWriterT :: Monad m => WriterT w m a -> m a

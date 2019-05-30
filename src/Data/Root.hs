@@ -1,6 +1,6 @@
 module Data.Root
   ( Root(..)
-  , save
+  , save, clear
   ) where
 
 
@@ -36,6 +36,13 @@ save v = \case
   Bin w ls rs -> Bin (v <> w) ls rs
   Tip w x -> Tip (v <> w) x
   Nil w -> Nil (v <> w)
+
+
+clear :: Root v a -> Root () a
+clear = \case
+  Bin _ ls rs -> Bin () (clear ls) (clear rs)
+  Tip _ x -> Tip () x
+  Nil _ -> Nil ()
 
 
 instance ( Monoid v ) => Applicative (Root v) where
