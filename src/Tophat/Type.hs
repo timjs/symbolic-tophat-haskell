@@ -12,6 +12,8 @@ import Data.Universe
 
 -- Types -----------------------------------------------------------------------
 
+infixr :->
+
 -- | *Kind* to index the meta types of values and expressions.
 data Ty
   = Ty :-> Ty

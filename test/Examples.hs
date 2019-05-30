@@ -1,5 +1,5 @@
 module Examples where
-
+{-
 import Tophat.Expr
 
 
@@ -196,3 +196,4 @@ lock =
     door     = Change @'TyPrimInt (Var 1)  :>>! If (Bn Eq (Deref (Var 1)) (I 2)) done stop
     unlock n = Update U :>>! If (Bn Eq (Deref (Var 2)) (I n)) (inc (Var 1)) stop
     inc c    = Task $ View $ Assign c (Bn Add (Deref c) (I 1))
+-}

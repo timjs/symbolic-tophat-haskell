@@ -5,7 +5,7 @@ module Tophat.Expr
   , pattern U, pattern B, pattern I, pattern S
   , pattern Let, pattern (:*:)
   , Pretask(..)
-  , pattern View, pattern Watch, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>!), pattern (:>>?)
+  , pattern View, pattern Watch, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:??), pattern (:>>=), pattern (:>>?)
   , subst, subst', shift, shift'
   ) where
 
@@ -45,6 +45,8 @@ data Expr (t :: Ty) where
 
   Task :: Pretask ('TyTask a) -> Expr ('TyTask a)
 
+
+infixl 3 :*:
 
 pattern Let x b = App (Lam b) x
 pattern (:*:) a b = Pair a b
@@ -177,17 +179,17 @@ infixr 2 :||:, :??:
 -- | NOTE:
 -- | Fixity of bind is left associative in a normal setting because of the scoping of lambdas.
 -- | Because we can't use lambdas in our DSL, bind should be right associative.
-infixr 1 :>>=, :>>!, :>>?
+infixr 1 :>>=, :>>?
 
 
 pattern View x = Update x
 pattern Watch x = Change x
-pattern (:&&:) x y = And (Task x) (Task y)
-pattern (:||:) x y = Or (Task x) (Task y)
-pattern (:??:) x y = Xor (Task x) (Task y)
-pattern (:>>=) t c = Then (Task t) (Lam (Task c))
-pattern (:>>!) t c = Then (Task t) (Lam c)
-pattern (:>>?) t c = Next (Task t) (Lam c)
+pattern (:&&:) x y = And x y
+pattern (:||:) x y = Or x y
+pattern (:??:) x y = Xor x y
+pattern (:??)  x y = Xor x y
+pattern (:>>=) t c = Then t (Lam c)
+pattern (:>>?) t c = Next t (Lam c)
 
 
 instance Pretty (Pretask t) where
