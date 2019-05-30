@@ -7,7 +7,7 @@ module Tophat.Op
 import Data.SBV.Dynamic
 import Tophat.Type
 
-import Data.SBV (SymVal, SBool, SList, ite, sTrue, (.&&))
+import Data.SBV (SymVal, SBool, SInteger, SList, ite, sTrue, (.&&), smin, smax)
 import Data.SBV.Internals (SBV(..))
 
 import qualified Data.SBV.List as Smt
@@ -48,10 +48,11 @@ data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Conj :: Bn 'TyPrimBool 'TyPrimBool 'TyPrimBool
   Disj :: Bn 'TyPrimBool 'TyPrimBool 'TyPrimBool
 
+  Eq :: Bn a a 'TyPrimBool
+  Nq :: Bn a a 'TyPrimBool
+
   Lt :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
   Le :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
-  Eq :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
-  Nq :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
   Ge :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
   Gt :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
 
@@ -59,6 +60,9 @@ data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Sub :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
   Mul :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
   Div :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
+
+  Min :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
+  Max :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
 
   Elem :: ( Editable p ) => Bn ('TyPrimList p) ('TyPrimList p) 'TyPrimBool
   Cat  :: ( Editable p ) => Bn ('TyPrimList p) ('TyPrimList p) ('TyPrimList p)
@@ -81,7 +85,10 @@ instance Pretty (Bn a b c) where
     Mul -> "*"
     Div -> "/"
 
-    Elem -> "@"
+    Min -> "`min`"
+    Max -> "`max`"
+
+    Elem -> "`elem`"
     Cat  -> "++"
 
 
@@ -93,14 +100,15 @@ instance Eq (Bn a b c) where
     Disj == Disj = True
     Disj == _    = False
 
-    Lt   == Lt = True
-    Lt   == _  = False
-    Le   == Le = True
-    Le   == _  = False
     Eq   == Eq = True
     Eq   == _  = False
     Nq   == Nq = True
     Nq   == _  = False
+
+    Lt   == Lt = True
+    Lt   == _  = False
+    Le   == Le = True
+    Le   == _  = False
     Ge   == Ge = True
     Ge   == _  = False
     Gt   == Gt = True
@@ -115,7 +123,13 @@ instance Eq (Bn a b c) where
     Div  == Div = True
     Div  == _   = False
 
+    Min == Min = True
+    Min == _   = False
+    Max == Max = True
+    Max == _   = False
+
     Elem == Elem = True
+    Elem == _    = True
     Cat  == Cat  = True
 
 
@@ -135,10 +149,11 @@ toSmtBn = \case
     Conj -> svAnd
     Disj -> svOr
 
-    Lt -> svLessThan
-    Le -> svLessEq
     Eq -> svEqual
     Nq -> svNotEqual
+
+    Lt -> svLessThan
+    Le -> svLessEq
     Ge -> svGreaterThan
     Gt -> svGreaterEq
 
@@ -147,9 +162,18 @@ toSmtBn = \case
     Mul -> svTimes
     Div -> svDivide
 
+    Min -> svMin
+    Max -> svMax
+
     Elem -> svElem (Proxy :: Proxy b)
     Cat  -> svCat  (Proxy :: Proxy b)
 
+
+svMax :: SVal -> SVal -> SVal
+svMax x y = unSBV $ smax (SBV x :: SInteger) (SBV y :: SInteger)
+
+svMin :: SVal -> SVal -> SVal
+svMin x y = unSBV $ smin (SBV x :: SInteger) (SBV y :: SInteger)
 
 -- | Note: The Proxy argument is there to lift the ambiguity of type variable `p`.
 svLen :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal

@@ -20,17 +20,17 @@ ids :: Stream Nat
 ids = Stream.iterate succ 1
 
 
-type Simulation t = StateT Heap (RootT Text (SupplyT Nat Identity)) ( Val t, List Input, Pred 'TyPrimBool )
+type Simulation t = StateT Heap (RootT Text (SupplyT Nat Identity)) ( Val ('TyPrim t), List Input, Pred 'TyPrimBool )
 
-runSimulation :: Simulation t -> ( Root Text ( ( Val t, List Input, Pred 'TyPrimBool ), Heap ), Stream Nat )
+runSimulation :: Simulation t -> ( Root Text ( ( Val ('TyPrim t), List Input, Pred 'TyPrimBool ), Heap ), Stream Nat )
 runSimulation r = runIdentity (runSupplyT (runRootT (runStateT r empty)) ids)
 
-execSimulation :: Simulation t -> Root Text ( Val t, List Input, Pred 'TyPrimBool, Heap )
+execSimulation :: Simulation t -> Root Text ( Val ('TyPrim t), List Input, Pred 'TyPrimBool, Heap )
 execSimulation = map go << fst << runSimulation
   where
     go ( ( v, is, p ), h ) = ( v, is, p, h )
 
-evalSimulation :: Simulation TyInt -> Root Text ( Pred 'TyPrimBool )
+evalSimulation :: Typeable t => Editable t => Simulation t -> Root Text ( Pred 'TyPrimBool )
 evalSimulation = map go << execSimulation
   where
     go ( v, _, p, _ ) = (Sym 0 :==: asPred v) :/\: p
