@@ -73,7 +73,7 @@ failing (V.Task t) = case t of
 -- |and the resulting predicate.
 eval ::
   MonadState Heap m => MonadZero m =>
-  Expr t -> m ( Val t, Pred 'TyBool )
+  Expr t -> m ( Val t, Pred 'TyPrimBool )
 eval = \case
   E.App e1 e2 -> do
     -- | Apparently GHC can't do GADT pattern matching inside do-notation,
@@ -99,14 +99,13 @@ eval = \case
     ( v1, p1 ) <- eval e1
     ( v2, p2 ) <- eval e2
     pure ( V.Pair v1 v2, p1 :/\: p2 )
-  E.Fst e -> do --FIXME: missing
-    ( e', p ) <- eval e
-    let V.Pair v _ = e'
-    pure ( v, p )
-  E.Snd e -> do --FIXME: missing
-    ( e', p ) <- eval e
-    let  V.Pair _ v = e'
-    pure ( v, p )
+  E.Fst e -> do
+    -- | XXX: could this go wrong by using MonadFail which returns `empty`?
+    ( V.Pair v1 _, p ) <- eval e
+    pure ( v1, p )
+  E.Snd e -> do
+    ( V.Pair _ v2, p ) <- eval e
+    pure ( v2, p )
 
   E.Nil -> do
     pure ( V.Nil, Yes )
@@ -115,15 +114,11 @@ eval = \case
     ( v2, p2 ) <- eval e2
     pure ( V.Cons v1 v2, p1 :/\: p2 )
   E.Head e -> do
-    ( e', p ) <- eval e
-    case e' of
-      V.Cons v1 _ -> pure ( v1, p )
-      _ -> error $ "Tophat.Expr.Sim.eval: trying to get head of " <> show (pretty e')
+    ( V.Cons v1 _, p ) <- eval e
+    pure ( v1, p )
   E.Tail e -> do
-    ( e', p ) <- eval e
-    case e' of
-      V.Cons _ v2 -> pure ( v2, p )
-      _ -> error $ "Tophat.Expr.Sim.eval: trying to get tail of " <> show (pretty e')
+    ( V.Cons _ v2, p ) <- eval e
+    pure ( v2, p )
 
   E.Ref e1 -> do
     ( v1, p1 ) <- eval e1
@@ -158,7 +153,7 @@ eval = \case
 
 eval' ::
   MonadState Heap m => MonadZero m =>
-  Pretask t -> m ( Task t, Pred 'TyBool )
+  Pretask t -> m ( Task t, Pred 'TyPrimBool )
 eval' = \case
   E.Enter ->
     pure ( V.Enter, Yes )
@@ -191,7 +186,7 @@ eval' = \case
 
 stride ::
   MonadState Heap m => MonadZero m =>
-  Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+  Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyPrimBool )
 stride (V.Task t) = case t of
   -- Step:
   V.Then t1 e2 -> do
@@ -235,7 +230,7 @@ stride (V.Task t) = case t of
 
 normalise ::
   MonadState Heap m => MonadZero m =>
-  Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyBool )
+  Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyPrimBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
   s1 <- get
@@ -250,7 +245,7 @@ normalise e0 = do
 
 handle ::
   MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
+  Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyPrimBool )
 handle (V.Task t) = case t of
   V.Enter -> do
     s <- fresh
@@ -285,7 +280,7 @@ handle (V.Task t) = case t of
 
 drive ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyBool )
+  Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyPrimBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
   track (show (pretty i1)) do
@@ -298,7 +293,7 @@ drive t0 = do
 -- | Collects all inputs and predicates created in the mean time.
 simulate ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Val ('TyTask t) -> List Input -> Pred 'TyBool -> m ( Val t, List Input, Pred 'TyBool )
+  Val ('TyTask t) -> List Input -> Pred 'TyPrimBool -> m ( Val t, List Input, Pred 'TyPrimBool )
 simulate t is p = go (go end) t is p
   where
     go cont t0 is0 ps0 = do
@@ -315,7 +310,7 @@ simulate t is p = go (go end) t is p
 
 initialise ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Expr ('TyTask t) -> m ( Val t, List Input, Pred 'TyBool )
+  Expr ('TyTask t) -> m ( Val t, List Input, Pred 'TyPrimBool )
 initialise t0 = do
   ( t1, p1 ) <- normalise t0
   -- track (show $ pretty t1) do

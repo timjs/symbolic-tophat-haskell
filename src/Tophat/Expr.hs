@@ -27,36 +27,36 @@ data Expr (t :: Ty) where
 
   Un :: ( Typeable p, Typeable q ) => Un p q -> Expr ('TyPrim p) -> Expr ('TyPrim q)
   Bn :: ( Typeable p, Typeable q, Typeable r ) => Bn p q r -> Expr ('TyPrim p) -> Expr ('TyPrim q) -> Expr ('TyPrim r)
-  If :: Expr ('TyPrim 'TyBool) -> Expr a -> Expr a -> Expr a
+  If :: Expr TyBool -> Expr a -> Expr a -> Expr a
 
-  Pair :: Expr a -> Expr b -> Expr (a ':>< b)
-  Fst  :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr a
-  Snd  :: ( Typeable a, Typeable b ) => Expr (a ':>< b) -> Expr b
+  Pair :: ( Editable p, Editable q ) => Expr ('TyPrim p) -> Expr ('TyPrim q) -> Expr (TyPair p q)
+  Fst  :: ( Typeable p, Typeable q ) => Expr (TyPair p q) -> Expr ('TyPrim p)
+  Snd  :: ( Typeable p, Typeable q ) => Expr (TyPair p q) -> Expr ('TyPrim q)
 
-  Nil  :: ( Editable p, Typeable p ) => Expr ('TyPrim ('TyList p))
-  Cons :: ( Editable p ) => Expr ('TyPrim p) -> Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim ('TyList p))
-  Head :: Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim p)
-  Tail :: Expr ('TyPrim ('TyList p)) -> Expr ('TyPrim ('TyList p))
+  Nil  :: ( Editable p, Typeable p ) => Expr (TyList p)
+  Cons :: ( Editable p ) => Expr ('TyPrim p) -> Expr (TyList p) -> Expr (TyList p)
+  Head :: Expr (TyList p) -> Expr ('TyPrim p)
+  Tail :: Expr (TyList p) -> Expr (TyList p)
 
   Ref    :: ( Typeable p ) => Expr ('TyPrim p) -> Expr ('TyRef p)
   Deref  :: ( Typeable p ) => Expr ('TyRef p) -> Expr ('TyPrim p)
-  Assign :: ( Typeable p ) => Expr ('TyRef p) -> Expr ('TyPrim p) -> Expr ('TyPrim 'TyUnit)
+  Assign :: ( Typeable p ) => Expr ('TyRef p) -> Expr ('TyPrim p) -> Expr TyUnit
 
   Task :: Pretask ('TyTask a) -> Expr ('TyTask a)
 
 
 pattern Let x b = App (Lam b) x
 
-pattern U :: Expr TyPrimUnit
+pattern U :: Expr TyUnit
 pattern U = Con ()
 
-pattern B :: Bool -> Expr TyPrimBool
+pattern B :: Bool -> Expr TyBool
 pattern B x = Con x
 
-pattern I :: Integer -> Expr TyPrimInt
+pattern I :: Integer -> Expr TyInt
 pattern I x = Con x
 
-pattern S :: String -> Expr TyPrimString
+pattern S :: String -> Expr TyString
 pattern S x = Con x
 
 
@@ -161,7 +161,7 @@ data Pretask (t :: Ty) where
   Update :: ( Editable p ) => Expr ('TyPrim p) -> Pretask ('TyTask ('TyPrim p))
   Change :: ( Typeable p, Editable p ) => Expr ('TyRef p) -> Pretask ('TyTask ('TyPrim p))
 
-  And  :: Expr ('TyTask a) -> Expr ('TyTask b) -> Pretask ('TyTask (a ':>< b))
+  And  :: ( Editable p, Editable q ) => Expr ('TyTask ('TyPrim p)) -> Expr ('TyTask ('TyPrim q)) -> Pretask ('TyTask (TyPair p q))
   Or   :: Expr ('TyTask a) -> Expr ('TyTask a) -> Pretask ('TyTask a)
   Xor  :: Expr ('TyTask a) -> Expr ('TyTask a) -> Pretask ('TyTask a)
   Fail :: Pretask ('TyTask a)

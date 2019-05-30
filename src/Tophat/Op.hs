@@ -18,12 +18,12 @@ import qualified Data.SBV.List as Smt
 -- Unary -
 
 data Un (a :: PrimTy) (b :: PrimTy) where
-  Not :: Un 'TyBool 'TyBool
-  Neg :: Un 'TyInt  'TyInt
+  Not :: Un 'TyPrimBool 'TyPrimBool
+  Neg :: Un 'TyPrimInt  'TyPrimInt
 
-  Len   :: ( Editable p ) => Un ('TyList p) 'TyInt
-  Empty :: ( Editable p ) => Un ('TyList p) 'TyBool
-  Uniq  :: ( Editable p ) => Un ('TyList p) 'TyBool
+  Len   :: ( Editable p ) => Un ('TyPrimList p) 'TyPrimInt
+  Empty :: ( Editable p ) => Un ('TyPrimList p) 'TyPrimBool
+  Uniq  :: ( Editable p ) => Un ('TyPrimList p) 'TyPrimBool
 
 
 instance Pretty (Un a b) where
@@ -50,23 +50,23 @@ instance Eq (Un a b) where
 -- Binary --
 
 data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
-  Conj :: Bn 'TyBool 'TyBool 'TyBool
-  Disj :: Bn 'TyBool 'TyBool 'TyBool
+  Conj :: Bn 'TyPrimBool 'TyPrimBool 'TyPrimBool
+  Disj :: Bn 'TyPrimBool 'TyPrimBool 'TyPrimBool
 
-  Lt :: Bn 'TyInt 'TyInt 'TyBool
-  Le :: Bn 'TyInt 'TyInt 'TyBool
-  Eq :: Bn 'TyInt 'TyInt 'TyBool
-  Nq :: Bn 'TyInt 'TyInt 'TyBool
-  Ge :: Bn 'TyInt 'TyInt 'TyBool
-  Gt :: Bn 'TyInt 'TyInt 'TyBool
+  Lt :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
+  Le :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
+  Eq :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
+  Nq :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
+  Ge :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
+  Gt :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimBool
 
-  Add :: Bn 'TyInt 'TyInt 'TyInt
-  Sub :: Bn 'TyInt 'TyInt 'TyInt
-  Mul :: Bn 'TyInt 'TyInt 'TyInt
-  Div :: Bn 'TyInt 'TyInt 'TyInt
+  Add :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
+  Sub :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
+  Mul :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
+  Div :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
 
-  Elem :: ( Editable p ) => Bn ('TyList p) ('TyList p) 'TyBool
-  Cat  :: ( Editable p ) => Bn ('TyList p) ('TyList p) ('TyList p)
+  Elem :: ( Editable p ) => Bn ('TyPrimList p) ('TyPrimList p) 'TyPrimBool
+  Cat  :: ( Editable p ) => Bn ('TyPrimList p) ('TyPrimList p) ('TyPrimList p)
 
 
 instance Pretty (Bn a b c) where
@@ -159,13 +159,13 @@ toSmtBn = \case
 
 -- | Note: I don't know why the Proxy argument lifts some ambiguity.
 -- | Without it GHC complains...
-svEmpty :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
+svEmpty :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal
 svEmpty _ xs = unSBV $ Smt.null (SBV xs :: SList (TypeOf p))
 
-svLen :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
+svLen :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal
 svLen _ xs = unSBV $ Smt.length (SBV xs :: SList (TypeOf p))
 
-svUniq :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal
+svUniq :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal
 svUniq _ xs = unSBV $ uniq (SBV xs :: SList (TypeOf p))
   where
     uniq :: Eq a => SymVal a => SList a -> SBool
@@ -173,8 +173,8 @@ svUniq _ xs = unSBV $ uniq (SBV xs :: SList (TypeOf p))
       (sTrue)
       (let ( hd, tl ) = Smt.uncons l in hd `Smt.notElem` tl .&& uniq tl)
 
-svElem :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal -> SVal
+svElem :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal -> SVal
 svElem _ x xs = unSBV $ (SBV x :: SBV (TypeOf p)) `Smt.elem` (SBV xs :: SList (TypeOf p))
 
-svCat :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal -> SVal
+svCat :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal -> SVal
 svCat _ xs ys = unSBV $ Smt.concat (SBV xs :: SList (TypeOf p)) (SBV ys :: SList (TypeOf p))

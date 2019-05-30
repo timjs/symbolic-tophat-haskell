@@ -16,6 +16,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import qualified Data.SBV.Dynamic as Smt
 import qualified Data.SBV.List as Smt
+import qualified Data.SBV.Tuple as Smt
 import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import qualified Tophat.Op as O
@@ -27,8 +28,10 @@ data Pred (p :: PrimTy) where
   Con :: ( Editable p ) => TypeOf p -> Pred p
   Sym :: ( Editable p ) => Name ('TyPrim p) -> Pred p
 
-  Nil  :: ( Editable p, Typeable p ) => Pred ('TyList p)
-  Cons :: ( Editable p ) => Pred p -> Pred ('TyList p) -> Pred ('TyList p)
+  Pair :: ( Editable p, Editable q ) => Pred p -> Pred q -> Pred ('TyPrimPair p q)
+
+  Nil  :: ( Editable p, Typeable p ) => Pred ('TyPrimList p)
+  Cons :: ( Editable p ) => Pred p -> Pred ('TyPrimList p) -> Pred ('TyPrimList p)
 
   Un :: ( Typeable p, Typeable q ) => O.Un p q -> Pred p -> Pred q
   Bn :: ( Typeable p, Typeable q, Typeable r ) => O.Bn p q r -> Pred p -> Pred q -> Pred r
@@ -49,6 +52,8 @@ instance Pretty (Pred t) where
   pretty = \case
     Con x -> pretty x
     Sym i -> cat [ "s", pretty i ]
+
+    Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
 
     Nil -> cat [ "[]_", pretty (typeRep @t) ]
     Cons a as -> sep [ pretty a, "::", pretty as ]
@@ -80,6 +85,8 @@ toSmt ss = \case
     fromMaybe (error $ "Tophat.Pred.toSmt: could not find symbol " <> show n <> " in table " <> show ss) $
     Map.lookup n ss
 
+  Pair a b -> svPair (Proxy :: Proxy t) (toSmt ss a) (toSmt ss b)
+
   Nil -> svNil (Proxy :: Proxy t)
   Cons a as -> svCons (Proxy :: Proxy t) (toSmt ss a) (toSmt ss as)
 
@@ -91,6 +98,8 @@ gatherFree :: forall t. Pred t -> Set ( Nat, Kind )
 gatherFree = \case
   Con _ -> neutral
   Sym (Name n) -> Set.singleton ( n, kindOf (Proxy @(TypeOf t)) )
+
+  Pair a b -> gatherFree a <> gatherFree b
 
   Nil -> neutral
   Cons a as -> gatherFree a <> gatherFree as
@@ -112,18 +121,21 @@ makeMap p = do
   pure $ fromList vars
 
 
-makePredicate :: Pred 'TyBool -> Symbolic (SBV Bool)
+makePredicate :: Pred 'TyPrimBool -> Symbolic (SBV Bool)
 makePredicate p = do
   ss <- makeMap p
   pure $ SBV $ toSmt ss p
 
 
-satisfiable :: Pred 'TyBool -> Bool
+satisfiable :: Pred 'TyPrimBool -> Bool
 satisfiable p = unsafePerformIO $ isSatisfiable $ makePredicate p
 
 
-svNil :: forall p. Editable p => Proxy ('TyList p) -> SVal
+svPair :: forall p q. Editable p => Editable q => Proxy ('TyPrimPair p q) -> SVal -> SVal -> SVal
+svPair _ x y = unSBV $ Smt.tuple ( SBV x :: SBV (TypeOf p), SBV y :: SBV (TypeOf q) )
+
+svNil :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal
 svNil _ = unSBV (Smt.nil :: SList (TypeOf p))
 
-svCons :: forall p. Editable p => Proxy ('TyList p) -> SVal -> SVal -> SVal
+svCons :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal -> SVal
 svCons _ x xs = unSBV $ (Smt..:) (SBV x :: SBV (TypeOf p)) (SBV xs :: SList (TypeOf p))

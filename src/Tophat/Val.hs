@@ -35,10 +35,10 @@ data Val (t :: Ty) where
   Un :: ( Typeable p, Typeable q ) => Un p q -> Val ('TyPrim p) -> Val ('TyPrim q)
   Bn :: ( Typeable p, Typeable q, Typeable r ) => Bn p q r -> Val ('TyPrim p) -> Val ('TyPrim q) -> Val ('TyPrim r)
 
-  Pair :: Val a -> Val b -> Val (a ':>< b)
+  Pair :: ( Editable p, Editable q ) => Val ('TyPrim p) -> Val ('TyPrim q) -> Val (TyPair p q)
 
-  Nil  :: ( Editable p, Typeable p ) => Val ('TyPrim ('TyList p))
-  Cons :: ( Editable p ) => Val ('TyPrim p) -> Val ('TyPrim ('TyList p)) -> Val ('TyPrim ('TyList p))
+  Nil  :: ( Editable p, Typeable p ) => Val (TyList p)
+  Cons :: ( Editable p ) => Val ('TyPrim p) -> Val (TyList p) -> Val (TyList p)
 
   Task :: Task ('TyTask a) -> Val ('TyTask a)
 
@@ -83,6 +83,7 @@ instance Eq (Val t) where
   Bn _ _ _              == _                     = False
 
   Pair a1 b1            == Pair a2 b2            = a1 == a2 && b1 == b2
+  Pair _ _              == _                     = False
 
   Nil                   == Nil                   = True
   Nil                   == _                     = False
@@ -99,7 +100,7 @@ data Task (t :: Ty) where
   Update :: ( Editable p ) => Val ('TyPrim p) -> Task ('TyTask ('TyPrim p))
   Change :: ( Typeable p, Editable p ) => Val ('TyRef p) -> Task ('TyTask ('TyPrim p))
 
-  And  :: Val ('TyTask a) -> Val ('TyTask b) -> Task ('TyTask (a ':>< b))
+  And  :: ( Editable p, Editable q ) => Val ('TyTask ('TyPrim p)) -> Val ('TyTask ('TyPrim q)) -> Task ('TyTask (TyPair p q))
   Or   :: Val ('TyTask a) -> Val ('TyTask a) -> Task ('TyTask a)
   Xor  :: Expr ('TyTask a) -> Expr ('TyTask a) -> Task ('TyTask a)
   Fail :: Task ('TyTask a)
@@ -184,6 +185,8 @@ asPred = \case
 
   Un o v1 -> P.Un o (asPred v1)
   Bn o v1 v2 -> P.Bn o (asPred v1) (asPred v2)
+
+  Pair v1 v2 -> P.Pair (asPred v1) (asPred v2)
 
   Nil -> P.Nil
   Cons v vs -> P.Cons (asPred v) (asPred vs)
