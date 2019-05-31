@@ -11,7 +11,7 @@ type Boolean = 'TyPrimBool
 type AddressDate = TyPair Address Date
 type AmountDateBoolean = TyPair ('TyPrimPair Amount Date) Boolean
 
-test :: Expr ('TyTask ('TyPrim ('TyPrimPair ('TyPrimPair ('TyPrimPair ('TyPrimPair ('TyPrimPair 'TyPrimInt Boolean) Boolean) Amount) Date) Date)))
+test :: Pretask ('TyTask ('TyPrim ('TyPrimPair ('TyPrimPair ('TyPrimPair ('TyPrimPair ('TyPrimPair 'TyPrimInt Boolean) Boolean) Amount) Date) Date)))
 test = let
     provideCitizenInfo :: Pretask ('TyTask ('TyPrim ('TyPrimPair Address Date)))
     provideCitizenInfo = Enter @('TyPrimPair Address Date)
@@ -30,7 +30,7 @@ test = let
       Task (Update (B False) :??: Wrap (If (Bn Conj (Bn Lt (Bn Sub (Var 1) (Var 2)) (I 365)) (Var 0))
         (Task $ Update (B True))
         (Task $ Fail)))
-  in Task $
+  in
   provideCitizenInfo :>>=  -- 0: <address, today>
   provideDocuments :&&: companyConfirm :>>= -- 0: <<invoiceAmount, invoiceDate>, confirmed>
   Wrap (App (App (App officerApprove

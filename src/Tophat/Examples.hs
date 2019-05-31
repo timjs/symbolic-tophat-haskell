@@ -5,6 +5,29 @@ import Tophat.Expr
 
 -- Examples --------------------------------------------------------------------
 
+enterInt :: Pretask ('TyTask ('TyPrim 'TyPrimInt))
+enterInt =
+  Enter @'TyPrimInt
+
+
+pick2 :: Pretask ('TyTask ('TyPrim 'TyPrimInt))
+pick2 =
+  View (I 0) :??: View (I 1)
+
+
+pick2_step :: Pretask ('TyTask ('TyPrim 'TyPrimBool))
+pick2_step =
+  pick2 :>>=
+  View (Bn Gt (Var 0) (I 0))
+
+
+pick2_par :: Pretask ('TyTask ('TyPrim 'TyPrimBool))
+pick2_par =
+  enterInt :&&: pick2 :>>=
+  let xy = Var @(TyPair 'TyPrimInt 'TyPrimInt) 0 in
+  View (Bn Gt (Fst xy) (Snd xy))
+
+
 -- Functions --
 
 
@@ -64,17 +87,6 @@ add_seq' = Task $
   View (Bn Add (Var 0) (Var 0))
 
 
-cons_list :: Expr ('TyTask (TyList 'TyPrimInt))
-cons_list =
-  Let (Cons (I 1) (Cons (I 2) Nil)) $ Task $
-  Enter @'TyPrimInt :>>=
-  View (Cons (Var 0) (Var 1))
-{-
-⊠ ▶ λ.□(x0 :: 1 :: 2 :: [])
-s0 => ( ( □(s0 :: 1 :: 2 :: []) , [s0] , True ) , <> )
--}
-
-
 add_par :: Expr ('TyTask (TyPair ('TyPrimPair 'TyPrimInt 'TyPrimInt) 'TyPrimInt))
 add_par = Task $
   Enter @'TyPrimInt :&&: Enter @'TyPrimInt :>>=
@@ -82,6 +94,14 @@ add_par = Task $
     x = Fst (Var @TyIntInt 0)
     y = Snd (Var @TyIntInt 0)
   in Bn Add x y :*: x :*: y)
+
+
+
+cons_list :: Expr ('TyTask (TyList 'TyPrimInt))
+cons_list =
+  Let (Cons (I 1) (Cons (I 2) Nil)) $ Task $
+  Enter @'TyPrimInt :>>=
+  View (Cons (Var 0) (Var 1))
 
 
 par_step :: Expr ('TyTask TyString)

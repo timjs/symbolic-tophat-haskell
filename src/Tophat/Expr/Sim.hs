@@ -292,7 +292,7 @@ drive t0 = do
   ( t1, i1, p1 ) <- handle t0
   track (show (pretty i1) <> " => ") do
     ( t2, p2 ) <- normalise (asExpr t1)
-    track (show (pretty t2) <> "; " <> show (pretty $ simplify $ p1 :/\: p2)) do
+    track (show (pretty t2) <> " |= " <> show (pretty $ simplify $ p1 :/\: p2)) do
       pure ( t2, i1, p1 :/\: p2 )
 
 
@@ -317,8 +317,8 @@ simulate t is p = go (go end) t is p
 
 initialise ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Expr ('TyTask t) -> m ( Val t, List Input, Pred 'TyPrimBool )
-initialise t0 = do
-  ( t1, p1 ) <- normalise t0
+  Pretask ('TyTask t) -> m ( Val t, List Input, Pred 'TyPrimBool )
+initialise e0 = do
+  ( t1, p1 ) <- normalise (E.Task e0)
   track (show $ pretty t1 <> "\n\n") do
     simulate t1 empty p1
