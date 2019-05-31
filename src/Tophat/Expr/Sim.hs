@@ -271,8 +271,8 @@ handle (V.Task t) = case t of
     [ ( V.Task $ V.Or t1' t2, ToFirst  i1, p1 ) | ( t1', i1, p1 ) <- handle t1 ] <|>
     [ ( V.Task $ V.Or t1 t2', ToSecond i2, p2 ) | ( t2', i2, p2 ) <- handle t2 ]
   V.Xor e1 e2 ->
-    [ ( t1, Change s, p1 :/\: P.Sym s )         | ( t1, p1 ) <- normalise e1, s <- fresh, not (failing t1) ] <|>
-    [ ( t2, Change s, p2 :/\: P.Not (P.Sym s) ) | ( t2, p2 ) <- normalise e2, s <- fresh, not (failing t2) ]
+    [ ( t1, GoLeft, p1 )  | ( t1, p1 ) <- normalise e1, not (failing t1) ] <|>
+    [ ( t2, GoRight, p2 ) | ( t2, p2 ) <- normalise e2, not (failing t2) ]
   V.Fail -> empty
     -- NOTE: Alternative: users can input anything, but nothing will ever come out of `fail`
     -- s <- fresh
