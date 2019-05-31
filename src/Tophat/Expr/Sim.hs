@@ -72,7 +72,7 @@ failing (V.Task t) = case t of
 -- |Note that the context of symbolic values `sxt` is the same for the expression
 -- |and the resulting predicate.
 eval ::
-  MonadState Heap m => MonadZero m =>
+  MonadState Heap m => Alternative m =>
   Expr t -> m ( Val t, Pred 'TyPrimBool )
 eval = \case
   E.App e1 e2 -> do
@@ -100,12 +100,15 @@ eval = \case
     ( v2, p2 ) <- eval e2
     pure ( V.Pair v1 v2, p1 :/\: p2 )
   E.Fst e -> do
-    -- | XXX: could this go wrong by using MonadFail which returns `empty`?
-    ( V.Pair v1 _, p ) <- eval e
-    pure ( v1, p )
+    ( e', p ) <- eval e
+    case e' of
+      V.Pair v1 _ -> pure ( v1, p )
+      _ -> error $ "Tophat.Expr.Sim.eval-Fst: " <> show (pretty e) <> " did not evaluate to a pair but to: " <> show (pretty e')
   E.Snd e -> do
-    ( V.Pair _ v2, p ) <- eval e
-    pure ( v2, p )
+    ( e', p ) <- eval e
+    case e' of
+      V.Pair _ v2 -> pure ( v2, p )
+      _ -> error $ "Tophat.Expr.Sim.eval-Snd: " <> show (pretty e) <> " did not evaluate to a pair but to: " <> show (pretty e')
 
   E.Nil -> do
     pure ( V.Nil, Yes )
@@ -114,11 +117,15 @@ eval = \case
     ( v2, p2 ) <- eval e2
     pure ( V.Cons v1 v2, p1 :/\: p2 )
   E.Head e -> do
-    ( V.Cons v1 _, p ) <- eval e
-    pure ( v1, p )
+    ( e', p ) <- eval e
+    case e' of
+      V.Cons v1 _ -> pure ( v1, p )
+      _ -> error $ "Tophat.Expr.Sim.eval-Head: " <> show (pretty e) <> " did not evaluate to a list but to: " <> show (pretty e')
   E.Tail e -> do
-    ( V.Cons _ v2, p ) <- eval e
-    pure ( v2, p )
+    ( e', p ) <- eval e
+    case e' of
+      V.Cons _ v2 -> pure ( v2, p )
+      _ -> error $ "Tophat.Expr.Sim.eval-Tail: " <> show (pretty e) <> " did not evaluate to a list but to: " <> show (pretty e')
 
   E.Ref e1 -> do
     ( v1, p1 ) <- eval e1
@@ -150,11 +157,11 @@ eval = \case
     pure ( V.Task t1, p1 )
 
   E.Var i ->
-    error $ "Free variable in expression: " <> show (pretty i)
+    error $ "Tophat.Expr.Sim.eval-Var: Found free variable in expression: " <> show (pretty i)
 
 
 eval' ::
-  MonadState Heap m => MonadZero m =>
+  MonadState Heap m => Alternative m =>
   Pretask t -> m ( Task t, Pred 'TyPrimBool )
 eval' = \case
   E.Enter ->
@@ -188,11 +195,11 @@ eval' = \case
     pure ( V.Next t1 e2, p1 )
 
   E.Wrap _ ->
-    error "Tophat.Expr.Sim.eval': Wrap should be evaluated"
+    error "Tophat.Expr.Sim.eval'-Wrap: Wrap should have been evaluated"
 
 
 stride ::
-  MonadState Heap m => MonadZero m =>
+  MonadState Heap m => Alternative m =>
   Val ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyPrimBool )
 stride (V.Task t) = case t of
   -- Step:
@@ -236,7 +243,7 @@ stride (V.Task t) = case t of
 
 
 normalise ::
-  MonadState Heap m => MonadZero m =>
+  MonadState Heap m => Alternative m =>
   Expr ('TyTask t) -> m ( Val ('TyTask t), Pred 'TyPrimBool )
 normalise e0 = do
   ( t0, p0 ) <- eval e0
@@ -290,7 +297,7 @@ drive ::
   Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyPrimBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
-  track (show (pretty i1) <> " => ") do
+  track (show (pretty i1) <> " -> ") do
     ( t2, p2 ) <- normalise (asExpr t1)
     track (show (pretty t2) <> " |= " <> show (pretty $ simplify $ p1 :/\: p2)) do
       pure ( t2, i1, p1 :/\: p2 )
