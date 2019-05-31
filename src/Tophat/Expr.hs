@@ -34,7 +34,7 @@ data Expr (t :: Ty) where
   Fst  :: ( Typeable p, Typeable q ) => Expr (TyPair p q) -> Expr ('TyPrim p)
   Snd  :: ( Typeable p, Typeable q ) => Expr (TyPair p q) -> Expr ('TyPrim q)
 
-  Nil  :: ( Editable p, Typeable p ) => Expr (TyList p)
+  Nil  :: ( Editable p ) => Expr (TyList p)
   Cons :: ( Editable p ) => Expr ('TyPrim p) -> Expr (TyList p) -> Expr (TyList p)
   Head :: Expr (TyList p) -> Expr ('TyPrim p)
   Tail :: Expr (TyList p) -> Expr (TyList p)

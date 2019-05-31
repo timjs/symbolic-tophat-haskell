@@ -30,7 +30,7 @@ execSimulation = map go << fst << runSimulation
   where
     go ( ( v, is, p ), h ) = ( v, is, p, h )
 
-evalSimulation :: Typeable t => Editable t => Simulation t -> Root Text ( Pred 'TyPrimBool )
+evalSimulation :: Editable t => Simulation t -> Root Text ( Pred 'TyPrimBool )
 evalSimulation = map go << execSimulation
   where
     go ( v, _, p, _ ) = (Sym 0 :==: asPred v) :/\: p

@@ -37,7 +37,7 @@ data Val (t :: Ty) where
 
   Pair :: ( Editable p, Editable q ) => Val ('TyPrim p) -> Val ('TyPrim q) -> Val (TyPair p q)
 
-  Nil  :: ( Editable p, Typeable p ) => Val (TyList p)
+  Nil  :: ( Editable p ) => Val (TyList p)
   Cons :: ( Editable p ) => Val ('TyPrim p) -> Val (TyList p) -> Val (TyList p)
 
   Task :: Task ('TyTask a) -> Val ('TyTask a)

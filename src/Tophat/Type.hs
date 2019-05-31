@@ -69,7 +69,7 @@ type TyStringList = TyList 'TyPrimString
 
 -- Editable types --------------------------------------------------------------
 
-class ( Typeable (TypeOf a), Pretty (TypeOf a), Eq (TypeOf a), SymVal (TypeOf a) ) => Editable a
+class ( Typeable a, Typeable (TypeOf a), Pretty (TypeOf a), Eq (TypeOf a), SymVal (TypeOf a) ) => Editable a
 
 instance Editable 'TyPrimUnit
 instance Editable 'TyPrimBool

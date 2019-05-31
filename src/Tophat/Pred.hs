@@ -30,7 +30,7 @@ data Pred (p :: PrimTy) where
 
   Pair :: ( Editable p, Editable q ) => Pred p -> Pred q -> Pred ('TyPrimPair p q)
 
-  Nil  :: ( Editable p, Typeable p ) => Pred ('TyPrimList p)
+  Nil  :: ( Editable p ) => Pred ('TyPrimList p)
   Cons :: ( Editable p ) => Pred p -> Pred ('TyPrimList p) -> Pred ('TyPrimList p)
 
   Un :: ( Typeable p, Typeable q ) => O.Un p q -> Pred p -> Pred q
