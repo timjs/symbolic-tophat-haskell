@@ -49,15 +49,19 @@ value (V.Task t) = case t of
   V.Next _ _               -> pure $ Nothing
 
 
-failing :: Val ('TyTask t) -> Bool
+failing ::
+  MonadState Heap m => Alternative m =>
+  Val ('TyTask t) -> m Bool
 failing (V.Task t) = case t of
-  V.Enter     -> False
-  V.Update _  -> False
-  V.Change _  -> False
-  V.And t1 t2 -> failing t1 && failing t2
-  V.Or  t1 t2 -> failing t1 && failing t2
-  V.Xor _ _   -> True --FIXME
-  V.Fail      -> True
+  V.Enter     -> pure False
+  V.Update _  -> pure False
+  V.Change _  -> pure False
+  V.And t1 t2 -> pure (&&) <*> failing t1 <*> failing t2
+  V.Or  t1 t2 -> pure (&&) <*> failing t1 <*> failing t2
+  V.Xor e1 e2 -> pure (&&) <*>
+    join [ failing t1 | ( t1, _ ) <- normalise e1 ] <*>
+    join [ failing t2 | ( t2, _ ) <- normalise e2 ]
+  V.Fail      -> pure True
   V.Then t1 _ -> failing t1
   V.Next t1 _ -> failing t1
 
@@ -211,7 +215,8 @@ stride (V.Task t) = case t of
       Nothing -> pure ( V.Task $ V.Then t1' e2, p1 )
       Just v1 -> do
         ( t2, p2 ) <- eval $ E.App e2 (asExpr v1)
-        if failing t2
+        f2 <- failing t2
+        if f2
           then do
             put s1
             pure ( V.Task $ V.Then t1' e2, p1 )
@@ -278,8 +283,8 @@ handle (V.Task t) = case t of
     [ ( V.Task $ V.Or t1' t2, ToFirst  i1, p1 ) | ( t1', i1, p1 ) <- handle t1 ] <|>
     [ ( V.Task $ V.Or t1 t2', ToSecond i2, p2 ) | ( t2', i2, p2 ) <- handle t2 ]
   V.Xor e1 e2 ->
-    [ ( t1, GoLeft, p1 )  | ( t1, p1 ) <- normalise e1, not (failing t1) ] <|>
-    [ ( t2, GoRight, p2 ) | ( t2, p2 ) <- normalise e2, not (failing t2) ]
+    [ ( t1, GoLeft, p1 )  | ( t1, p1 ) <- normalise e1, False <- failing t1 ] <|>
+    [ ( t2, GoRight, p2 ) | ( t2, p2 ) <- normalise e2, False <- failing t2 ]
   V.Fail -> empty
     -- NOTE: Alternative: users can input anything, but nothing will ever come out of `fail`
     -- s <- fresh
@@ -289,7 +294,7 @@ handle (V.Task t) = case t of
     pure ( V.Task $ V.Then t1' e2, i1, p1 )
   V.Next t1 e2 ->
     [ ( V.Task $ V.Next t1' e2, i1, p1 ) | ( t1', i1, p1 ) <- handle t1 ] <|>
-    [ ( t2, Continue, p2 )               | Just v1 <- value t1, ( t2, p2 ) <- normalise (E.App e2 (asExpr v1)), not (failing t2) ]
+    [ ( t2, Continue, p2 )               | Just v1 <- value t1, ( t2, p2 ) <- normalise (E.App e2 (asExpr v1)), False <- failing t2 ]
 
 
 drive ::
