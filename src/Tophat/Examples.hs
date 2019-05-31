@@ -10,9 +10,9 @@ enterInt =
   Enter @'TyPrimInt
 
 
-pick2 :: Pretask ('TyTask ('TyPrim 'TyPrimInt))
+pick2 :: Pretask ('TyTask ('TyPrim 'TyPrimBool))
 pick2 =
-  View (I 0) :??: View (I 1)
+  Update (B True) :??: Update (B False)
 
 
 pick2_step :: Pretask ('TyTask ('TyPrim 'TyPrimBool))
