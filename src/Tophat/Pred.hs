@@ -73,6 +73,9 @@ simplify = \case
   Un o x -> Un o (simplify x)
   Bn o x y -> Bn o (simplify x) (simplify y)
 
+  Not (Con True) -> Con False
+  Not (Con False) -> Con True
+
   p -> p
 
 
