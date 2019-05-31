@@ -15,10 +15,10 @@ type AmountDateBoolean = TyPair ('TyPrimPair Amount Date) Boolean
 tax :: Pretask ('TyTask ('TyPrim ('TyPrimPair ('TyPrimPair ('TyPrimPair ('TyPrimPair ('TyPrimPair 'TyPrimInt Boolean) Boolean) Amount) Date) Date)))
 tax = let
     provideCitizenInfo :: Pretask ('TyTask ('TyPrim ('TyPrimPair Address Date)))
-    provideCitizenInfo = Enter @('TyPrimPair Address Date)
+    provideCitizenInfo = Enter @Address :&&: Enter @Date
 
     provideDocuments :: Pretask ('TyTask ('TyPrim ('TyPrimPair Amount Date)))
-    provideDocuments = Enter @('TyPrimPair Amount Date)
+    provideDocuments = Enter @Amount :&&: Enter @Date
 
     companyConfirm :: Pretask ('TyTask ('TyPrim Boolean))
     companyConfirm = Update (B True) :??: Update (B False)
