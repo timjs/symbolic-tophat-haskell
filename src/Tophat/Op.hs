@@ -175,6 +175,12 @@ svMax x y = unSBV $ smax (SBV x :: SInteger) (SBV y :: SInteger)
 svMin :: SVal -> SVal -> SVal
 svMin x y = unSBV $ smin (SBV x :: SInteger) (SBV y :: SInteger)
 
+svFst :: forall p q. Editable p => Editable q => Proxy ('TyPrimPair p q) -> SVal -> SVal
+svFst _ xy = unSBV $ Smt._1 (SBV xy :: SBV ( TypeOf p, TypeOf q ))
+
+svSnd :: forall p q. Editable p => Editable q => Proxy ('TyPrimPair p q) -> SVal -> SVal
+svSnd _ xy = unSBV $ Smt._2 (SBV xy :: SBV ( TypeOf p, TypeOf q ))
+
 -- | Note: The Proxy argument is there to lift the ambiguity of type variable `p`.
 svLen :: forall p. Editable p => Proxy ('TyPrimList p) -> SVal -> SVal
 svLen _ xs = unSBV $ Smt.length (SBV xs :: SList (TypeOf p))
