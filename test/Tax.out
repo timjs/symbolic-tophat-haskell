@@ -1,0 +1,27 @@
+⊠ ▶ λ.⊠ ⋈ □(True) ◇ □(False) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd x1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd x2>)
+
+s1 => ⊠ ⋈ □(True) ◇ □(False) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+├
+│ ├ S s4 => ⊠ ⋈ □(False) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+│ │ ├ S s18 => ⊠ ⋈ □(s18) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+│ │ │ ├ S s20 => ⊠ ⋈ □(s20) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+│ │ │ │ ├ S s22 => ⊠ ⋈ □(s22) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>): ╳
+│ │ │ │ └ F s21 => : ╳
+│ │ │ └ F s19 => : ╳
+│ │ └ F s17 => : ╳
+│ └ S s3 => ⊠ ⋈ □(True) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+│   ├ S s12 => ⊠ ⋈ □(s12) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+│   │ ├ S s14 => ⊠ ⋈ □(s14) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+│   │ │ ├ S s16 => ⊠ ⋈ □(s16) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>): ╳
+│   │ │ └ F s15 => : ╳
+│   │ └ F s13 => : ╳
+│   └ F s11 => : ╳
+└ F s2 => □(s2) ⋈ □(True) ◇ □(False) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+  ├
+  │ ├ S s7 => : ╳
+  │ └ S s6 => : ╳
+  └ F s5 => □(s5) ⋈ □(True) ◇ □(False) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>)
+    ├
+    │ ├ S s10 => : ╳
+    │ └ S s9 => : ╳
+    └ F s8 => □(s8) ⋈ □(True) ◇ □(False) ▶ λ.(((λ.λ.λ.□(False) ◇ if (((x1 - x2) < 365) ∧ x0) then □(True) else ↯) (fst fst x0)) (snd s1)) (snd x0) ▶ λ.□(<<<<<if x0 then (600 `min` (fst fst x1 / 10)) else 0 , x0> , snd x1> , fst fst x1> , snd fst x1> , snd s1>): ╳
