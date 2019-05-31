@@ -1,5 +1,7 @@
 module Tophat.Expr.Run
   ( Simulation, runSimulation, execSimulation, evalSimulation
+  , predicates
+  , initialise
   ) where
 
 import Control.Monad.Root
@@ -8,6 +10,7 @@ import Tophat.Type
 
 import Data.Root (Root)
 import Data.Stream (Stream)
+import Tophat.Expr.Sim (initialise)
 import Tophat.Heap (Heap)
 import Tophat.Input (Input)
 import Tophat.Pred (Pred(..), pattern (:==:), pattern (:/\:))
@@ -30,7 +33,11 @@ execSimulation = map go << fst << runSimulation
   where
     go ( ( v, is, p ), h ) = ( v, is, p, h )
 
-evalSimulation :: Editable t => Simulation t -> Root Text ( Pred 'TyPrimBool )
-evalSimulation = map go << execSimulation
+evalSimulation :: Editable t => Simulation t -> List (Pred 'TyPrimBool)
+evalSimulation = predicates << execSimulation
+
+
+predicates :: Editable t => Root Text ( Val ('TyPrim t), List Input, Pred 'TyPrimBool, Heap ) -> List (Pred 'TyPrimBool)
+predicates = map go << toList
   where
     go ( v, _, p, _ ) = (Sym 0 :==: asPred v) :/\: p

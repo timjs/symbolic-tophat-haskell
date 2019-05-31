@@ -5,7 +5,7 @@ module Prelude
   , List, Unit, Nat, nat
   , Vector, only, index, update
   , Pretty(..), Doc, sep, cat, split, indent, parens, angles
-  , scan, tracePretty
+  , scan, pretty', tracePretty
   , neutral
   , (<<), (>>), (#), map
   , (<-<), (>->)
@@ -99,6 +99,10 @@ split = Pretty.vsep
 
 tracePretty :: Pretty a => a -> a
 tracePretty x = traceShow (pretty x) x
+
+
+pretty' :: Pretty a => a -> Pretty.SimpleDocStream n
+pretty' = Pretty.layoutPretty (Pretty.LayoutOptions Pretty.Unbounded) << pretty
 
 
 instance ( Pretty a, Pretty b, Pretty c, Pretty d ) => Pretty ( a, b, c, d ) where

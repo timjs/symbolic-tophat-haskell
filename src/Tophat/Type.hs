@@ -2,7 +2,7 @@ module Tophat.Type
   ( module Data.Universe
   , Ty(..), PrimTy(..)
   , TyUnit, TyBool, TyInt, TyString, TyPair, TyList
-  , TyUnitUnit, TyUnitInt, TyIntUnit, TyIntInt, TyIntString, TyStringInt, TyIntList, TyStringList
+  , TyUnitUnit, TyUnitInt, TyIntUnit, TyIntInt, TyIntString, TyStringInt, TyListInt, TyStringList
   , Editable
   ) where
 
@@ -57,13 +57,14 @@ type TyString   = 'TyPrim 'TyPrimString
 type TyPair a b = 'TyPrim ('TyPrimPair a b)
 type TyList a   = 'TyPrim ('TyPrimList a)
 
-type TyUnitUnit   = TyPair 'TyPrimUnit   'TyPrimUnit
-type TyUnitInt    = TyPair 'TyPrimUnit   'TyPrimInt
-type TyIntUnit    = TyPair 'TyPrimInt    'TyPrimUnit
-type TyIntInt     = TyPair 'TyPrimInt    'TyPrimInt
-type TyStringInt  = TyPair 'TyPrimString 'TyPrimInt
-type TyIntString  = TyPair 'TyPrimInt    'TyPrimString
-type TyIntList    = TyList 'TyPrimInt
+type TyUnitUnit  = TyPair 'TyPrimUnit   'TyPrimUnit
+type TyUnitInt   = TyPair 'TyPrimUnit   'TyPrimInt
+type TyIntUnit   = TyPair 'TyPrimInt    'TyPrimUnit
+type TyIntInt    = TyPair 'TyPrimInt    'TyPrimInt
+type TyStringInt = TyPair 'TyPrimString 'TyPrimInt
+type TyIntString = TyPair 'TyPrimInt    'TyPrimString
+
+type TyListInt    = TyList 'TyPrimInt
 type TyStringList = TyList 'TyPrimString
 
 
