@@ -53,7 +53,7 @@ instance Pretty (Pred t) where
     Con x -> pretty x
     Sym i -> cat [ "s", pretty i ]
 
-    Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
+    Pair a b -> angles $ cat [ pretty a, ", ", pretty b ]
 
     Nil -> cat [ "[]_", pretty (typeRep @t) ]
     Cons a as -> sep [ pretty a, "::", pretty as ]

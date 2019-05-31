@@ -54,7 +54,7 @@ instance Pretty (Val t) where
     Un o a -> parens $ sep [ pretty o, pretty a ]
     Bn o a b -> parens $ sep [ pretty a, pretty o, pretty b ]
 
-    Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
+    Pair a b -> angles $ cat [ pretty a, ", ", pretty b ]
 
     Nil -> "[]"
     -- Nil -> cat [ "[]_", pretty (typeRep @t) ]

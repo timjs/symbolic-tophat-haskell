@@ -68,7 +68,7 @@ instance Pretty (Expr t) where
   pretty = \case
     Lam f -> cat [ "λ.", pretty f ]
     -- Lam f -> cat [ "λ_", pretty (typeRep @t), ".", pretty f ]
-    Let x b -> split [ sep [ "let", pretty x, "in" ], pretty b ]
+    -- Let x b -> split [ sep [ "let", pretty x, "in" ], pretty b ]
     App f a -> sep [ parens (pretty f), parens (pretty a) ]
     Var i -> cat [ "x", pretty i ]
     Sym i -> cat [ "s", pretty i ]
@@ -80,7 +80,7 @@ instance Pretty (Expr t) where
     Bn o a b -> parens (sep [ pretty a, pretty o, pretty b ])
     If p a b -> sep [ "if", pretty p, "then", pretty a, "else", pretty b ]
 
-    Pair a b -> angles $ cat [ pretty a, ",", pretty b ]
+    Pair a b -> angles $ cat [ pretty a, ", ", pretty b ]
     Fst a -> sep [ "fst", pretty a ]
     Snd a -> sep [ "snd", pretty a ]
 
