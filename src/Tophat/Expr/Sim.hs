@@ -290,10 +290,10 @@ drive ::
   Val ('TyTask t) -> m ( Val ('TyTask t), Input, Pred 'TyPrimBool )
 drive t0 = do
   ( t1, i1, p1 ) <- handle t0
-  track (show (pretty i1)) do
+  track (show (pretty i1) <> " => ") do
     ( t2, p2 ) <- normalise (asExpr t1)
-    -- track (show $ pretty t2) do
-    pure ( t2, i1, p1 :/\: p2 )
+    track (show (pretty t2) <> "; " <> show (pretty $ simplify $ p1 :/\: p2)) do
+      pure ( t2, i1, p1 :/\: p2 )
 
 
 -- | Call `drive` till the moment we have an observable value.
@@ -320,5 +320,5 @@ initialise ::
   Expr ('TyTask t) -> m ( Val t, List Input, Pred 'TyPrimBool )
 initialise t0 = do
   ( t1, p1 ) <- normalise t0
-  -- track (show $ pretty t1) do
-  simulate t1 empty p1
+  track (show $ pretty t1 <> "\n\n") do
+    simulate t1 empty p1
