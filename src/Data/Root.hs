@@ -8,9 +8,9 @@ module Data.Root
 -- |
 -- | Note: the order of the constructors matters for performance (see Data.IntMap.Internal).
 data Root v a
-  = Bin v (Root v a) (Root v a)
-  | Tip v a
-  | Nil v
+  = Bin !v !(Root v a) !(Root v a)
+  | Tip !v !a
+  | Nil !v
   deriving ( Eq, Ord, Show, Read, Functor, Foldable, Traversable )
 
 
@@ -20,8 +20,8 @@ instance ( Pretty v, Pretty a ) => Pretty (Root v a) where
       helper :: Root v a -> List (Doc n)
       helper = \case
         Bin v ls rs -> pretty v : sub ls rs
-        Tip v x -> [ pretty v <> ": " <> pretty x ]
-        Nil v -> [ pretty v <> ": ╳" ]
+        Tip v x -> [ pretty v <> " ==> " <> pretty x ]
+        Nil v -> [ pretty v <> " ==> ╳" ]
 
       sub :: Root v a -> Root v a -> List (Doc n)
       sub ls rs = pad "├ " "│ " (helper rs) <> pad "└ " "  " (helper ls)
