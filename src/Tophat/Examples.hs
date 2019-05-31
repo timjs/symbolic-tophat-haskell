@@ -10,15 +10,16 @@ enterInt =
   Enter @'TyPrimInt
 
 
-pick2 :: Pretask ('TyTask ('TyPrim 'TyPrimBool))
+pick2 :: Pretask ('TyTask ('TyPrim 'TyPrimInt))
 pick2 =
-  Update (B True) :??: Update (B False)
+  Update (I 0) :??: Update (I 2)
 
 
 pick2_step :: Pretask ('TyTask ('TyPrim 'TyPrimBool))
 pick2_step =
   pick2 :>>=
-  View (Bn Gt (Var 0) (I 0))
+  let x = Var @TyInt 0 in
+  View (Bn Gt x (I 0))
 
 
 pick2_par :: Pretask ('TyTask ('TyPrim 'TyPrimBool))
