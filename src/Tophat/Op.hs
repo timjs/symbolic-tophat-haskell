@@ -64,7 +64,7 @@ data Bn (a :: PrimTy) (b :: PrimTy) (c :: PrimTy) where
   Min :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
   Max :: Bn 'TyPrimInt 'TyPrimInt 'TyPrimInt
 
-  Elem :: ( Editable p ) => Bn ('TyPrimList p) ('TyPrimList p) 'TyPrimBool
+  Elem :: ( Editable p ) => Bn p ('TyPrimList p) 'TyPrimBool
   Cat  :: ( Editable p ) => Bn ('TyPrimList p) ('TyPrimList p) ('TyPrimList p)
 
 
@@ -129,7 +129,6 @@ instance Eq (Bn a b c) where
     Max == _   = False
 
     Elem == Elem = True
-    Elem == _    = True
     Cat  == Cat  = True
 
 
