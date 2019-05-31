@@ -173,6 +173,11 @@ data Pretask (t :: Ty) where
   Then :: ( Typeable a, Typeable b ) => Expr ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Pretask ('TyTask b)
   Next :: ( Typeable a, Typeable b ) => Expr ('TyTask a) -> Expr (a ':-> 'TyTask b) -> Pretask ('TyTask b)
 
+  -- | `Wrap` is simply here as a convenience to write task expressions.
+  -- | It is used in conjunction with the patterns defined below,
+  -- | where every pattern takes and returns `Pretask`s.
+  Wrap :: Expr a -> Pretask a
+
 
 infixl 3 :&&:
 infixr 2 :||:, :??:
@@ -184,12 +189,12 @@ infixr 1 :>>=, :>>?
 
 pattern View x = Update x
 pattern Watch x = Change x
-pattern (:&&:) x y = And x y
-pattern (:||:) x y = Or x y
-pattern (:??:) x y = Xor x y
-pattern (:??)  x y = Xor x y
-pattern (:>>=) t c = Then t (Lam c)
-pattern (:>>?) t c = Next t (Lam c)
+pattern (:&&:) x y = And (Task x) (Task y)
+pattern (:||:) x y = Or (Task x) (Task y)
+pattern (:??:) x y = Xor (Task x) (Task y)
+pattern (:??)  x y = Xor (Task x) (Task y)
+pattern (:>>=) t c = Then (Task t) (Lam (Task c))
+pattern (:>>?) t c = Next (Task t) (Lam (Task c))
 
 
 instance Pretty (Pretask t) where
@@ -205,6 +210,8 @@ instance Pretty (Pretask t) where
 
     Then x c -> sep [ pretty x, "▶", pretty c ]
     Next x c -> sep [ pretty x, "▷", pretty c ]
+
+    Wrap x -> pretty x
 
 
 instance Eq (Pretask t) where
@@ -238,6 +245,9 @@ instance Eq (Pretask t) where
     , Just Refl <- c1 ~= c2        = x1 == x2 && c1 == c2
     | otherwise                    = False
   Next _ _       == _              = False
+
+  Wrap x1        == Wrap x2        = x1 == x2
+  Wrap _         == _              = False
 
 
 -- Substitution ----------------------------------------------------------------
@@ -294,6 +304,8 @@ subst' j s = \case
   Then a b -> Then (subst j s a) (subst j s b)
   Next a b -> Next (subst j s a) (subst j s b)
 
+  Wrap a -> Wrap (subst j s a)
+
 
 -- | The one-place shift of an expression `e` after cutof `c`.
 shift :: Typeable s => Name s -> Expr t -> Expr t
@@ -338,3 +350,5 @@ shift' c = \case
 
   Then a b -> Then (shift c a) (shift c b)
   Next a b -> Next (shift c a) (shift c b)
+
+  Wrap a -> Wrap (shift c a)

@@ -1,5 +1,5 @@
 module Tophat.Examples where
-{-
+
 import Tophat.Expr
 
 
@@ -47,7 +47,7 @@ echo = Task $
 echo' :: Expr ('TyTask TyInt)
 echo' = Task $
   Enter @'TyPrimInt :>>?
-  Task (View (Var 0))
+  View (Var 0)
 
 
 add_seq :: Expr ('TyTask TyInt)
@@ -86,20 +86,20 @@ add_par = Task $
 
 par_step :: Expr ('TyTask TyString)
 par_step = Task $
-  Update (I 0) :&&: Update (I 0) :>>!
-  If (Bn Gt (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0))) done stop
+  Update (I 0) :&&: Update (I 0) :>>=
+  Wrap (If (Bn Gt (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0))) done stop)
 
 
 guard0 :: Expr ('TyTask TyInt)
 guard0 = Task $
-  Enter @'TyPrimInt :>>!
-  If (Bn Gt (Var 0) (I 0)) (Task $ View (Var 0)) (Task $ Fail)
+  Enter @'TyPrimInt :>>=
+  Wrap (If (Bn Gt (Var 0) (I 0)) (Task $ View (Var 0)) (Task $ Fail))
 
 
 preguard :: Expr ('TyTask (TyString))
 preguard = Task $
-  Enter @'TyPrimBool :>>!
-  If (Un Not (Var 0)) (contguard (Var 0)) (Task $ Fail)
+  Enter @'TyPrimBool :>>=
+  Wrap (If (Un Not (Var 0)) (contguard (Var 0)) (Task $ Fail))
   where
     contguard :: Expr TyBool -> Expr ('TyTask (TyString))
     contguard x = Task $
@@ -110,10 +110,10 @@ preguard = Task $
 
 machine :: Expr ('TyTask (TyString))
 machine = Task $
-  Enter @'TyPrimInt :>>!
-  If (Bn Eq (Var 0) (I 1)) (Task $ View (S "Biscuit")) (
+  Enter @'TyPrimInt :>>=
+  Wrap (If (Bn Eq (Var 0) (I 1)) (Task $ View (S "Biscuit")) (
   If (Bn Eq (Var 0) (I 2)) (Task $ View (S "Chocolate")) (
-  Task $ Fail))
+  Task $ Fail)))
 
 
 iftest :: Expr ('TyTask (TyString))
@@ -128,8 +128,8 @@ step_fail = Task $
 
 iffail :: Expr ('TyTask (TyString))
 iffail = Task $
-  Enter @'TyPrimInt :>>!
-  If (B True) (Task $ Update $ S "Biscuit") (Task $ Fail)
+  Enter @'TyPrimInt :>>=
+  Wrap (If (B True) (Task $ Update $ S "Biscuit") (Task $ Fail))
 
 
 share :: Expr ('TyTask TyInt)
@@ -145,15 +145,15 @@ share' = Task $
 
 shareStep :: Expr ('TyTask TyString)
 shareStep = Task $
-  Change @'TyPrimInt (Ref (I 0)) :>>!
-  If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail)
+  Change @'TyPrimInt (Ref (I 0)) :>>=
+  Wrap (If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail))
 
 
 shareStepCont :: Expr ('TyTask TyString)
 shareStepCont =
   Let (Ref (I 0)) $ Task $
   Change @'TyPrimInt (Var 0) :>>?
-  If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail)
+  Wrap (If (Bn Eq (Var 0) (I 1)) (Task $ View (S "done")) (Task $ Fail))
 
 
 -- Shares --
@@ -168,8 +168,8 @@ stop   = Task $ Fail
 
 share_step :: Expr ('TyTask TyString)
 share_step = Task $
-  Change (Ref (I 0)) :>>!
-  If (Bn Gt (Var 0) (I 0)) done stop
+  Change (Ref (I 0)) :>>=
+  Wrap (If (Bn Gt (Var 0) (I 0)) done stop)
 
 
 share_par :: Expr ('TyTask TyIntInt)
@@ -179,8 +179,8 @@ share_par = Task $
 
 share_par_step :: Expr ('TyTask TyString)
 share_par_step = Task $
-  Change (Ref (I 0)) :&&: Change (Ref (I 0)) :>>!
-  If (Bn Gt (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0))) done stop
+  Change (Ref (I 0)) :&&: Change (Ref (I 0)) :>>=
+  Wrap (If (Bn Gt (Fst (Var @TyIntInt 0)) (Snd (Var @TyIntInt 0))) done stop)
 
 
 
@@ -193,7 +193,6 @@ lock =
   Task $
   door :&&: (unlock 1 :&&: unlock 2)
   where
-    door     = Change @'TyPrimInt (Var 1)  :>>! If (Bn Eq (Deref (Var 1)) (I 2)) done stop
-    unlock n = Update U :>>! If (Bn Eq (Deref (Var 2)) (I n)) (inc (Var 1)) stop
+    door     = Change @'TyPrimInt (Var 1)  :>>= Wrap (If (Bn Eq (Deref (Var 1)) (I 2)) done stop)
+    unlock n = Update U :>>= Wrap (If (Bn Eq (Deref (Var 2)) (I n)) (inc (Var 1)) stop)
     inc c    = Task $ View $ Assign c (Bn Add (Deref c) (I 1))
--}

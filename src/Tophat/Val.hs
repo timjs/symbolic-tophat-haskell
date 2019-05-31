@@ -3,7 +3,7 @@ module Tophat.Val
   , module Tophat.Name
   , Val(..), Un(..), Bn(..)
   , Task(..)
-  , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>\), pattern (:>>?)
+  , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
   , asPred, asExpr, asPretask
   ) where
 
@@ -115,7 +115,7 @@ infixr 2 :||:, :??:
 -- | NOTE:
 -- | Fixity of bind is left associative in a normal setting because of the scoping of lambdas.
 -- | Because we can't use lambdas in our DSL, bind should be right associative.
-infixr 1 :>>=, :>>?, :>>\
+infixr 1 :>>=, :>>?
 
 
 pattern View x = Update x
@@ -123,7 +123,6 @@ pattern (:&&:) x y = And (Task x) (Task y)
 pattern (:||:) x y = Or (Task x) (Task y)
 pattern (:??:) x y = Xor (E.Task x) (E.Task y)
 pattern (:>>=) t c = Then (Task t) (E.Lam (E.Task c))
-pattern (:>>\) t c = Then (Task t) (E.Lam c)
 pattern (:>>?) t c = Next (Task t) (E.Lam (E.Task c))
 
 

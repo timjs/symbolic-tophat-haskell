@@ -143,6 +143,8 @@ eval = \case
   E.Con x ->
     pure ( V.Con x, Yes )
 
+  E.Task (E.Wrap e1) -> do
+    eval e1
   E.Task e1 -> do
     ( t1, p1 ) <- eval' e1
     pure ( V.Task t1, p1 )
@@ -163,6 +165,7 @@ eval' = \case
   E.Change e1 -> do
     ( v1, p1 ) <- eval e1
     pure ( V.Change v1, p1 )
+
   E.And e1 e2 -> do
     ( t1, p1 ) <- eval e1
     ( t2, p2 ) <- eval e2
@@ -176,12 +179,16 @@ eval' = \case
     pure ( V.Xor e1 e2, Yes )
   E.Fail ->
     pure ( V.Fail, Yes )
+
   E.Then e1 e2 -> do
     ( t1, p1 ) <- eval e1
     pure ( V.Then t1 e2, p1 )
   E.Next e1 e2 -> do
     ( t1, p1 ) <- eval e1
     pure ( V.Next t1 e2, p1 )
+
+  E.Wrap _ ->
+    error "Tophat.Expr.Sim.eval': Wrap should be evaluated"
 
 
 stride ::
