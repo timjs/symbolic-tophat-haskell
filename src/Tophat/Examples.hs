@@ -1,4 +1,4 @@
-module Examples where
+module Tophat.Examples where
 {-
 import Tophat.Expr
 

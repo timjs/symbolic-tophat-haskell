@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aab91980193f6944508763b7a77207aaac5a5e94a8fa3be2e00475aff97f7814
+-- hash: bb7c40542437aa54dfe1f75a58e0e50cfab4cabc78b8ec3de0442d5a8a2f5b38
 
 name:           symbolic-tophat
 version:        0.1.0.0
@@ -32,7 +32,10 @@ library
       Data.Root
       Data.Some
       Data.Universe
+      Main
       Prelude
+      Tophat.Examples
+      Tophat.Examples.Tax
       Tophat.Expr
       Tophat.Expr.Run
       Tophat.Expr.Sim
@@ -62,16 +65,31 @@ library
     , vector
   default-language: Haskell2010
 
-test-suite translation-test
-  type: exitcode-stdio-1.0
+executable symbolic-tophat
   main-is: Main.hs
   other-modules:
-      Examples
-      Examples.Tax
-      Solver
+      Control.Monad.Root
+      Control.Monad.Supply
+      Control.Monad.Track.Class
+      Data.Root
+      Data.Some
+      Data.Universe
+      Prelude
+      Tophat.Examples
+      Tophat.Examples.Tax
+      Tophat.Expr
+      Tophat.Expr.Run
+      Tophat.Expr.Sim
+      Tophat.Heap
+      Tophat.Input
+      Tophat.Name
+      Tophat.Op
+      Tophat.Pred
+      Tophat.Type
+      Tophat.Val
       Paths_symbolic_tophat
   hs-source-dirs:
-      test
+      src
   default-extensions: EmptyDataDecls EmptyCase FlexibleContexts FlexibleInstances InstanceSigs MultiParamTypeClasses LambdaCase MultiWayIf NamedFieldPuns TupleSections NumericUnderscores DeriveGeneric DeriveFunctor DeriveFoldable DeriveTraversable DerivingVia BangPatterns KindSignatures TypeOperators MonadComprehensions BinaryLiterals NegativeLiterals NoStarIsType BlockArguments ScopedTypeVariables TypeApplications PartialTypeSignatures NamedWildCards OverloadedStrings OverloadedLists ConstraintKinds RankNTypes DefaultSignatures PatternSynonyms PatternGuards FunctionalDependencies GADTs ExistentialQuantification DataKinds PolyKinds TypeFamilies QuantifiedConstraints
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Wno-deprecations -Wno-missing-pattern-synonym-signatures -threaded -rtsopts -with-rtsopts=-N
   build-depends:

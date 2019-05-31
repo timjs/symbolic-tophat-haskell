@@ -1,4 +1,4 @@
-module Examples.Tax where
+module Tophat.Examples.Tax where
 
 import Tophat.Expr
 
