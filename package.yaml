@@ -15,8 +15,8 @@ extra-source-files:
 
 
 dependencies:
-  - base-noprelude
-  - relude
+  - base-noprelude >= 4.12 && < 5
+  - relude >= 0.5 && < 1
   - mtl
   - text
   - vector
@@ -24,7 +24,7 @@ dependencies:
   - Stream
   - containers
   - unordered-containers
-  - sbv
+  - sbv >= 8.0 && < 9
 
 
 default-extensions:

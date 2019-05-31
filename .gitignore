@@ -1,2 +1,4 @@
-*.cabal
+dist*/
+
 format.json
+errors.txt

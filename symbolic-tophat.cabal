@@ -1,0 +1,89 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: aab91980193f6944508763b7a77207aaac5a5e94a8fa3be2e00475aff97f7814
+
+name:           symbolic-tophat
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/timjs/symbolic-tophat#readme>
+homepage:       https://github.com/timjs/symbolic-tophat#readme
+bug-reports:    https://github.com/timjs/symbolic-tophat/issues
+author:         Tim Steenvoorden
+maintainer:     tim.steenvoorden@me.com
+copyright:      BSD3
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/timjs/symbolic-tophat
+
+library
+  exposed-modules:
+      Control.Monad.Root
+      Control.Monad.Supply
+      Control.Monad.Track.Class
+      Data.Root
+      Data.Some
+      Data.Universe
+      Prelude
+      Tophat.Expr
+      Tophat.Expr.Run
+      Tophat.Expr.Sim
+      Tophat.Heap
+      Tophat.Input
+      Tophat.Name
+      Tophat.Op
+      Tophat.Pred
+      Tophat.Type
+      Tophat.Val
+  other-modules:
+      Paths_symbolic_tophat
+  hs-source-dirs:
+      src
+  default-extensions: EmptyDataDecls EmptyCase FlexibleContexts FlexibleInstances InstanceSigs MultiParamTypeClasses LambdaCase MultiWayIf NamedFieldPuns TupleSections NumericUnderscores DeriveGeneric DeriveFunctor DeriveFoldable DeriveTraversable DerivingVia BangPatterns KindSignatures TypeOperators MonadComprehensions BinaryLiterals NegativeLiterals NoStarIsType BlockArguments ScopedTypeVariables TypeApplications PartialTypeSignatures NamedWildCards OverloadedStrings OverloadedLists ConstraintKinds RankNTypes DefaultSignatures PatternSynonyms PatternGuards FunctionalDependencies GADTs ExistentialQuantification DataKinds PolyKinds TypeFamilies QuantifiedConstraints
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Wno-deprecations -Wno-missing-pattern-synonym-signatures
+  build-depends:
+      Stream
+    , base-noprelude >=4.12 && <5
+    , containers
+    , mtl
+    , prettyprinter
+    , relude >=0.5 && <1
+    , sbv >=8.0 && <9
+    , text
+    , unordered-containers
+    , vector
+  default-language: Haskell2010
+
+test-suite translation-test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Examples
+      Examples.Tax
+      Solver
+      Paths_symbolic_tophat
+  hs-source-dirs:
+      test
+  default-extensions: EmptyDataDecls EmptyCase FlexibleContexts FlexibleInstances InstanceSigs MultiParamTypeClasses LambdaCase MultiWayIf NamedFieldPuns TupleSections NumericUnderscores DeriveGeneric DeriveFunctor DeriveFoldable DeriveTraversable DerivingVia BangPatterns KindSignatures TypeOperators MonadComprehensions BinaryLiterals NegativeLiterals NoStarIsType BlockArguments ScopedTypeVariables TypeApplications PartialTypeSignatures NamedWildCards OverloadedStrings OverloadedLists ConstraintKinds RankNTypes DefaultSignatures PatternSynonyms PatternGuards FunctionalDependencies GADTs ExistentialQuantification DataKinds PolyKinds TypeFamilies QuantifiedConstraints
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -Wno-deprecations -Wno-missing-pattern-synonym-signatures -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      Stream
+    , base-noprelude >=4.12 && <5
+    , containers
+    , mtl
+    , prettyprinter
+    , relude >=0.5 && <1
+    , sbv >=8.0 && <9
+    , symbolic-tophat
+    , text
+    , unordered-containers
+    , vector
+  default-language: Haskell2010
