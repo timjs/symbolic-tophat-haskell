@@ -2,8 +2,10 @@ module Tophat.Examples where
 
 import Tophat.Expr
 
-import Tophat.Pred (Pred)
+import Tophat.Pred (Pred, pattern (:==:))
 import Tophat.Val (Val, asPred)
+
+import qualified Tophat.Pred as P
 
 
 -- Examples --------------------------------------------------------------------
@@ -141,13 +143,18 @@ preguard = Task $
       )
 
 
-machine :: Expr ('TyTask (TyString))
-machine = Task $
+machine :: Pretask ('TyTask (TyString))
+machine =
   Enter @'TyPrimInt :>>=
   Wrap (If (Bn Eq (Var 0) (I 1)) (Task $ View (S "Biscuit")) (
   If (Bn Eq (Var 0) (I 2)) (Task $ View (S "Chocolate")) (
   Task $ Fail)))
 
+goalBiscuit :: Val TyString -> Pred 'TyPrimBool
+goalBiscuit v = asPred v :==: P.S "Biscuit"
+
+goalChocolate :: Val TyString -> Pred 'TyPrimBool
+goalChocolate v = asPred v :==: P.S "Chocolate"
 
 iftest :: Expr ('TyTask (TyString))
 iftest =
