@@ -330,8 +330,8 @@ simulate t is p = go (go end) t is p
 
 firsts ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Val ('TyTask ('TyPrim t)) -> Goal t -> Pred 'TyPrimBool -> m ( Input, Pred 'TyPrimBool )
-firsts t g p = [ ( i, p'' ) | ( v, i:_, p' ) <- simulate t [] p, let p'' = p' :/\: g v, satisfiable p'' ]
+  Val ('TyTask ('TyPrim t)) -> Goal t -> Pred 'TyPrimBool -> m ( List Input, Pred 'TyPrimBool )
+firsts t g p = [ ( i, p'' ) | ( v, i, p' ) <- simulate t [] p, let p'' = p' :/\: g v, satisfiable p'' ]
 
 
 startSimulate ::
@@ -344,7 +344,7 @@ startSimulate e0 = do
 
 startFirsts ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Pretask ('TyTask ('TyPrim t)) -> Goal t -> m ( Input, Pred 'TyPrimBool )
+  Pretask ('TyTask ('TyPrim t)) -> Goal t -> m ( List Input, Pred 'TyPrimBool )
 startFirsts e0 g = do
   ( t1, p1 ) <- normalise (E.Task e0)
   track (show $ pretty t1 <> "\n\n") do

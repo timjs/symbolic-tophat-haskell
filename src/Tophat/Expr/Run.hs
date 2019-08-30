@@ -44,20 +44,20 @@ predicates = map go << toList
 
 
 
-type Firsts = StateT Heap (RootT Text (SupplyT Nat Identity)) ( Input, Pred 'TyPrimBool )
+type Firsts = StateT Heap (RootT Text (SupplyT Nat Identity)) ( List Input, Pred 'TyPrimBool )
 
-runFirsts :: Firsts -> ( Root Text ( ( Input, Pred 'TyPrimBool ), Heap ), Stream Nat )
+runFirsts :: Firsts -> ( Root Text ( ( List Input, Pred 'TyPrimBool ), Heap ), Stream Nat )
 runFirsts r = runIdentity (runSupplyT (runRootT (runStateT r empty)) ids)
 
-execFirsts :: Firsts -> Root Text ( Input, Pred 'TyPrimBool, Heap )
+execFirsts :: Firsts -> Root Text ( List Input, Pred 'TyPrimBool, Heap )
 execFirsts = map go << fst << runFirsts
   where
     go ( ( v, p ), h ) = ( v, p, h )
 
-evalFirsts :: Firsts -> List (Input, Pred 'TyPrimBool)
+evalFirsts :: Firsts -> List (List Input, Pred 'TyPrimBool)
 evalFirsts = predicatesFirsts << execFirsts
 
-predicatesFirsts :: Root Text ( Input, Pred 'TyPrimBool, Heap ) -> List (Input, Pred 'TyPrimBool)
+predicatesFirsts :: Root Text ( List Input, Pred 'TyPrimBool, Heap ) -> List (List Input, Pred 'TyPrimBool)
 predicatesFirsts = map go << toList
   where
     go ( i, p, _ ) = (i,p) --(Sym 0 :==: asPred v) :/\: p

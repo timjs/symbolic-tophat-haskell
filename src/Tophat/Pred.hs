@@ -3,6 +3,7 @@ module Tophat.Pred
   , module Tophat.Type
   , Pred(..)
   , pattern Yes, pattern Nop, pattern Not, pattern (:/\:), pattern (:\/:), pattern (:==:)
+  , pattern S
   , simplify
   , toSmt, satisfiable
   ) where
@@ -46,6 +47,9 @@ pattern (:/\:) x y = Bn O.Conj x y
 pattern (:\/:) x y = Bn O.Disj x y
 
 pattern (:==:) x y = Bn O.Eq x y
+
+pattern S :: String -> Pred 'TyPrimString
+pattern S x = Con x
 
 
 instance Pretty (Pred t) where
