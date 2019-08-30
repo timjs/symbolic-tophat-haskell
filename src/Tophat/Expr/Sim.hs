@@ -3,7 +3,8 @@ module Tophat.Expr.Sim
   , module Tophat.Input
   , module Tophat.Expr
   , value, failing
-  , eval, eval', stride, normalise, handle, drive, simulate, firsts, initialise
+  , eval, eval', stride, normalise, handle, drive, simulate, firsts
+  , startSimulate, startFirsts
   ) where
 
 import Control.Monad.Track.Class
@@ -329,14 +330,22 @@ simulate t is p = go (go end) t is p
 
 firsts ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
-  Val ('TyTask ('TyPrim t)) -> Goal t -> m ( Input, Pred 'TyPrimBool )
-firsts t g = [ ( i, p' ) | ( v, i:_, p ) <- simulate t [] Yes, let p' = p :/\: g v, satisfiable p' ]
+  Val ('TyTask ('TyPrim t)) -> Goal t -> Pred 'TyPrimBool -> m ( Input, Pred 'TyPrimBool )
+firsts t g p = [ ( i, p'' ) | ( v, i:_, p' ) <- simulate t [] p, let p'' = p' :/\: g v, satisfiable p'' ]
 
 
-initialise ::
+startSimulate ::
   MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
   Pretask ('TyTask t) -> m ( Val t, List Input, Pred 'TyPrimBool )
-initialise e0 = do
+startSimulate e0 = do
   ( t1, p1 ) <- normalise (E.Task e0)
   track (show $ pretty t1 <> "\n\n") do
     simulate t1 empty p1
+
+startFirsts ::
+  MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  Pretask ('TyTask ('TyPrim t)) -> Goal t -> m ( Input, Pred 'TyPrimBool )
+startFirsts e0 g = do
+  ( t1, p1 ) <- normalise (E.Task e0)
+  track (show $ pretty t1 <> "\n\n") do
+    firsts t1 g p1
