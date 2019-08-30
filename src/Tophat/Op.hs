@@ -153,8 +153,8 @@ toSmtBn = \case
 
     Lt -> svLessThan
     Le -> svLessEq
-    Ge -> svGreaterThan
-    Gt -> svGreaterEq
+    Gt -> svGreaterThan
+    Ge -> svGreaterEq
 
     Add -> svPlus
     Sub -> svMinus
