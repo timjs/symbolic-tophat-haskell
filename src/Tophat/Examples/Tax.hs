@@ -1,7 +1,8 @@
 module Tophat.Examples.Tax where
 
 import Tophat.Expr
-
+import qualified Tophat.Val as V
+import qualified Tophat.Pred as P
 
 type Address = 'TyPrimString
 type Date = 'TyPrimInt
@@ -44,3 +45,7 @@ tax = let
       (I 0)
   in
   View (subsidyAmount :*: Var @('TyPrim Boolean) 0 :*: Snd (Var @AmountDateBoolean 1) :*: Fst (Fst (Var @AmountDateBoolean 1)) :*: Snd (Fst (Var @AmountDateBoolean 1)) :*: Snd (Var @AddressDate 2))
+
+
+goalTax :: V.Val ('TyPrim ('TyPrimPair ('TyPrimPair ('TyPrimPair ('TyPrimPair ('TyPrimPair 'TyPrimInt Boolean) Boolean) Amount) Date) Date)) -> P.Pred 'TyPrimBool
+goalTax (V.Pair (V.Pair (V.Pair (V.Pair (V.Pair i _) _) _) _ ) _ ) = P.Bn V.Gt (V.asPred i) (P.Con 0)
