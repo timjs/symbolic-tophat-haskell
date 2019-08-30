@@ -2,8 +2,20 @@ module Tophat.Examples where
 
 import Tophat.Expr
 
+import Tophat.Pred (Pred)
+import Tophat.Val (Val, asPred)
+
 
 -- Examples --------------------------------------------------------------------
+
+
+enterBool :: Pretask ('TyTask ('TyPrim 'TyPrimBool))
+enterBool =
+  Enter @'TyPrimBool
+
+goalTrue :: Val ('TyPrim 'TyPrimBool) -> Pred 'TyPrimBool
+goalTrue = asPred
+
 
 enterInt :: Pretask ('TyTask ('TyPrim 'TyPrimInt))
 enterInt =
