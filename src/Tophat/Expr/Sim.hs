@@ -3,7 +3,7 @@ module Tophat.Expr.Sim
   , module Tophat.Input
   , module Tophat.Expr
   , value, failing
-  , eval, eval', stride, normalise, handle, drive, simulate, initialise
+  , eval, eval', stride, normalise, handle, drive, simulate, firsts, initialise
   ) where
 
 import Control.Monad.Track.Class
@@ -13,7 +13,7 @@ import Tophat.Type
 
 import Tophat.Expr (Expr, Pretask, subst)
 import Tophat.Pred (Pred, simplify, satisfiable, pattern Yes, pattern (:/\:))
-import Tophat.Val (Val, Task, asPred, asExpr)
+import Tophat.Val (Val, Task, Goal, asPred, asExpr)
 import Tophat.Heap (Heap, new, read, write)
 
 import qualified Tophat.Expr as E
@@ -325,6 +325,12 @@ simulate t is p = go (go end) t is p
         | t0 /= t1              -> simulate t1 is1 ps1
         | otherwise             -> cont t1 is1 ps1
     end _ _ _ = empty
+
+
+firsts ::
+  MonadTrack Text m => MonadSupply Nat m => MonadState Heap m => MonadZero m =>
+  Val ('TyTask ('TyPrim t)) -> Goal t -> m ( Input, Pred 'TyPrimBool )
+firsts t g = [ ( i, p' ) | ( v, i:_, p ) <- simulate t [] Yes, let p' = p :/\: g v, satisfiable p' ]
 
 
 initialise ::
