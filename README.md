@@ -10,7 +10,8 @@ take a look at the [TopHat Haskell](https://github.com/timjs/tophat-haskell) imp
 
 ## Paper
 
-The paper behind all this code is published at IFL'19
+The paper behind all this code is published at [IFL'19](http://2019.iflconference.org).
+Read [the paper](https://github.com/timjs/symbolic-tophat) for more background.
 
 ## Building
 
