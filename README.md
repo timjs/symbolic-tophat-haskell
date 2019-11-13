@@ -18,7 +18,7 @@ Read [the paper](https://github.com/timjs/symbolic-tophat) for more background.
 Clone the repository and build it by running Cabal's new commands:
 
 ```sh
-git clone https://github.com/timjs/tophat-haskell.git
+git clone https://github.com/timjs/symbolic-tophat-haskell.git
 cd tophat-haskell
 cabal new-build
 cabal new-run
