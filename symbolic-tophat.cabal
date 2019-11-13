@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3f5811a197c60a8cc73c9525172e286ddf2c567da6a9ebf7053dd11071b94cda
+-- hash: f54fab33e0733ca9df7f6c86fc449217ce306de0a1814f9b0b566e886aff34d0
 
 name:           symbolic-tophat
 version:        0.1.0.0
@@ -37,6 +37,7 @@ library
       Tophat.Examples
       Tophat.Examples.Flight
       Tophat.Examples.Tax
+      Tophat.Examples.Vending
       Tophat.Expr
       Tophat.Expr.Run
       Tophat.Expr.Sim
@@ -79,6 +80,7 @@ executable symbolic-tophat
       Tophat.Examples
       Tophat.Examples.Flight
       Tophat.Examples.Tax
+      Tophat.Examples.Vending
       Tophat.Expr
       Tophat.Expr.Run
       Tophat.Expr.Sim
