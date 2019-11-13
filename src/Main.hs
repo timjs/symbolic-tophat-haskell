@@ -8,5 +8,5 @@ import Tophat.Examples.Tax
 
 main :: IO ()
 main = do
-  writeFile "Flight.out" (show $ pretty $ execSimulation $ initialise flight)
-  writeFile "Tax.out"    (show $ pretty $ execSimulation $ initialise tax)
+  writeFile "Flight.out" (show $ pretty $ execSimulation $ startSimulate flight)
+  writeFile "Tax.out"    (show $ pretty $ execSimulation $ startSimulate tax)

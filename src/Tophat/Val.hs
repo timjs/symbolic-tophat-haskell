@@ -2,7 +2,7 @@ module Tophat.Val
   ( module Tophat.Type
   , module Tophat.Name
   , Val(..), Un(..), Bn(..)
-  , Task(..)
+  , Task(..), Goal
   , pattern View, pattern (:&&:), pattern (:||:), pattern (:??:), pattern (:>>=), pattern (:>>?)
   , asPred, asExpr, asPretask
   ) where
@@ -21,6 +21,11 @@ import Tophat.Expr (Expr)
 
 import qualified Tophat.Expr as E
 import qualified Tophat.Pred as P
+
+
+-- Goals -----------------------------------------------------------------------
+
+type Goal (p :: PrimTy) = Val ('TyPrim p) -> P.Pred 'TyPrimBool
 
 
 -- Expressions -----------------------------------------------------------------
