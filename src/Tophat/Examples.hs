@@ -7,6 +7,15 @@ import Tophat.Val (Val, asPred)
 
 import qualified Tophat.Pred as P
 
+{-
+
+To run an example with a goal in GHCi:
+
+>>> let x = evalFirsts $ startFirsts <prog> <goal>
+>>> pretty x
+
+-}
+
 
 -- Examples --------------------------------------------------------------------
 
